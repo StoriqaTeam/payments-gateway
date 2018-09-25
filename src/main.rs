@@ -1,5 +1,7 @@
+extern crate env_logger;
 extern crate payments_lib;
 
 fn main() {
-    payments_lib::hello();
+    env_logger::init();
+    payments_lib::print_config();
 }
