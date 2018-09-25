@@ -14,6 +14,7 @@ extern crate log;
 extern crate config as config_crate;
 #[macro_use]
 extern crate http_router;
+extern crate regex;
 
 #[macro_use]
 mod macros;
