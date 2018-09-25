@@ -24,7 +24,7 @@ where
 {
     Box::new(
         serde_json::to_string(&model)
-            .map_err(|e| e.context(format!("model: {:?}", &model)).context(ErrorKind::Json).into())
+            .map_err(|e| error_context!(e, ErrorKind::Json, model))
             .into_future()
             .map(|text| {
                 Response::builder()

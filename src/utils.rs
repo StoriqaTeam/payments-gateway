@@ -8,6 +8,10 @@ fn format_error<E: Fail>(error: E) -> String {
         iter = e;
     }
     result.push_str(&format!("{}", iter));
+    if let Some(bt) = error.backtrace() {
+        let bt = format!("\n{}", bt);
+        result.push_str(&bt);
+    }
     result
 }
 
