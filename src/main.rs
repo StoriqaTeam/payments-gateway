@@ -1,3 +1,5 @@
+extern crate payments_lib;
+
 fn main() {
-    println!("Hello, world!");
+    payments_lib::hello();
 }
