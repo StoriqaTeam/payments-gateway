@@ -1,0 +1,7 @@
+name: payments
+version: "0.1.0"
+author: "Alexey Karasev <karasev.alexey@gmail.com>"
+about: Does awesome things
+subcommands:
+    - config:
+        about: Prints current config

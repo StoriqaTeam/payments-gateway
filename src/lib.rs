@@ -21,5 +21,5 @@ pub fn hello() {
 
 pub fn print_config() {
     let config = config::Config::new().unwrap_or_else(|e| panic!("Error parsing config: {}", e));
-    info!("Parsed config: {:?}", config);
+    println!("Parsed config: {:?}", config);
 }
