@@ -1,0 +1,6 @@
+[package]
+name = "payments"
+version = "0.1.0"
+authors = ["Алексей Карасев <karasev.alexey@gmail.com>"]
+
+[dependencies]
