@@ -5,3 +5,5 @@ about: Does awesome things
 subcommands:
     - config:
         about: Prints current config
+    - server:
+        about: Starts server

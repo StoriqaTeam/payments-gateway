@@ -14,6 +14,8 @@ fn main() {
 
     if let Some(_) = matches.subcommand_matches("config") {
         payments_lib::print_config();
+    } else if let Some(_) = matches.subcommand_matches("server") {
+        payments_lib::start_server();
     } else {
         let _ = app.print_help();
         println!("\n")

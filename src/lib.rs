@@ -13,13 +13,27 @@ extern crate serde_derive;
 extern crate log;
 extern crate config as config_crate;
 
+#[macro_use]
+mod macros;
+mod api;
 mod config;
+mod utils;
+
+use config::Config;
 
 pub fn hello() {
     println!("Hello world");
 }
 
 pub fn print_config() {
-    let config = config::Config::new().unwrap_or_else(|e| panic!("Error parsing config: {}", e));
-    println!("Parsed config: {:?}", config);
+    println!("Parsed config: {:?}", get_config());
+}
+
+pub fn start_server() {
+    let config = get_config();
+    api::start_server(config);
+}
+
+fn get_config() -> Config {
+    config::Config::new().unwrap_or_else(|e| panic!("Error parsing config: {}", e))
 }
