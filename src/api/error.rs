@@ -14,6 +14,8 @@ pub enum ErrorKind {
     Hyper,
     #[fail(display = "error parsing data")]
     Parse,
+    #[fail(display = "error converting json data")]
+    Json,
 }
 
 impl Fail for Error {

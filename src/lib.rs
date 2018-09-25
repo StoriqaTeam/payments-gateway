@@ -12,6 +12,8 @@ extern crate serde_derive;
 #[macro_use]
 extern crate log;
 extern crate config as config_crate;
+#[macro_use]
+extern crate http_router;
 
 #[macro_use]
 mod macros;
