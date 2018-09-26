@@ -10,15 +10,15 @@ pub struct Error {
 #[allow(dead_code)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
-    #[fail(display = "error inside of Hyper library")]
+    #[fail(display = "client - error inside of Hyper library")]
     Hyper,
-    #[fail(display = "error constructing http request / response")]
+    #[fail(display = "client - error constructing http request / response")]
     Http,
-    #[fail(display = "error parsing bytes into utf8")]
+    #[fail(display = "client - error parsing bytes into utf8")]
     UTF8,
-    #[fail(display = "error parsing string to struct")]
+    #[fail(display = "client - error parsing string to struct")]
     Json,
-    #[fail(display = "unauthorized")]
+    #[fail(display = "client - unauthorized")]
     Unauthorized,
 }
 

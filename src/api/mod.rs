@@ -3,7 +3,7 @@ use hyper::{service::Service, Body, Request, Response};
 
 use super::config::Config;
 use super::utils::log_error;
-use client::{Client, ClientImpl};
+use client::{Client, ClientImpl, StoriqaClient, StoriqaClientImpl};
 use failure::{Compat, Fail};
 use futures::future;
 use futures::prelude::*;
@@ -23,12 +23,17 @@ use self::error::{Error, ErrorKind};
 #[derive(Clone)]
 pub struct ApiService {
     client: Arc<dyn Client>,
+    storiqa_client: Arc<dyn StoriqaClient>,
 }
 
 impl ApiService {
     fn new(config: &Config) -> Self {
         let client = ClientImpl::new(config);
-        ApiService { client: Arc::new(client) }
+        let storiqa_client = StoriqaClientImpl::new(&config, client.clone());
+        ApiService {
+            client: Arc::new(client),
+            storiqa_client: Arc::new(storiqa_client),
+        }
     }
 }
 
@@ -41,6 +46,7 @@ impl Service for ApiService {
     fn call(&mut self, req: Request<Body>) -> Self::Future {
         let (parts, http_body) = req.into_parts();
         let client = self.client.clone();
+        let storiqa_client = self.storiqa_client.clone();
         Box::new(
             read_body(http_body)
                 .map_err(|e| error_context!(e, ErrorKind::Hyper))
@@ -51,6 +57,7 @@ impl Service for ApiService {
                         uri: parts.uri.clone(),
                         headers: parts.headers,
                         client,
+                        storiqa_client,
                     };
                     let router = router! {
                         _ => post_sessions,

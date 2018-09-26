@@ -9,6 +9,7 @@ mod error;
 mod storiqa;
 
 pub use self::error::{Error, ErrorKind};
+pub use self::storiqa::*;
 
 pub trait Client: Send + Sync + 'static {
     fn request(&self, req: Request<Body>) -> Box<Future<Item = Response<Body>, Error = hyper::Error>>;

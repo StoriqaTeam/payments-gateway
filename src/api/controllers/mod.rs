@@ -1,5 +1,5 @@
 use super::error::{Error, ErrorKind};
-use client::Client;
+use client::{Client, StoriqaClient};
 use failure::Fail;
 use futures::prelude::*;
 use hyper::{header::HeaderValue, Body, HeaderMap, Method, Response, Uri};
@@ -20,6 +20,7 @@ pub struct Context {
     pub uri: Uri,
     pub headers: HeaderMap<HeaderValue>,
     pub client: Arc<Client>,
+    pub storiqa_client: Arc<StoriqaClient>,
 }
 
 fn response_with_model<M>(model: &M) -> ControllerFuture

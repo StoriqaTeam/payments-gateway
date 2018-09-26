@@ -24,7 +24,7 @@ pub struct StoriqaClientImpl {
 }
 
 impl StoriqaClientImpl {
-    fn new<C: Client>(config: &Config, cli: C) -> Self {
+    pub fn new<C: Client>(config: &Config, cli: C) -> Self {
         Self {
             cli: Arc::new(cli),
             storiqa_url: config.client.storiqa_url.clone(),
