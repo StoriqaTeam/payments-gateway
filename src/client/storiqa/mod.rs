@@ -37,10 +37,21 @@ impl StoriqaClientImpl {
         let query2 = query.clone();
         let query3 = query.clone();
         let cli = self.cli.clone();
+        let query = query.replace("\n", "");
+        let body = format!(
+            r#"
+                {{
+                    "operationName": "M",
+                    "query": "{}",
+                    "variables": null
+                }}
+            "#,
+            query
+        );
         Request::builder()
             .uri(self.storiqa_url.clone())
             .method(Method::POST)
-            .body(Body::from(query))
+            .body(Body::from(body))
             .map_err(move |e| error_context!(e, ErrorKind::Http, query3))
             .into_future()
             .and_then(move |req| cli.request(req).map_err(move |e| error_context!(e, ErrorKind::Hyper, query1)))
@@ -57,7 +68,7 @@ impl StoriqaClient for StoriqaClientImpl {
         let query = format!(
             r#"
                 mutation M {{
-                    getJWTByEmail(input: {{email: "{}", password: "{}"}}) {{
+                    getJWTByEmail(input: {{email: \"{}\", password: \"{}\", clientMutationId:\"\"}}) {{
                         token
                     }}
                 }}
@@ -66,16 +77,10 @@ impl StoriqaClient for StoriqaClientImpl {
         );
         Box::new(
             self.exec_query::<GetJWTResponse>(&query)
-                .and_then(|resp| resp.data.ok_or(ErrorKind::Unauthorized.into()))
-                .map(|resp_data| StoriqaJWT::new(resp_data.getJWTByEmail.token)),
+                .and_then(|resp| {
+                    let e = format_err!("Failed at getJWT");
+                    resp.data.clone().ok_or(error_context!(e, ErrorKind::Unauthorized, resp))
+                }).map(|resp_data| StoriqaJWT::new(resp_data.getJWTByEmail.token)),
         )
     }
 }
-
-const getJWTQuery: &'static str = r#"
-mutation M {{
-	getJWTByEmail(input: {{email: "{}", password: "{}"}}) {{
-        token
-    }}
-}}
-"#;
