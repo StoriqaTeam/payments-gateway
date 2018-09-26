@@ -15,7 +15,7 @@ use std::sync::Arc;
 use utils::read_body;
 
 pub trait StoriqaClient: Send + Sync + 'static {
-    fn getJWT(&self, email: String, password: String) -> Box<Future<Item = StoriqaJWT, Error = Error>>;
+    fn getJWT(&self, email: String, password: String) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
 }
 
 pub struct StoriqaClientImpl {
@@ -31,7 +31,7 @@ impl StoriqaClientImpl {
         }
     }
 
-    fn exec_query<T: for<'de> Deserialize<'de>>(&self, query: &str) -> impl Future<Item = T, Error = Error> {
+    fn exec_query<T: for<'de> Deserialize<'de> + Send>(&self, query: &str) -> impl Future<Item = T, Error = Error> + Send {
         let query = query.to_string();
         let query1 = query.clone();
         let query2 = query.clone();
@@ -53,7 +53,7 @@ impl StoriqaClientImpl {
 }
 
 impl StoriqaClient for StoriqaClientImpl {
-    fn getJWT(&self, email: String, password: String) -> Box<Future<Item = StoriqaJWT, Error = Error>> {
+    fn getJWT(&self, email: String, password: String) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
         let query = format!(
             r#"
                 mutation M {{

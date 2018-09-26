@@ -10,12 +10,14 @@ pub struct Error {
 #[allow(dead_code)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
-    #[fail(display = "error inside of Hyper library")]
+    #[fail(display = "controller - error inside of Hyper library")]
     Hyper,
-    #[fail(display = "error parsing data")]
+    #[fail(display = "controller - error parsing data")]
     Parse,
-    #[fail(display = "error converting json data")]
+    #[fail(display = "controller - error converting json data")]
     Json,
+    #[fail(display = "controller - error fetching data using http client")]
+    Client,
 }
 
 impl Fail for Error {

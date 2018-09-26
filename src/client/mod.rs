@@ -12,7 +12,7 @@ pub use self::error::{Error, ErrorKind};
 pub use self::storiqa::*;
 
 pub trait Client: Send + Sync + 'static {
-    fn request(&self, req: Request<Body>) -> Box<Future<Item = Response<Body>, Error = hyper::Error>>;
+    fn request(&self, req: Request<Body>) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send>;
 }
 
 #[derive(Clone)]
@@ -30,7 +30,7 @@ impl ClientImpl {
 }
 
 impl Client for ClientImpl {
-    fn request(&self, req: Request<Body>) -> Box<Future<Item = Response<Body>, Error = hyper::Error>> {
+    fn request(&self, req: Request<Body>) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send> {
         Box::new(self.cli.request(req))
     }
 }

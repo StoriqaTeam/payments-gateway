@@ -16,6 +16,8 @@ use utils::read_body;
 
 mod controllers;
 mod error;
+mod requests;
+mod responses;
 
 use self::controllers::*;
 use self::error::{Error, ErrorKind};
@@ -81,11 +83,11 @@ pub fn start_server(config: Config) {
             .map_err(|e| error_context!(e, ErrorKind::Parse, config.server.host, config.server.port))
             .into_future()
             .and_then(move |addr| {
-                Server::bind(&addr)
+                let server = Server::bind(&addr)
                     .serve(new_service)
-                    .map(move |_| {
-                        info!("Listening on http://{}", addr);
-                    }).map_err(move |e| error_context!(e, ErrorKind::Parse, addr))
+                    .map_err(move |e| error_context!(e, ErrorKind::Parse, addr));
+                info!("Listening on http://{}", addr);
+                server
             }).map_err(|e: Error| log_error(e))
     }));
 }

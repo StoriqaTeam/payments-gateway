@@ -23,7 +23,7 @@ pub struct Context {
     pub storiqa_client: Arc<StoriqaClient>,
 }
 
-fn response_with_model<M>(model: &M) -> ControllerFuture
+pub fn response_with_model<M>(model: &M) -> ControllerFuture
 where
     M: Debug + Serialize,
 {
