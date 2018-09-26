@@ -14,7 +14,7 @@ fn format_error<E: Fail>(error: E) -> String {
     }
     if let Some(bt) = error.backtrace() {
         let regexp = regex::Regex::new("payments_lib").unwrap();
-        result.push_str("\nRelevant backtrace: \n");
+        result.push_str("\nRelevant backtrace:\n");
         let bt = format!("{}", bt);
         let lines: Vec<&str> = bt.split("\n").skip(1).collect();
         lines.chunks(2).for_each(|chunk| {

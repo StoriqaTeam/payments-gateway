@@ -6,8 +6,12 @@ use super::utils::log_error;
 use failure::{Compat, Fail};
 use futures::future;
 use futures::prelude::*;
+use hyper::Client as HyperClient;
 use hyper::Server;
+use hyper_tls::HttpsConnector;
 use std::net::SocketAddr;
+use std::sync::Arc;
+use types::Client;
 
 mod controllers;
 mod error;
@@ -16,7 +20,9 @@ use self::controllers::*;
 use self::error::{Error, ErrorKind};
 
 #[derive(Clone)]
-pub struct ApiService;
+pub struct ApiService {
+    client: Arc<Client>,
+}
 
 impl Service for ApiService {
     type ReqBody = Body;
@@ -26,6 +32,7 @@ impl Service for ApiService {
 
     fn call(&mut self, req: Request<Body>) -> Self::Future {
         let (parts, http_body) = req.into_parts();
+        let client = self.client.clone();
         Box::new(
             read_body(http_body)
                 .and_then(move |body| {
@@ -34,38 +41,40 @@ impl Service for ApiService {
                         method: parts.method.clone(),
                         uri: parts.uri.clone(),
                         headers: parts.headers,
+                        client,
                     };
                     let router = router! {
                         _ => post_sessions,
                     };
 
                     router(ctx, parts.method.into(), parts.uri.path())
-                })
-                .map_err(|e| e.compat()),
+                }).map_err(|e| e.compat()),
         )
     }
 }
 
 pub fn start_server(config: Config) {
     hyper::rt::run(future::lazy(move || {
-        let app = ApiService {};
+        let mut connector = HttpsConnector::new(config.client.dns_threads).unwrap();
+        connector.https_only(true);
+        let client = HyperClient::builder().build(connector);
+
+        let app = ApiService { client: Arc::new(client) };
         let new_service = move || {
             let res: Result<_, hyper::Error> = Ok(app.clone());
             res
         };
         format!("{}:{}", config.server.host, config.server.port)
             .parse::<SocketAddr>()
-            .map_err(|e| error_context!(e, ErrorKind::Parse, config))
+            .map_err(|e| error_context!(e, ErrorKind::Parse, config.server.host, config.server.port))
             .into_future()
             .and_then(move |addr| {
                 Server::bind(&addr)
                     .serve(new_service)
                     .map(move |_| {
                         info!("Listening on http://{}", addr);
-                    })
-                    .map_err(move |e| error_context!(e, ErrorKind::Parse, config))
-            })
-            .map_err(|e: Error| log_error(e))
+                    }).map_err(move |e| error_context!(e, ErrorKind::Parse, addr))
+            }).map_err(|e: Error| log_error(e))
     }));
 }
 

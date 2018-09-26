@@ -5,6 +5,12 @@ use std::env;
 pub struct Config {
     pub server: Server,
     pub database: Database,
+    pub client: Client,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Client {
+    pub dns_threads: usize,
 }
 
 #[derive(Debug, Deserialize, Clone)]

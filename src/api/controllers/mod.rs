@@ -5,17 +5,21 @@ use hyper::{header::HeaderValue, Body, HeaderMap, Method, Response, Uri};
 use serde::Serialize;
 use serde_json;
 use std::fmt::Debug;
+use std::sync::Arc;
+use types::Client;
 
 mod auth;
 pub use self::auth::*;
 
 pub type ControllerFuture = Box<Future<Item = Response<Body>, Error = Error> + Send>;
 
+#[derive(Clone)]
 pub struct Context {
     pub body: Vec<u8>,
     pub method: Method,
     pub uri: Uri,
     pub headers: HeaderMap<HeaderValue>,
+    pub client: Arc<Client>,
 }
 
 fn response_with_model<M>(model: &M) -> ControllerFuture

@@ -14,12 +14,14 @@ extern crate log;
 extern crate config as config_crate;
 #[macro_use]
 extern crate http_router;
+extern crate hyper_tls;
 extern crate regex;
 
 #[macro_use]
 mod macros;
 mod api;
 mod config;
+mod types;
 mod utils;
 
 use config::Config;
