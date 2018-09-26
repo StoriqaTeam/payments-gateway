@@ -3,6 +3,7 @@ use hyper::{service::Service, Body, Request, Response};
 
 use super::config::Config;
 use super::utils::log_error;
+use client::{Client, ClientImpl};
 use failure::{Compat, Fail};
 use futures::future;
 use futures::prelude::*;
@@ -11,7 +12,6 @@ use hyper::Server;
 use hyper_tls::HttpsConnector;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use types::Client;
 
 mod controllers;
 mod error;
@@ -21,7 +21,14 @@ use self::error::{Error, ErrorKind};
 
 #[derive(Clone)]
 pub struct ApiService {
-    client: Arc<Client>,
+    client: Arc<dyn Client>,
+}
+
+impl ApiService {
+    fn new(config: &Config) -> Self {
+        let client = ClientImpl::new(config);
+        ApiService { client: Arc::new(client) }
+    }
 }
 
 impl Service for ApiService {
@@ -55,11 +62,7 @@ impl Service for ApiService {
 
 pub fn start_server(config: Config) {
     hyper::rt::run(future::lazy(move || {
-        let mut connector = HttpsConnector::new(config.client.dns_threads).unwrap();
-        connector.https_only(true);
-        let client = HyperClient::builder().build(connector);
-
-        let app = ApiService { client: Arc::new(client) };
+        let app = ApiService::new(&config);
         let new_service = move || {
             let res: Result<_, hyper::Error> = Ok(app.clone());
             res

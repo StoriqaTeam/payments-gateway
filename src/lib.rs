@@ -20,8 +20,8 @@ extern crate regex;
 #[macro_use]
 mod macros;
 mod api;
+mod client;
 mod config;
-mod types;
 mod utils;
 
 use config::Config;

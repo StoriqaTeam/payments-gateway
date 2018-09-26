@@ -1,4 +1,5 @@
 use super::error::{Error, ErrorKind};
+use client::Client;
 use failure::Fail;
 use futures::prelude::*;
 use hyper::{header::HeaderValue, Body, HeaderMap, Method, Response, Uri};
@@ -6,7 +7,6 @@ use serde::Serialize;
 use serde_json;
 use std::fmt::Debug;
 use std::sync::Arc;
-use types::Client;
 
 mod auth;
 pub use self::auth::*;
