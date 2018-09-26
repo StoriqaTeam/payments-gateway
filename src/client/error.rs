@@ -38,6 +38,13 @@ impl Display for Error {
     }
 }
 
+#[allow(dead_code)]
+impl Error {
+    pub fn kind(&self) -> ErrorKind {
+        *self.inner.get_context()
+    }
+}
+
 impl From<ErrorKind> for Error {
     fn from(kind: ErrorKind) -> Error {
         Error { inner: Context::new(kind) }

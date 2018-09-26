@@ -20,6 +20,13 @@ pub enum ErrorKind {
     Client,
 }
 
+#[allow(dead_code)]
+impl Error {
+    pub fn kind(&self) -> ErrorKind {
+        *self.inner.get_context()
+    }
+}
+
 impl Fail for Error {
     fn cause(&self) -> Option<&Fail> {
         self.inner.cause()
