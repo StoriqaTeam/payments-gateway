@@ -31,13 +31,14 @@ impl StoriqaClientImpl {
         }
     }
 
-    fn exec_query<'de, T: Deserialize<'de>>(&self, query: &str) -> impl Future<Item = T, Error = Error> {
+    fn exec_query<T: for<'de> Deserialize<'de>>(&self, query: &str) -> impl Future<Item = T, Error = Error> {
         let query = query.to_string();
         let query1 = query.clone();
         let query2 = query.clone();
         let query3 = query.clone();
         let cli = self.cli.clone();
         Request::builder()
+            .uri(self.storiqa_url.clone())
             .method(Method::POST)
             .body(Body::from(query))
             .map_err(move |e| error_context!(e, ErrorKind::Http, query3))
