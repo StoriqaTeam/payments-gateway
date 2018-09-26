@@ -4,10 +4,10 @@ use futures::prelude::*;
 use hyper;
 use regex;
 
-fn format_error<E: Fail>(error: E) -> String {
+fn format_error<E: Fail>(error: &E) -> String {
     let mut result = String::new();
     let mut chain: Vec<&Fail> = Vec::new();
-    let mut iter: Option<&Fail> = Some(&error);
+    let mut iter: Option<&Fail> = Some(error);
     while let Some(e) = iter {
         chain.push(e);
         iter = e.cause();
@@ -38,7 +38,7 @@ fn format_error<E: Fail>(error: E) -> String {
     result
 }
 
-pub fn log_error<E: Fail>(error: E) {
+pub fn log_error<E: Fail>(error: &E) {
     error!("\n{}", format_error(error));
 }
 

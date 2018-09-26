@@ -66,7 +66,10 @@ impl Service for ApiService {
                     };
 
                     router(ctx, parts.method.into(), parts.uri.path())
-                }).map_err(|e| e.compat()),
+                }).map_err(|e| {
+                    log_error(&e);
+                    e.compat()
+                }),
         )
     }
 }
@@ -88,6 +91,6 @@ pub fn start_server(config: Config) {
                     .map_err(move |e| error_context!(e, ErrorKind::Parse, addr));
                 info!("Listening on http://{}", addr);
                 server
-            }).map_err(|e: Error| log_error(e))
+            }).map_err(|e: Error| log_error(&e))
     }));
 }
