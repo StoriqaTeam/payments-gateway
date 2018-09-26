@@ -1,4 +1,7 @@
 use failure::Fail;
+use futures::future;
+use futures::prelude::*;
+use hyper;
 use regex;
 
 fn format_error<E: Fail>(error: E) -> String {
@@ -37,4 +40,12 @@ fn format_error<E: Fail>(error: E) -> String {
 
 pub fn log_error<E: Fail>(error: E) {
     error!("\n{}", format_error(error));
+}
+
+// Reads body of request in Future format
+pub fn read_body(body: hyper::Body) -> impl Future<Item = Vec<u8>, Error = hyper::Error> {
+    body.fold(Vec::new(), |mut acc, chunk| {
+        acc.extend_from_slice(&*chunk);
+        future::ok::<_, hyper::Error>(acc)
+    })
 }

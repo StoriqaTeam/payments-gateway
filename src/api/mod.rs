@@ -12,6 +12,7 @@ use hyper::Server;
 use hyper_tls::HttpsConnector;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use utils::read_body;
 
 mod controllers;
 mod error;
@@ -42,6 +43,7 @@ impl Service for ApiService {
         let client = self.client.clone();
         Box::new(
             read_body(http_body)
+                .map_err(|e| error_context!(e, ErrorKind::Hyper))
                 .and_then(move |body| {
                     let ctx = Context {
                         body,
@@ -79,12 +81,4 @@ pub fn start_server(config: Config) {
                     }).map_err(move |e| error_context!(e, ErrorKind::Parse, addr))
             }).map_err(|e: Error| log_error(e))
     }));
-}
-
-// Reads body of request in Future format
-pub fn read_body(body: hyper::Body) -> impl Future<Item = Vec<u8>, Error = Error> {
-    body.fold(Vec::new(), |mut acc, chunk| {
-        acc.extend_from_slice(&*chunk);
-        future::ok::<_, hyper::Error>(acc)
-    }).map_err(|e| error_context!(e, ErrorKind::Hyper))
 }

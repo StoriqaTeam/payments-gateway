@@ -22,6 +22,7 @@ mod macros;
 mod api;
 mod client;
 mod config;
+mod models;
 mod utils;
 
 use config::Config;

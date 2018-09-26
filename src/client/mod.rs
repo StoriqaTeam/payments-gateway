@@ -1,11 +1,17 @@
 use config::Config;
+use futures::future;
 use futures::prelude::*;
 use hyper;
-use hyper::{client::HttpConnector, Body, Error, Request, Response};
+use hyper::{client::HttpConnector, Body, Request, Response};
 use hyper_tls::HttpsConnector;
 
-pub trait Client: Send + Sync {
-    fn request(&self, req: Request<Body>) -> Box<Future<Item = Response<Body>, Error = Error>>;
+mod error;
+mod storiqa;
+
+pub use self::error::{Error, ErrorKind};
+
+pub trait Client: Send + Sync + 'static {
+    fn request(&self, req: Request<Body>) -> Box<Future<Item = Response<Body>, Error = hyper::Error>>;
 }
 
 #[derive(Clone)]
@@ -23,7 +29,7 @@ impl ClientImpl {
 }
 
 impl Client for ClientImpl {
-    fn request(&self, req: Request<Body>) -> Box<Future<Item = Response<Body>, Error = Error>> {
+    fn request(&self, req: Request<Body>) -> Box<Future<Item = Response<Body>, Error = hyper::Error>> {
         Box::new(self.cli.request(req))
     }
 }

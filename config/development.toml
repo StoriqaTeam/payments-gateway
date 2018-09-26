@@ -4,6 +4,7 @@ port = 8000
 
 [client]
 dns_threads = 4
+storiqa_url = "https://stage.stq.cloud/graphql"
 
 [database]
 url = "postgresql://payments:payments@payments-pg/payments"
