@@ -3,12 +3,15 @@ use regex;
 
 fn format_error<E: Fail>(error: E) -> String {
     let mut result = String::new();
-    let mut iter: &Fail = &error;
-    while let Some(e) = iter.cause() {
-        result.push_str(&format!("{}\n", iter));
-        iter = e;
+    let mut chain: Vec<&Fail> = Vec::new();
+    let mut iter: Option<&Fail> = Some(&error);
+    while let Some(e) = iter {
+        chain.push(e);
+        iter = e.cause();
     }
-    result.push_str(&format!("{}", iter));
+    for err in chain.into_iter().rev() {
+        result.push_str(&format!("{}\n", err));
+    }
     if let Some(bt) = error.backtrace() {
         let regexp = regex::Regex::new("payments_lib").unwrap();
         result.push_str("\nRelevant backtrace: \n");
