@@ -14,7 +14,7 @@ pub enum ErrorKind {
     #[fail(display = "controller error - unauthorized")]
     Unauthorized,
     #[fail(display = "controller error - unprocessable entity")]
-    UnprocessableEntity,
+    BadRequest,
     #[fail(display = "controller error - internal error")]
     Internal,
 }
@@ -76,7 +76,7 @@ impl From<ClientErrorKind> for ErrorKind {
         match err {
             ClientErrorKind::Internal => ErrorKind::Internal,
             ClientErrorKind::Unauthorized => ErrorKind::Unauthorized,
-            ClientErrorKind::UnprocessableEntity => ErrorKind::UnprocessableEntity,
+            ClientErrorKind::BadRequest => ErrorKind::BadRequest,
         }
     }
 }

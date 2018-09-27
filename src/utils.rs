@@ -42,6 +42,10 @@ pub fn log_error<E: Fail>(error: &E) {
     error!("\n{}", format_error(error));
 }
 
+pub fn log_warn<E: Fail>(error: &E) {
+    warn!("\n{}", format_error(error));
+}
+
 // Reads body of request in Future format
 pub fn read_body(body: hyper::Body) -> impl Future<Item = Vec<u8>, Error = hyper::Error> {
     body.fold(Vec::new(), |mut acc, chunk| {

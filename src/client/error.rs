@@ -13,7 +13,7 @@ pub enum ErrorKind {
     #[fail(display = "client error - unauthorized")]
     Unauthorized,
     #[fail(display = "client error - unprocessable entity")]
-    UnprocessableEntity,
+    BadRequest,
     #[fail(display = "client error - internal error")]
     Internal,
 }

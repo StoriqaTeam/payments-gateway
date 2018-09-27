@@ -2,7 +2,7 @@ use hyper;
 use hyper::{service::Service, Body, Request, Response};
 
 use super::config::Config;
-use super::utils::log_error;
+use super::utils::{log_error, log_warn};
 use client::{Client, ClientImpl, StoriqaClient, StoriqaClientImpl};
 use failure::{Compat, Fail};
 use futures::future;
@@ -65,9 +65,31 @@ impl Service for ApiService {
 
                     router(ctx, parts.method.into(), parts.uri.path())
                 })
-                .map_err(|e| {
-                    log_error(&e);
-                    e.compat()
+                .or_else(|e| match e.kind() {
+                    ErrorKind::BadRequest => {
+                        log_error(&e);
+                        Ok(Response::builder()
+                            .status(400)
+                            .header("Content-Type", "application/json")
+                            .body(Body::from(r#"{"description": "Bad request"}"#))
+                            .unwrap())
+                    }
+                    ErrorKind::Unauthorized => {
+                        log_warn(&e);
+                        Ok(Response::builder()
+                            .status(401)
+                            .header("Content-Type", "application/json")
+                            .body(Body::from(r#"{"description": "Unauthorized"}"#))
+                            .unwrap())
+                    }
+                    ErrorKind::Internal => {
+                        log_error(&e);
+                        Ok(Response::builder()
+                            .status(500)
+                            .header("Content-Type", "application/json")
+                            .body(Body::from(r#"{"description": "Internal server error"}"#))
+                            .unwrap())
+                    }
                 }),
         )
     }

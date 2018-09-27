@@ -52,7 +52,7 @@ impl StoriqaClientImpl {
             .uri(self.storiqa_url.clone())
             .method(Method::POST)
             .body(Body::from(body))
-            .map_err(ewrap!(ErrorContext::Hyper, ErrorKind::UnprocessableEntity, query3))
+            .map_err(ewrap!(ErrorContext::Hyper, ErrorKind::BadRequest, query3))
             .into_future()
             .and_then(move |req| cli.request(req).map_err(ewrap!(ErrorContext::Network, ErrorKind::Internal, query1)))
             .and_then(move |resp| read_body(resp.into_body()).map_err(ewrap!(ErrorContext::Network, ErrorKind::Internal, query2)))
