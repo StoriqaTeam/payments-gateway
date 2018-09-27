@@ -10,27 +10,33 @@ pub struct Error {
 #[allow(dead_code)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
-    #[fail(display = "client error - unauthorized")]
-    Unauthorized,
-    #[fail(display = "client error - unprocessable entity")]
+    #[fail(display = "http client error - bad request")]
     BadRequest,
-    #[fail(display = "client error - internal error")]
+    #[fail(display = "http client error - unauthorized")]
+    Unauthorized,
+    #[fail(display = "http client error - not found")]
+    NotFound,
+    #[fail(display = "http client error - unprocessable entity")]
+    UnprocessableEntity,
+    #[fail(display = "http client error - internal server error")]
+    InternalServer,
+    #[fail(display = "http client error - bad gateway")]
+    BadGateway,
+    #[fail(display = "http client error - timeout")]
+    GatewayTimeout,
+    #[fail(display = "http client error - unknown server error status")]
+    UnknownServerError,
+    #[fail(display = "http client error - internal error")]
     Internal,
 }
 
 #[allow(dead_code)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorContext {
-    #[fail(display = "client context - network error")]
-    Network,
-    #[fail(display = "client context - error inside of Hyper library")]
+    #[fail(display = "http client - error inside of Hyper library")]
     Hyper,
-    #[fail(display = "client context - error parsing bytes into utf8 from client response")]
-    ResponseUTF8,
-    #[fail(display = "client context - error parsing string to struct from client response")]
-    ResponseJson,
-    #[fail(display = "client context - unauthorized from client response")]
-    ResponseUnauthorized,
+    #[fail(display = "http client - error in server response")]
+    Response,
 }
 
 impl Fail for Error {

@@ -20,13 +20,11 @@ pub fn post_sessions(ctx: &Context) -> ControllerFuture {
                     ErrorKind::BadRequest,
                     string
                 ))
-            })
-            .and_then(move |input| {
+            }).and_then(move |input| {
                 let input_clone = input.clone();
                 cli.get_jwt(input.email, input.password)
-                    .map_err(ewrap!(catch ErrorContext::Client, input_clone))
-            })
-            .and_then(|jwt| {
+                    .map_err(ewrap!(catch ErrorContext::StoriqaClient, input_clone))
+            }).and_then(|jwt| {
                 let model = PostSessionsResponse { token: jwt };
                 response_with_model(&model)
             }),

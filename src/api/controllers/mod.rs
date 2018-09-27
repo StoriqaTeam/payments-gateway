@@ -1,5 +1,5 @@
 use super::error::*;
-use client::{Client, StoriqaClient};
+use client::{HttpClient, StoriqaClient};
 use failure::Fail;
 use futures::prelude::*;
 use hyper::{header::HeaderValue, Body, HeaderMap, Method, Response, Uri};
@@ -19,7 +19,7 @@ pub struct Context {
     pub method: Method,
     pub uri: Uri,
     pub headers: HeaderMap<HeaderValue>,
-    pub client: Arc<Client>,
+    pub client: Arc<HttpClient>,
     pub storiqa_client: Arc<StoriqaClient>,
 }
 

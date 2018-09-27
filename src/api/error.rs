@@ -13,7 +13,7 @@ pub struct Error {
 pub enum ErrorKind {
     #[fail(display = "controller error - unauthorized")]
     Unauthorized,
-    #[fail(display = "controller error - unprocessable entity")]
+    #[fail(display = "controller error - bad request")]
     BadRequest,
     #[fail(display = "controller error - internal error")]
     Internal,
@@ -26,8 +26,8 @@ pub enum ErrorContext {
     Hyper,
     #[fail(display = "controller context - error parsing config data")]
     Config,
-    #[fail(display = "controller context - error fetching data using http client")]
-    Client,
+    #[fail(display = "controller context - error fetching data using Storiqa client")]
+    StoriqaClient,
     #[fail(display = "controller context - error converting json data from request")]
     RequestJson,
     #[fail(display = "controller context - error parsing bytes into utf8 from request")]
@@ -76,7 +76,7 @@ impl From<ClientErrorKind> for ErrorKind {
         match err {
             ClientErrorKind::Internal => ErrorKind::Internal,
             ClientErrorKind::Unauthorized => ErrorKind::Unauthorized,
-            ClientErrorKind::BadRequest => ErrorKind::BadRequest,
+            ClientErrorKind::MalformedInput => ErrorKind::BadRequest,
         }
     }
 }

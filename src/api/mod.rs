@@ -3,7 +3,7 @@ use hyper::{service::Service, Body, Request, Response};
 
 use super::config::Config;
 use super::utils::{log_error, log_warn};
-use client::{Client, ClientImpl, StoriqaClient, StoriqaClientImpl};
+use client::{HttpClient, HttpClientImpl, StoriqaClient, StoriqaClientImpl};
 use failure::{Compat, Fail};
 use futures::future;
 use futures::prelude::*;
@@ -22,13 +22,13 @@ use self::error::*;
 
 #[derive(Clone)]
 pub struct ApiService {
-    client: Arc<dyn Client>,
+    client: Arc<dyn HttpClient>,
     storiqa_client: Arc<dyn StoriqaClient>,
 }
 
 impl ApiService {
     fn new(config: &Config) -> Self {
-        let client = ClientImpl::new(config);
+        let client = HttpClientImpl::new(config);
         let storiqa_client = StoriqaClientImpl::new(&config, client.clone());
         ApiService {
             client: Arc::new(client),
@@ -64,8 +64,7 @@ impl Service for ApiService {
                     };
 
                     router(ctx, parts.method.into(), parts.uri.path())
-                })
-                .or_else(|e| match e.kind() {
+                }).or_else(|e| match e.kind() {
                     ErrorKind::BadRequest => {
                         log_error(&e);
                         Ok(Response::builder()
@@ -109,15 +108,13 @@ pub fn start_server(config: Config) {
                 ErrorKind::Internal,
                 config.server.host,
                 config.server.port
-            ))
-            .into_future()
+            )).into_future()
             .and_then(move |addr| {
                 let server = Server::bind(&addr)
                     .serve(new_service)
                     .map_err(ewrap!(ErrorContext::Hyper, ErrorKind::Internal, addr));
                 info!("Listening on http://{}", addr);
                 server
-            })
-            .map_err(|e: Error| log_error(&e))
+            }).map_err(|e: Error| log_error(&e))
     }));
 }
