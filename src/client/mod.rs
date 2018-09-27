@@ -1,5 +1,4 @@
 use config::Config;
-use futures::future;
 use futures::prelude::*;
 use hyper;
 use hyper::{client::HttpConnector, Body, Request, Response};

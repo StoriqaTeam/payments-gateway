@@ -4,10 +4,8 @@ use super::super::responses::*;
 use super::response_with_model;
 use super::Context;
 use super::ControllerFuture;
-use client::ErrorKind as ClientErrorKind;
 use failure::Fail;
 use futures::prelude::*;
-use hyper::{Body, Response};
 use serde_json;
 
 pub fn post_sessions(ctx: &Context) -> ControllerFuture {
@@ -25,7 +23,7 @@ pub fn post_sessions(ctx: &Context) -> ControllerFuture {
             })
             .and_then(move |input| {
                 let input_clone = input.clone();
-                cli.getJWT(input.email, input.password)
+                cli.get_jwt(input.email, input.password)
                     .map_err(ewrap!(catch ErrorContext::Client, input_clone))
             })
             .and_then(|jwt| {

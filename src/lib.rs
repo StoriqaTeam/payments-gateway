@@ -1,11 +1,9 @@
 extern crate futures;
 #[macro_use]
 extern crate failure;
-extern crate hyper;
-#[macro_use]
 extern crate diesel;
+extern crate hyper;
 extern crate serde;
-#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;

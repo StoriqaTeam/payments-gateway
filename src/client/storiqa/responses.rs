@@ -1,5 +1,3 @@
-use serde::Deserialize;
-
 #[derive(Debug, Deserialize, Clone)]
 pub struct GetJWTResponse {
     pub data: Option<GetJWTByEmail>,
@@ -8,7 +6,8 @@ pub struct GetJWTResponse {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct GetJWTByEmail {
-    pub getJWTByEmail: Token,
+    #[serde(rename = "getJWTByEmail")]
+    pub get_jwt_by_email: Token,
 }
 
 #[derive(Debug, Deserialize, Clone)]

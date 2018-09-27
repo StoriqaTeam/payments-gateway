@@ -15,7 +15,7 @@ use std::sync::Arc;
 use utils::read_body;
 
 pub trait StoriqaClient: Send + Sync + 'static {
-    fn getJWT(&self, email: String, password: String) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
+    fn get_jwt(&self, email: String, password: String) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
 }
 
 pub struct StoriqaClientImpl {
@@ -65,7 +65,7 @@ impl StoriqaClientImpl {
 }
 
 impl StoriqaClient for StoriqaClientImpl {
-    fn getJWT(&self, email: String, password: String) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
+    fn get_jwt(&self, email: String, password: String) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
         let query = format!(
             r#"
                 mutation M {{
@@ -84,7 +84,7 @@ impl StoriqaClient for StoriqaClientImpl {
                         .clone()
                         .ok_or(ewrap!(raw e, ErrorContext::ResponseUnauthorized, ErrorKind::Unauthorized, resp))
                 })
-                .map(|resp_data| StoriqaJWT::new(resp_data.getJWTByEmail.token)),
+                .map(|resp_data| StoriqaJWT::new(resp_data.get_jwt_by_email.token)),
         )
     }
 }
