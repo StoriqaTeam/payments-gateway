@@ -13,7 +13,7 @@ macro_rules! ewrap {
             let arg = format!(" {}: {:#?}", stringify!($arg), $arg);
             msg.push_str(&arg);
         )*
-        $e.context(msg).context($context).context($kind).into()
+        $e.context($context).context(msg).context($kind).into()
     }};
 
     (catch $context:expr, $($arg:expr),*) => {{

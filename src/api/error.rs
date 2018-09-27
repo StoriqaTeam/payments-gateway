@@ -22,17 +22,17 @@ pub enum ErrorKind {
 #[allow(dead_code)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorSource {
-    #[fail(display = "controller context - error inside of Hyper library")]
+    #[fail(display = "controller source - error inside of Hyper library")]
     Hyper,
-    #[fail(display = "controller context - error parsing config data")]
+    #[fail(display = "controller source - error parsing config data")]
     Config,
-    #[fail(display = "controller context - error fetching data using Storiqa client")]
+    #[fail(display = "controller source - error fetching data using Storiqa client")]
     StoriqaClient,
-    #[fail(display = "controller context - error converting json data from request")]
+    #[fail(display = "controller source - error converting json data from request")]
     RequestJson,
-    #[fail(display = "controller context - error parsing bytes into utf8 from request")]
+    #[fail(display = "controller source - error parsing bytes into utf8 from request")]
     RequestUTF8,
-    #[fail(display = "controller context - error converting json data from request")]
+    #[fail(display = "controller source - error converting json data from request")]
     ResponseJson,
 }
 

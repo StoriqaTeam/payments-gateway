@@ -21,14 +21,16 @@ pub enum ErrorKind {
 #[allow(dead_code)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorSource {
-    #[fail(display = "storiqa client context - error inside http client")]
+    #[fail(display = "storiqa client source - error inside http client")]
     HttpClient,
-    #[fail(display = "storiqa client context - error inside of Hyper library")]
+    #[fail(display = "storiqa client source - error inside of Hyper library")]
     Hyper,
-    #[fail(display = "storiqa client context - error parsing bytes to utf8")]
+    #[fail(display = "storiqa client source - error parsing bytes to utf8")]
     Utf8,
-    #[fail(display = "storiqa client context - error parsing string to json")]
+    #[fail(display = "storiqa client source - error parsing string to json")]
     Json,
+    #[fail(display = "storiqa client source - itself")]
+    Itself,
 }
 
 impl Fail for Error {

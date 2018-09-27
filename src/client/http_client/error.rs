@@ -33,9 +33,9 @@ pub enum ErrorKind {
 #[allow(dead_code)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorSource {
-    #[fail(display = "http client - error inside of Hyper library")]
+    #[fail(display = "http client source - error inside of Hyper library")]
     Hyper,
-    #[fail(display = "http client - error in server response")]
+    #[fail(display = "http client source - error in server response")]
     Response,
 }
 

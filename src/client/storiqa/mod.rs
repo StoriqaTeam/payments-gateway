@@ -85,7 +85,7 @@ impl StoriqaClient for StoriqaClientImpl {
                     let e = format_err!("Failed at getJWT");
                     resp.data
                         .clone()
-                        .ok_or(ewrap!(raw e, ErrorSource::HttpClient, ErrorKind::Unauthorized, resp))
+                        .ok_or(ewrap!(raw e, ErrorSource::Itself, ErrorKind::Unauthorized, resp))
                 }).map(|resp_data| StoriqaJWT::new(resp_data.get_jwt_by_email.token)),
         )
     }
