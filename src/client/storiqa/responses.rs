@@ -1,3 +1,5 @@
+use models::*;
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct GetJWTResponse {
     pub data: Option<GetJWTByEmail>,
@@ -12,7 +14,7 @@ pub struct GetJWTByEmail {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Token {
-    pub token: String,
+    pub token: StoriqaJWT,
 }
 
 #[derive(Debug, Deserialize, Clone)]
