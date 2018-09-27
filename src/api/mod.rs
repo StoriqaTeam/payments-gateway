@@ -49,7 +49,7 @@ impl Service for ApiService {
         let storiqa_client = self.storiqa_client.clone();
         Box::new(
             read_body(http_body)
-                .map_err(ewrap!(ErrorContext::Hyper, ErrorKind::Internal))
+                .map_err(ewrap!(ErrorSource::Hyper, ErrorKind::Internal))
                 .and_then(move |body| {
                     let ctx = Context {
                         body,
@@ -104,7 +104,7 @@ pub fn start_server(config: Config) {
         format!("{}:{}", config.server.host, config.server.port)
             .parse::<SocketAddr>()
             .map_err(ewrap!(
-                ErrorContext::Config,
+                ErrorSource::Config,
                 ErrorKind::Internal,
                 config.server.host,
                 config.server.port
@@ -112,7 +112,7 @@ pub fn start_server(config: Config) {
             .and_then(move |addr| {
                 let server = Server::bind(&addr)
                     .serve(new_service)
-                    .map_err(ewrap!(ErrorContext::Hyper, ErrorKind::Internal, addr));
+                    .map_err(ewrap!(ErrorSource::Hyper, ErrorKind::Internal, addr));
                 info!("Listening on http://{}", addr);
                 server
             }).map_err(|e: Error| log_error(&e))

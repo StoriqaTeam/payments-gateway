@@ -31,18 +31,18 @@ impl HttpClient for HttpClientImpl {
         Box::new(
             self.cli
                 .request(req)
-                .map_err(ewrap!(ErrorContext::Hyper, ErrorKind::Internal))
+                .map_err(ewrap!(ErrorSource::Hyper, ErrorKind::Internal))
                 .and_then(|resp| {
                     if resp.status().is_client_error() || resp.status().is_server_error() {
                         let e = format_err!("Error in server response");
                         match resp.status().as_u16() {
-                            400 => Err(ewrap!(raw e, ErrorContext::Response, ErrorKind::BadRequest)),
-                            401 => Err(ewrap!(raw e, ErrorContext::Response, ErrorKind::Unauthorized)),
-                            404 => Err(ewrap!(raw e, ErrorContext::Response, ErrorKind::NotFound)),
-                            500 => Err(ewrap!(raw e, ErrorContext::Response, ErrorKind::Internal)),
-                            502 => Err(ewrap!(raw e, ErrorContext::Response, ErrorKind::BadGateway)),
-                            504 => Err(ewrap!(raw e, ErrorContext::Response, ErrorKind::GatewayTimeout)),
-                            _ => Err(ewrap!(raw e, ErrorContext::Response, ErrorKind::UnknownServerError)),
+                            400 => Err(ewrap!(raw e, ErrorSource::Response, ErrorKind::BadRequest)),
+                            401 => Err(ewrap!(raw e, ErrorSource::Response, ErrorKind::Unauthorized)),
+                            404 => Err(ewrap!(raw e, ErrorSource::Response, ErrorKind::NotFound)),
+                            500 => Err(ewrap!(raw e, ErrorSource::Response, ErrorKind::Internal)),
+                            502 => Err(ewrap!(raw e, ErrorSource::Response, ErrorKind::BadGateway)),
+                            504 => Err(ewrap!(raw e, ErrorSource::Response, ErrorKind::GatewayTimeout)),
+                            _ => Err(ewrap!(raw e, ErrorSource::Response, ErrorKind::UnknownServerError)),
                         }
                     } else {
                         Ok(resp)

@@ -21,7 +21,7 @@ pub enum ErrorKind {
 
 #[allow(dead_code)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum ErrorContext {
+pub enum ErrorSource {
     #[fail(display = "controller context - error inside of Hyper library")]
     Hyper,
     #[fail(display = "controller context - error parsing config data")]

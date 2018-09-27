@@ -53,16 +53,16 @@ impl StoriqaClientImpl {
             .uri(self.storiqa_url.clone())
             .method(Method::POST)
             .body(Body::from(body))
-            .map_err(ewrap!(ErrorContext::Hyper, ErrorKind::MalformedInput, query3))
+            .map_err(ewrap!(ErrorSource::Hyper, ErrorKind::MalformedInput, query3))
             .into_future()
             .and_then(move |req| {
                 cli.request(req)
-                    .map_err(ewrap!(ErrorContext::HttpClient, ErrorKind::Internal, query1))
-            }).and_then(move |resp| read_body(resp.into_body()).map_err(ewrap!(ErrorContext::Hyper, ErrorKind::Internal, query2)))
+                    .map_err(ewrap!(ErrorSource::HttpClient, ErrorKind::Internal, query1))
+            }).and_then(move |resp| read_body(resp.into_body()).map_err(ewrap!(ErrorSource::Hyper, ErrorKind::Internal, query2)))
             .and_then(|bytes| {
                 let bytes_clone = bytes.clone();
-                String::from_utf8(bytes).map_err(ewrap!(ErrorContext::Utf8, ErrorKind::Internal, bytes_clone))
-            }).and_then(|string| serde_json::from_str::<T>(&string).map_err(ewrap!(ErrorContext::Json, ErrorKind::Internal, string)))
+                String::from_utf8(bytes).map_err(ewrap!(ErrorSource::Utf8, ErrorKind::Internal, bytes_clone))
+            }).and_then(|string| serde_json::from_str::<T>(&string).map_err(ewrap!(ErrorSource::Json, ErrorKind::Internal, string)))
     }
 }
 
@@ -85,7 +85,7 @@ impl StoriqaClient for StoriqaClientImpl {
                     let e = format_err!("Failed at getJWT");
                     resp.data
                         .clone()
-                        .ok_or(ewrap!(raw e, ErrorContext::HttpClient, ErrorKind::Unauthorized, resp))
+                        .ok_or(ewrap!(raw e, ErrorSource::HttpClient, ErrorKind::Unauthorized, resp))
                 }).map(|resp_data| StoriqaJWT::new(resp_data.get_jwt_by_email.token)),
         )
     }

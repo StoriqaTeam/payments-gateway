@@ -20,7 +20,7 @@ pub enum ErrorKind {
 
 #[allow(dead_code)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum ErrorContext {
+pub enum ErrorSource {
     #[fail(display = "storiqa client context - error inside http client")]
     HttpClient,
     #[fail(display = "storiqa client context - error inside of Hyper library")]
