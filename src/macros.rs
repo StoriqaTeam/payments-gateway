@@ -1,10 +1,10 @@
-macro_rules! ectx {
+macro_rules! ewrap {
     (raw $e:ident, $context:expr, $kind:expr) => {
-        ectx!(raw $e, $context, $kind, )
+        ewrap!(raw $e, $context, $kind, )
     };
 
     ($context:expr, $kind:expr) => {
-        ectx!($context, $kind, )
+        ewrap!($context, $kind, )
     };
 
     (raw $e:ident, $context:expr, $kind:expr, $($arg:expr),*) => {{
@@ -19,14 +19,14 @@ macro_rules! ectx {
     (catch $context:expr, $($arg:expr),*) => {{
         move |e| {
             let kind = e.kind().into();
-            ectx!(raw e, $context, kind, $($arg),*)
+            ewrap!(raw e, $context, kind, $($arg),*)
         }
     }};
 
 
     ($context:expr, $kind:expr, $($arg:expr),*) => {{
         move |e| {
-            ectx!(raw e, $context, $kind, $($arg),*)
+            ewrap!(raw e, $context, $kind, $($arg),*)
         }
     }};
 

@@ -29,7 +29,7 @@ where
 {
     Box::new(
         serde_json::to_string(&model)
-            .map_err(ectx!(ErrorContext::ResponseJson, ErrorKind::Internal, model))
+            .map_err(ewrap!(ErrorContext::ResponseJson, ErrorKind::Internal, model))
             .into_future()
             .map(|text| {
                 Response::builder()
