@@ -1,3 +1,5 @@
+use models::Password;
+
 #[derive(Debug, Deserialize, Clone, Copy)]
 pub enum DeviceType {
     Ios,
@@ -10,7 +12,7 @@ pub enum DeviceType {
 #[serde(rename_all = "camelCase")]
 pub struct PostSessionsRequest {
     pub email: String,
-    pub password: String,
+    pub password: Password,
     pub device_type: DeviceType,
     pub device_os: Option<String>,
     pub device_id: Option<String>,
