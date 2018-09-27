@@ -1,3 +1,4 @@
+use client::ErrorKind as ClientErrorKind;
 use failure::{Backtrace, Context, Fail};
 use std::fmt;
 use std::fmt::Display;
@@ -67,5 +68,15 @@ impl From<ErrorKind> for Error {
 impl From<Context<ErrorKind>> for Error {
     fn from(inner: Context<ErrorKind>) -> Error {
         Error { inner: inner }
+    }
+}
+
+impl From<ClientErrorKind> for ErrorKind {
+    fn from(err: ClientErrorKind) -> Self {
+        match err {
+            ClientErrorKind::Internal => ErrorKind::Internal,
+            ClientErrorKind::Unauthorized => ErrorKind::Unauthorized,
+            ClientErrorKind::UnprocessableEntity => ErrorKind::UnprocessableEntity,
+        }
     }
 }

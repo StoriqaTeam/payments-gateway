@@ -22,12 +22,9 @@ pub fn post_sessions(ctx: &Context) -> ControllerFuture {
             })
             .and_then(move |input| {
                 let input_clone = input.clone();
-                cli.getJWT(input.email, input.password).map_err(move |e| match e.kind() {
-                    ClientErrorKind::Unauthorized => error_context!(e, ErrorContext::Client, ErrorKind::Unauthorized, input_clone),
-                    ClientErrorKind::UnprocessableEntity => {
-                        error_context!(e, ErrorContext::Client, ErrorKind::UnprocessableEntity, input_clone)
-                    }
-                    _ => error_context!(e, ErrorContext::Client, ErrorKind::Internal, input_clone),
+                cli.getJWT(input.email, input.password).map_err(move |e| {
+                    let kind = e.kind().into();
+                    error_context!(e, ErrorContext::Client, kind, input_clone)
                 })
             })
             .and_then(|jwt| {
