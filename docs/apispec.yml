@@ -1,0 +1,615 @@
+openapi: 3.0.0
+servers:
+  - url: 'https://payments.storiqa.com/v1'
+  - url: 'http://payments.storiqa.com/v1'
+info:
+  description: Api server for wallet payments.
+  version: "1.0.1"
+  title: Payments
+  contact:
+    email: a.karasev@storiqa.com
+tags:
+  - name: users
+    description: Login, register, user management, etc.
+  - name: accounts
+    description: Managements of accounts
+  - name: transactions
+    description: Managements of transactions
+paths:
+  /sessions:
+    post:
+      summary: Login by user and password
+      tags:
+        - users
+      responses:
+        '200':
+          description: ok
+          content:
+            '*/*':
+              schema:
+                type: object
+                properties:
+                  token:
+                    $ref: '#/components/schemas/JWT'
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionCreateInput'
+  /sessions/oauth:
+    post:
+      summary: Login by oauth provider
+      tags:
+        - users
+      responses:
+        '200':
+          description: ok
+          content:
+            '*/*':
+              schema:
+                type: object
+                properties:
+                  token:
+                    $ref: '#/components/schemas/JWT'
+        '401':
+          description: unauthorized
+        '422':
+          description: Json doesn't match schema
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionOauthCreateInput'
+  /users:
+    post:
+      summary: Registers a new user
+      tags:
+        - users
+      responses:
+        '200':
+          description: Ok
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/User'
+        '303':
+          description: User already exists
+        '422':
+          description: Json doesn't match schema
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateInput'
+  /users/me:
+    get:
+      summary: Returns current user
+      security:
+        - Bearer: []
+      tags:
+        - users
+      responses:
+        '200':
+          description: Ok
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+  /users/{userId}/accounts:
+    get:
+      summary: Returns list of accounts for a user.
+      description: You need to be an admin or a user with `userId` to get this list.
+      security:
+        - Bearer: []
+      tags:
+        - accounts
+      parameters:
+        - $ref: '#/components/parameters/userIdParam'
+        - $ref: '#/components/parameters/offsetParam'
+        - $ref: '#/components/parameters/limitParam'
+      responses:
+        '200':
+          description: Ok
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Account'
+        '401':
+          description: Unauthorized
+    put:
+      summary: Update account for a user
+      description: Only users with `userId` are allowed to update an account
+      security:
+        - Bearer: []
+      tags:
+        - accounts
+      parameters:
+        - $ref: '#/components/parameters/userIdParam'
+      responses:
+        '200':
+          description: Ok
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Account'
+        '401':
+          description: unauthorized
+        '422':
+          description: Json doesn't match schema
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountUpdateInput'
+    post:
+      summary: >-
+        Creates account for a user
+      description: Only users with `userId` are allowed to
+        create an account
+      security:
+        - Bearer: []
+      tags:
+        - accounts
+      parameters:
+        - $ref: '#/components/parameters/userIdParam'
+      responses:
+        '200':
+          description: Ok
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Account'
+        '401':
+          description: unauthorized
+        '422':
+          description: Json doesn't match schema
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountCreateInput'
+    delete:
+      summary: Delete an account
+      description: Account will be deactivated, rather than deleted. Only users with `userId` are allowed to delete an account
+      security:
+        - Bearer: []
+      tags:
+        - accounts
+      parameters:
+        - $ref: '#/components/parameters/userIdParam'
+      responses:
+        '200':
+          description: Ok
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Account'
+        '401':
+          description: unauthorized
+
+  '/users/{userId}/transactions':
+    get:
+      summary: Lists all transactions of a user
+      description: You need to be an admin or a user with `userId` to get this list.
+      security:
+        - Bearer: []
+      tags:
+        - transactions
+      parameters:
+        - $ref: '#/components/parameters/userIdParam'
+        - $ref: '#/components/parameters/offsetParam'
+        - $ref: '#/components/parameters/limitParam'
+      responses:
+        '200':
+          description: Ok
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+    post:
+      summary: Create a transactions for a user
+      description: Only users with `userId` are allowed to create a transaction
+      security:
+        - Bearer: []
+      tags:
+        - transactions
+      parameters:
+        - $ref: '#/components/parameters/userIdParam'
+      responses:
+        '200':
+          description: Ok
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+        '401':
+          description: unauthorized
+        '422':
+          description: Json doesn't match schema
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionCreateInput'
+  '/users/{userId}/accounts/{accountId}/transactions':
+    get:
+      summary: Lists all transactions of a user's account
+      description: You need to be an admin or a user with `userId` to get this list.
+      security:
+        - Bearer: []
+      tags:
+        - transactions
+      parameters:
+        - $ref: '#/components/parameters/userIdParam'
+        - $ref: '#/components/parameters/accountIdParam'
+      responses:
+        '200':
+          description: Ok
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+        '401':
+          description: unauthorized
+        '422':
+          description: Json doesn't match schema
+  /obfuscated_accounts:
+    get:
+      summary: Get obfuscated accounts for a phone number and currency
+      description: This method is mostly used when you want to search your counterparty for transaction by phone
+      parameters:
+        - name: phones
+          in: query
+          description: Filter accounts by owners with these phones
+          required: true
+          schema:
+            type: string
+        - name: currency
+          in: query
+          description: Filter accounts by this currency
+          required: true
+          schema:
+            type: string
+            format: currency
+        - $ref: '#/components/parameters/offsetParam'
+        - $ref: '#/components/parameters/limitParam'
+
+      responses:
+        '200':
+          description: Ok
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ObfuscatedUserAccount'
+components:
+  schemas:
+    DeviceType:
+      type: string
+      enum: [ios|android|web|other]
+    UserId:
+      type: string
+      description: Id of a User in our system
+      example: jghkdfgdjfgkdf7gd
+    AccountId:
+      type: string
+      description: Id of Account in our system
+      example: jghkdfgdjfgkdf7gd
+
+    ObfuscatedUserAccount:
+      type: object
+      description: >
+        User account with *** instead of some numbers + user info like phone
+        number and obfuscated name.
+         This one is used when you want to make a transaction and find accounts by phone number. That way
+         you don't get a full info, but you get enough info for a transfer.
+      properties:
+        account_id:
+          $ref: '#/components/schemas/AccountId'
+        address:
+          type: string
+          description: obfuscated blockchain address / fiat account number
+          example: ofds**************dfgdfofb
+        phone:
+          type: string
+          description: obfuscated phone number
+          example: 8903456***12
+        name:
+          type: string
+          description: obfuscated user full name
+          example: Alexey K.
+        currency:
+          $ref: '#/components/schemas/Currency'
+    OauthJWT:
+      type: string
+      description: Base64 encoded Json web token for a user from Oauth provider.
+      example: dfg98h798g875hs5fg6h5sf8gh==
+    JWT:
+      type: string
+      description: Base64 encoded Json web token for a user from API.
+      example: gnsiocrto7cr8ctialc34==
+    SessionCreateInput:
+      type: object
+      required:
+        - email
+        - password
+        - deviceType
+      properties:
+        email:
+          type: string
+          example: a.karasev@storiqa.com
+        password:
+          type: string
+          example: secret pass
+        deviceType:
+          $ref: '#/components/schemas/DeviceType'
+        deviceOs:
+          type: string
+          description: Android SDK / iOS version. Requied for mobile only.
+        deviceId:
+          description: IMEI. Requied for mobile only.
+          type: string
+          example: 1237987834798375349
+    SessionOauthCreateInput:
+      type: object
+      required:
+        - oauthToken
+        - oauthProvider
+      properties:
+        oauthToken:
+          $ref: '#/components/schemas/OauthJWT'
+        oauthProvider:
+          $ref: '#/components/schemas/OauthProvider'
+        deviceType:
+          type: string
+          enum: [ios|android|web|other]
+        deviceOs:
+          type: string
+          description: Android SDK / iOS version. Requied for mobile only.
+        deviceId:
+          description: IMEI. Requied for mobile only.
+          type: string
+          example: 1237987834798375349
+    Value:
+      type: integer
+      format: uint256
+      description: Monetary value - either fiat or blockchain
+      example: 185000000000000000000
+    TransactionCreateInput:
+      type: object
+      required:
+        - id
+        - from
+        - to
+        - toType
+        - currency
+        - value
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        from:
+          $ref: '#/components/schemas/AccountAddress'
+        to:
+          description: >
+            Generally you make a transaction using blockchain address.
+            However, when working with obfuscated accounts you get back
+            only account id in our system (we need that to hide blockchain
+            address so that a user couldn't find it by phone)
+          oneOf:
+            - $ref: '#/components/schemas/AccountId'
+            - $ref: '#/components/schemas/AccountAddress'
+          discriminator:
+            propertyName: toType
+          example:
+            jghkdfgdjfgkdf7gd | 0x89595fa59d69d696d9d96
+        toType:
+          type: string
+          enum: [account|address]
+        currency:
+          $ref: '#/components/schemas/Currency'
+        value:
+          $ref: '#/components/schemas/Value'
+    Transaction:
+      type: object
+      required:
+        - id
+        - fromAddress
+        - toAddress
+        - currency
+        - value
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        fromAddress:
+          $ref: '#/components/schemas/AccountAddress'
+        toAddress:
+          $ref: '#/components/schemas/AccountAddress'
+        currency:
+          $ref: '#/components/schemas/Currency'
+        value:
+          $ref: '#/components/schemas/Value'
+    AccountAddress:
+      type: string
+      description: Either blockchain address or fiat account number (depending on currency)
+      example: '0x89595fa59d69d696d9d96'
+    AccountCreateInput:
+      type: object
+      required:
+        - id
+        - currency
+        - name
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        currency:
+          $ref: '#/components/schemas/Currency'
+        name:
+          type: string
+          description: Short name for the account
+          example: My main account
+    AccountUpdateInput:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          type: string
+          description: Short name for the account
+          example: My main account
+    Account:
+      type: object
+      required:
+        - id
+        - balance
+        - currency
+        - userId
+        - accountAddress
+        - name
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        balance:
+          $ref: '#/components/schemas/Value'
+        currency:
+          $ref: '#/components/schemas/Currency'
+        userId:
+          $ref: '#/components/schemas/UserId'
+        accountAddress:
+          $ref: '#/components/schemas/AccountAddress'
+        name:
+          type: string
+          description: Short name for the account
+          example: My main account
+    Currency:
+      type: string
+      description: >-
+        ISO 4217 alphabetic code for fiat currencies in CAPS
+        [source](https://www.currency-iso.org/en/home/tables/table-a1.html). Or
+        Coinmarketcap symbol in CAPS [source](https://coinmarketcap.com/)
+      example: ETH
+    Id:
+      type: string
+      example: jghkdfgdjfgkdf7gd
+    OauthProvider:
+      type: string
+      enum: [facebook|google]
+    Role:
+      type: string
+      enum:
+        - user
+        - admin
+      example: user
+    User:
+      type: object
+      required:
+        - email
+        - password
+        - phone
+        - firstName
+        - lastName
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        email:
+          type: string
+          example: a.karasev@storiqa.com
+        phone:
+          type: string
+          example: '79034442211'
+        firstName:
+          type: string
+          example: Alexey
+        lastName:
+          type: string
+          example: Karasev
+        role:
+          $ref: '#/components/schemas/Role'
+    UserCreateInput:
+      type: object
+      required:
+        - email
+        - password
+        - phone
+        - firstName
+        - lastName
+      properties:
+        email:
+          type: string
+          example: a.karasev@storiqa.com
+        password:
+          type: string
+          example: secret password
+        phone:
+          type: string
+          example: '79034442211'
+        firstName:
+          type: string
+          example: Alexey
+        lastName:
+          type: string
+          example: Karasev
+        deviceType:
+          type: string
+          enum: [ios|android|web|other]
+        deviceOs:
+          type: string
+          description: Android SDK / iOS version. Requied for mobile only.
+        deviceId:
+          description: IMEI. Requied for mobile only.
+          type: string
+          example: 1237987834798375349
+  securitySchemes:
+    Bearer:
+      type: apiKey
+      name: Authorization
+      in: header
+  parameters:
+    userIdParam:
+      name: userId
+      in: path
+      description: ID of user
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    accountIdParam:
+      name: accountId
+      in: path
+      description: ID of account
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    offsetParam:
+      in: query
+      name: offset
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      description: The number of items to skip before starting to collect the result set.
+    limitParam:
+      in: query
+      name: limit
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 20
+      description: The numbers of items to return.
