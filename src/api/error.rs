@@ -10,14 +10,29 @@ pub struct Error {
 #[allow(dead_code)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
-    #[fail(display = "controller - error inside of Hyper library")]
+    #[fail(display = "controller error - unauthorized")]
+    Unauthorized,
+    #[fail(display = "controller error - unprocessable entity")]
+    UnprocessableEntity,
+    #[fail(display = "controller error - internal error")]
+    Internal,
+}
+
+#[allow(dead_code)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
+pub enum ErrorContext {
+    #[fail(display = "controller context - error inside of Hyper library")]
     Hyper,
-    #[fail(display = "controller - error parsing data")]
-    Parse,
-    #[fail(display = "controller - error converting json data")]
-    Json,
-    #[fail(display = "controller - error fetching data using http client")]
+    #[fail(display = "controller context - error parsing config data")]
+    Config,
+    #[fail(display = "controller context - error fetching data using http client")]
     Client,
+    #[fail(display = "controller context - error converting json data from request")]
+    RequestJson,
+    #[fail(display = "controller context - error parsing bytes into utf8 from request")]
+    RequestUTF8,
+    #[fail(display = "controller context - error converting json data from request")]
+    ResponseJson,
 }
 
 #[allow(dead_code)]

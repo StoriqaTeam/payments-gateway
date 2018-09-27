@@ -20,7 +20,7 @@ mod requests;
 mod responses;
 
 use self::controllers::*;
-use self::error::{Error, ErrorKind};
+use self::error::*;
 
 #[derive(Clone)]
 pub struct ApiService {
@@ -51,7 +51,7 @@ impl Service for ApiService {
         let storiqa_client = self.storiqa_client.clone();
         Box::new(
             read_body(http_body)
-                .map_err(|e| error_context!(e, ErrorKind::Hyper))
+                .map_err(|e| error_context!(e, ErrorContext::Hyper, ErrorKind::Internal))
                 .and_then(move |body| {
                     let ctx = Context {
                         body,
@@ -66,7 +66,8 @@ impl Service for ApiService {
                     };
 
                     router(ctx, parts.method.into(), parts.uri.path())
-                }).map_err(|e| {
+                })
+                .map_err(|e| {
                     log_error(&e);
                     e.compat()
                 }),
@@ -83,14 +84,15 @@ pub fn start_server(config: Config) {
         };
         format!("{}:{}", config.server.host, config.server.port)
             .parse::<SocketAddr>()
-            .map_err(|e| error_context!(e, ErrorKind::Parse, config.server.host, config.server.port))
+            .map_err(|e| error_context!(e, ErrorContext::Config, ErrorKind::Internal, config.server.host, config.server.port))
             .into_future()
             .and_then(move |addr| {
                 let server = Server::bind(&addr)
                     .serve(new_service)
-                    .map_err(move |e| error_context!(e, ErrorKind::Parse, addr));
+                    .map_err(move |e| error_context!(e, ErrorContext::Hyper, ErrorKind::Internal, addr));
                 info!("Listening on http://{}", addr);
                 server
-            }).map_err(|e: Error| log_error(&e))
+            })
+            .map_err(|e: Error| log_error(&e))
     }));
 }

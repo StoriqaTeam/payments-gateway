@@ -1,8 +1,8 @@
 mod responses;
 
 use self::responses::*;
+use super::error::*;
 use super::Client;
-use super::{Error, ErrorKind};
 use config::Config;
 use failure::Fail;
 use futures::prelude::*;
@@ -52,14 +52,22 @@ impl StoriqaClientImpl {
             .uri(self.storiqa_url.clone())
             .method(Method::POST)
             .body(Body::from(body))
-            .map_err(move |e| error_context!(e, ErrorKind::Http, query3))
+            .map_err(move |e| error_context!(e, ErrorContext::Hyper, ErrorKind::UnprocessableEntity, query3))
             .into_future()
-            .and_then(move |req| cli.request(req).map_err(move |e| error_context!(e, ErrorKind::Hyper, query1)))
-            .and_then(move |resp| read_body(resp.into_body()).map_err(move |e| error_context!(e, ErrorKind::Hyper, query2)))
+            .and_then(move |req| {
+                cli.request(req)
+                    .map_err(move |e| error_context!(e, ErrorContext::Network, ErrorKind::Internal, query1))
+            })
+            .and_then(move |resp| {
+                read_body(resp.into_body()).map_err(move |e| error_context!(e, ErrorContext::Network, ErrorKind::Internal, query2))
+            })
             .and_then(|bytes| {
                 let bytes_clone = bytes.clone();
-                String::from_utf8(bytes).map_err(move |e| error_context!(e, ErrorKind::UTF8, bytes_clone))
-            }).and_then(|string| serde_json::from_str::<T>(&string).map_err(|e| error_context!(e, ErrorKind::Json, string)))
+                String::from_utf8(bytes).map_err(move |e| error_context!(e, ErrorContext::ResponseUTF8, ErrorKind::Internal, bytes_clone))
+            })
+            .and_then(|string| {
+                serde_json::from_str::<T>(&string).map_err(|e| error_context!(e, ErrorContext::ResponseJson, ErrorKind::Internal, string))
+            })
     }
 }
 
@@ -79,8 +87,11 @@ impl StoriqaClient for StoriqaClientImpl {
             self.exec_query::<GetJWTResponse>(&query)
                 .and_then(|resp| {
                     let e = format_err!("Failed at getJWT");
-                    resp.data.clone().ok_or(error_context!(e, ErrorKind::Unauthorized, resp))
-                }).map(|resp_data| StoriqaJWT::new(resp_data.getJWTByEmail.token)),
+                    resp.data
+                        .clone()
+                        .ok_or(error_context!(e, ErrorContext::ResponseUnauthorized, ErrorKind::Unauthorized, resp))
+                })
+                .map(|resp_data| StoriqaJWT::new(resp_data.getJWTByEmail.token)),
         )
     }
 }

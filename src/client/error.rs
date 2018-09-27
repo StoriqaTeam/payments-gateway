@@ -10,16 +10,27 @@ pub struct Error {
 #[allow(dead_code)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
-    #[fail(display = "client - error inside of Hyper library")]
-    Hyper,
-    #[fail(display = "client - error constructing http request / response")]
-    Http,
-    #[fail(display = "client - error parsing bytes into utf8")]
-    UTF8,
-    #[fail(display = "client - error parsing string to struct")]
-    Json,
-    #[fail(display = "client - unauthorized")]
+    #[fail(display = "client error - unauthorized")]
     Unauthorized,
+    #[fail(display = "client error - unprocessable entity")]
+    UnprocessableEntity,
+    #[fail(display = "client error - internal error")]
+    Internal,
+}
+
+#[allow(dead_code)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
+pub enum ErrorContext {
+    #[fail(display = "client context - network error")]
+    Network,
+    #[fail(display = "client context - error inside of Hyper library")]
+    Hyper,
+    #[fail(display = "client context - error parsing bytes into utf8 from client response")]
+    ResponseUTF8,
+    #[fail(display = "client context - error parsing string to struct from client response")]
+    ResponseJson,
+    #[fail(display = "client context - unauthorized from client response")]
+    ResponseUnauthorized,
 }
 
 impl Fail for Error {

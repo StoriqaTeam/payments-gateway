@@ -1,4 +1,4 @@
-use super::error::{Error, ErrorKind};
+use super::error::*;
 use client::{Client, StoriqaClient};
 use failure::Fail;
 use futures::prelude::*;
@@ -29,7 +29,7 @@ where
 {
     Box::new(
         serde_json::to_string(&model)
-            .map_err(|e| error_context!(e, ErrorKind::Json, model))
+            .map_err(|e| error_context!(e, ErrorContext::ResponseJson, ErrorKind::Internal, model))
             .into_future()
             .map(|text| {
                 Response::builder()

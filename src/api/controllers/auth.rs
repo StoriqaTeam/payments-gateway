@@ -4,6 +4,7 @@ use super::super::responses::*;
 use super::response_with_model;
 use super::Context;
 use super::ControllerFuture;
+use client::ErrorKind as ClientErrorKind;
 use failure::Fail;
 use futures::prelude::*;
 use hyper::{Body, Response};
@@ -13,15 +14,23 @@ pub fn post_sessions(ctx: &Context) -> ControllerFuture {
     let cli = ctx.storiqa_client.clone();
     Box::new(
         String::from_utf8(ctx.body.clone())
-            .map_err(|e| error_context!(e, ErrorKind::Parse, ctx.body))
+            .map_err(|e| error_context!(e, ErrorContext::RequestUTF8, ErrorKind::UnprocessableEntity, ctx.body))
             .into_future()
             .and_then(|string| {
-                serde_json::from_str::<PostSessionsRequest>(&string).map_err(move |e| error_context!(e, ErrorKind::Json, string))
-            }).and_then(move |input| {
+                serde_json::from_str::<PostSessionsRequest>(&string)
+                    .map_err(move |e| error_context!(e, ErrorContext::RequestJson, ErrorKind::UnprocessableEntity, string))
+            })
+            .and_then(move |input| {
                 let input_clone = input.clone();
-                cli.getJWT(input.email, input.password)
-                    .map_err(move |e| error_context!(e, ErrorKind::Client, input_clone))
-            }).and_then(|jwt| {
+                cli.getJWT(input.email, input.password).map_err(move |e| match e.kind() {
+                    ClientErrorKind::Unauthorized => error_context!(e, ErrorContext::Client, ErrorKind::Unauthorized, input_clone),
+                    ClientErrorKind::UnprocessableEntity => {
+                        error_context!(e, ErrorContext::Client, ErrorKind::UnprocessableEntity, input_clone)
+                    }
+                    _ => error_context!(e, ErrorContext::Client, ErrorKind::Internal, input_clone),
+                })
+            })
+            .and_then(|jwt| {
                 let model = PostSessionsResponse { token: jwt };
                 response_with_model(&model)
             }),
