@@ -1,11 +1,8 @@
 macro_rules! ewrap {
-    (raw $e:ident, $context:expr, $kind:expr) => {
-        ewrap!(raw $e, $context, $kind, )
-    };
-
-    ($context:expr, $kind:expr) => {
-        ewrap!($context, $kind, )
-    };
+    (raw $e:ident, $context:expr, $kind:expr) => {{
+        let msg = format!("at {}:{}", file!(), line!());
+        $e.context($context).context(msg).context($kind).into()
+    }};
 
     (raw $e:ident, $context:expr, $kind:expr, $($arg:expr),*) => {{
         let mut msg = format!("at {}:{}", file!(), line!());
@@ -23,6 +20,11 @@ macro_rules! ewrap {
         }
     }};
 
+    ($context:expr, $kind:expr) => {
+        move |e| {
+            ewrap!(raw e, $context, $kind)
+        }
+    };
 
     ($context:expr, $kind:expr, $($arg:expr),*) => {{
         move |e| {

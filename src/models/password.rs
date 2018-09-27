@@ -1,5 +1,5 @@
 use serde::{Serialize, Serializer};
-use std::fmt::{Debug, Display, Error, Formatter};
+use std::fmt::{Debug, Error, Formatter};
 
 #[derive(Deserialize, Clone)]
 pub struct Password(String);
@@ -22,10 +22,6 @@ impl Serialize for Password {
 }
 
 impl Password {
-    pub fn new(data: String) -> Self {
-        Password(data)
-    }
-
     pub fn inner(&self) -> &str {
         &self.0
     }
