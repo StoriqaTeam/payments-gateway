@@ -12,12 +12,6 @@ impl Debug for Password {
     }
 }
 
-impl Display for Password {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        f.write_str(&self.0)
-    }
-}
-
 impl Serialize for Password {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -30,5 +24,9 @@ impl Serialize for Password {
 impl Password {
     pub fn new(data: String) -> Self {
         Password(data)
+    }
+
+    pub fn inner(&self) -> &str {
+        &self.0
     }
 }
