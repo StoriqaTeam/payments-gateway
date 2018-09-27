@@ -14,17 +14,17 @@ pub fn post_sessions(ctx: &Context) -> ControllerFuture {
     let cli = ctx.storiqa_client.clone();
     Box::new(
         String::from_utf8(ctx.body.clone())
-            .map_err(|e| error_context!(e, ErrorContext::RequestUTF8, ErrorKind::UnprocessableEntity, ctx.body))
+            .map_err(|e| ectx!(e, ErrorContext::RequestUTF8, ErrorKind::UnprocessableEntity, ctx.body))
             .into_future()
             .and_then(|string| {
                 serde_json::from_str::<PostSessionsRequest>(&string)
-                    .map_err(move |e| error_context!(e, ErrorContext::RequestJson, ErrorKind::UnprocessableEntity, string))
+                    .map_err(move |e| ectx!(e, ErrorContext::RequestJson, ErrorKind::UnprocessableEntity, string))
             })
             .and_then(move |input| {
                 let input_clone = input.clone();
                 cli.getJWT(input.email, input.password).map_err(move |e| {
                     let kind = e.kind().into();
-                    error_context!(e, ErrorContext::Client, kind, input_clone)
+                    ectx!(e, ErrorContext::Client, kind, input_clone)
                 })
             })
             .and_then(|jwt| {

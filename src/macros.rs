@@ -1,6 +1,6 @@
-macro_rules! error_context {
+macro_rules! ectx {
     ($e:ident, $context:expr, $kind:expr) => {
-        error_context!($e, $context, $kind, )
+        ectx!($e, $context, $kind, )
     };
 
     ($e:ident, $context:expr, $kind:expr, $($arg:expr),*) => {{
