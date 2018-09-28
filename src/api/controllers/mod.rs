@@ -4,10 +4,11 @@ use futures::prelude::*;
 use hyper::{header::HeaderValue, Body, HeaderMap, Method, Response, Uri};
 use std::sync::Arc;
 
-mod auth;
 mod fallback;
-pub use self::auth::*;
+mod users;
+
 pub use self::fallback::*;
+pub use self::users::*;
 
 pub type ControllerFuture = Box<Future<Item = Response<Body>, Error = Error> + Send>;
 

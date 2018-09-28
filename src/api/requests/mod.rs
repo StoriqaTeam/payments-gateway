@@ -1,4 +1,4 @@
-use models::Password;
+use models::*;
 
 #[derive(Debug, Deserialize, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
@@ -29,4 +29,10 @@ pub struct PostUsersRequest {
     pub device_type: DeviceType,
     pub device_os: Option<String>,
     pub device_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PostUsersConfirmEmailRequest {
+    pub email_confirm_token: EmailConfirmToken,
 }

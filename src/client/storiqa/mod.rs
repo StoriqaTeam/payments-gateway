@@ -23,7 +23,8 @@ pub trait StoriqaClient: Send + Sync + 'static {
         password: Password,
         first_name: String,
         last_name: String,
-    ) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
+    ) -> Box<Future<Item = User, Error = Error> + Send>;
+    fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
 }
 
 pub struct StoriqaClientImpl {
@@ -106,12 +107,14 @@ impl StoriqaClient for StoriqaClientImpl {
         password: Password,
         first_name: String,
         last_name: String,
-    ) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
+    ) -> Box<Future<Item = User, Error = Error> + Send> {
         let query = format!(
             r#"
                 mutation M {{
                     createUser(input: {{email: \"{}\", password: \"{}\", firstName: \"{}\", lastName: \"{}\", clientMutationId:\"\"}}) {{
-                        token
+                        email
+                        firstName
+                        lastName
                     }}
                 }}
             "#,
@@ -119,6 +122,29 @@ impl StoriqaClient for StoriqaClientImpl {
             password.inner(),
             first_name,
             last_name,
+        );
+        Box::new(
+            self.exec_query::<CreateUserResponse>(&query)
+                .and_then(|resp| {
+                    let e = format_err!("Failed at create_user");
+                    resp.data
+                        .clone()
+                        .ok_or(ewrap!(raw e, ErrorSource::Itself, ErrorKind::Unauthorized, resp))
+                })
+                .map(|resp_data| resp_data.create_user),
+        )
+    }
+
+    fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
+        let query = format!(
+            r#"
+                mutation M {{
+                    verifyEmail(input: {{token: \"{}\", clientMutationId:\"\"}}) {{
+                        token
+                    }}
+                }}
+            "#,
+            token,
         );
         Box::new(
             self.exec_query::<GetJWTResponse>(&query)

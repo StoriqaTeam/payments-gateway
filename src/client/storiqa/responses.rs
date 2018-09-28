@@ -1,6 +1,18 @@
 use models::*;
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct CreateUserResponse {
+    pub data: Option<CreateUser>,
+    pub errors: Option<Vec<GraphQLError>>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateUser {
+    pub create_user: User,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct GetJWTResponse {
     pub data: Option<GetJWTByEmail>,
     pub errors: Option<Vec<GraphQLError>>,
