@@ -9,7 +9,9 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 mod auth;
+mod fallback;
 pub use self::auth::*;
+pub use self::fallback::*;
 
 pub type ControllerFuture = Box<Future<Item = Response<Body>, Error = Error> + Send>;
 

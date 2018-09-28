@@ -60,11 +60,13 @@ impl Service for ApiService {
                         storiqa_client,
                     };
                     let router = router! {
-                        _ => post_sessions,
+                        POST /v1/sessions => post_sessions,
+                        _ => not_found,
                     };
 
                     router(ctx, parts.method.into(), parts.uri.path())
-                }).or_else(|e| match e.kind() {
+                })
+                .or_else(|e| match e.kind() {
                     ErrorKind::BadRequest => {
                         log_error(&e);
                         Ok(Response::builder()
@@ -108,13 +110,15 @@ pub fn start_server(config: Config) {
                 ErrorKind::Internal,
                 config.server.host,
                 config.server.port
-            )).into_future()
+            ))
+            .into_future()
             .and_then(move |addr| {
                 let server = Server::bind(&addr)
                     .serve(new_service)
                     .map_err(ewrap!(ErrorSource::Hyper, ErrorKind::Internal, addr));
                 info!("Listening on http://{}", addr);
                 server
-            }).map_err(|e: Error| log_error(&e))
+            })
+            .map_err(|e: Error| log_error(&e))
     }));
 }

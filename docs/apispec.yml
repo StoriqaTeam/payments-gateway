@@ -677,9 +677,9 @@ components:
       required:
         - email
         - password
-        - phone
         - firstName
         - lastName
+        - deviceType
       properties:
         email:
           type: string
@@ -687,9 +687,6 @@ components:
         password:
           type: string
           example: secret password
-        phone:
-          type: string
-          example: '79034442211'
         firstName:
           type: string
           example: Alexey
