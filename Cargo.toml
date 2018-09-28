@@ -22,3 +22,4 @@ config = "0.9"
 clap = {version = "2", features = ["yaml"]}
 http_router = "0.1"
 regex = "1"
+base64 = "0.9"

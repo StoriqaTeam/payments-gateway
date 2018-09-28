@@ -12,6 +12,7 @@ extern crate log;
 extern crate config as config_crate;
 #[macro_use]
 extern crate http_router;
+extern crate base64;
 extern crate hyper_tls;
 extern crate regex;
 

@@ -12,6 +12,7 @@ pub struct Config {
 pub struct Client {
     pub dns_threads: usize,
     pub storiqa_url: String,
+    pub storiqa_jwt_public_key_base64: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]

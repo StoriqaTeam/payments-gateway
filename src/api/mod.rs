@@ -3,6 +3,7 @@ use hyper::{service::Service, Body, Request, Response};
 
 use super::config::Config;
 use super::utils::{log_error, log_warn};
+use base64;
 use client::{HttpClient, HttpClientImpl, StoriqaClient, StoriqaClientImpl};
 use failure::{Compat, Fail};
 use futures::future;
@@ -14,6 +15,7 @@ use utils::read_body;
 
 mod controllers;
 mod error;
+mod middleware;
 mod requests;
 mod responses;
 mod utils;
@@ -25,16 +27,24 @@ use self::error::*;
 pub struct ApiService {
     client: Arc<dyn HttpClient>,
     storiqa_client: Arc<dyn StoriqaClient>,
+    storiqa_jwt_public_key: Vec<u8>,
 }
 
 impl ApiService {
-    fn new(config: &Config) -> Self {
+    fn from_config(config: &Config) -> Result<Self, Error> {
         let client = HttpClientImpl::new(config);
         let storiqa_client = StoriqaClientImpl::new(&config, client.clone());
-        ApiService {
+        let storiqa_jwt_public_key: Result<Vec<u8>, Error> = base64::decode(&config.client.storiqa_jwt_public_key_base64).map_err(ewrap!(
+            ErrorSource::Config,
+            ErrorKind::Internal,
+            &config.client.storiqa_jwt_public_key_base64
+        ));
+        let storiqa_jwt_public_key = storiqa_jwt_public_key?;
+        Ok(ApiService {
             client: Arc::new(client),
             storiqa_client: Arc::new(storiqa_client),
-        }
+            storiqa_jwt_public_key,
+        })
     }
 }
 
@@ -100,11 +110,7 @@ impl Service for ApiService {
 
 pub fn start_server(config: Config) {
     hyper::rt::run(future::lazy(move || {
-        let app = ApiService::new(&config);
-        let new_service = move || {
-            let res: Result<_, hyper::Error> = Ok(app.clone());
-            res
-        };
+        let config_clone = config.clone();
         format!("{}:{}", config.server.host, config.server.port)
             .parse::<SocketAddr>()
             .map_err(ewrap!(
@@ -113,8 +119,13 @@ pub fn start_server(config: Config) {
                 config.server.host,
                 config.server.port
             ))
+            .and_then(move |addr| ApiService::from_config(&config_clone).map(move |app| (app, addr)))
             .into_future()
-            .and_then(move |addr| {
+            .and_then(move |(app, addr)| {
+                let new_service = move || {
+                    let res: Result<_, hyper::Error> = Ok(app.clone());
+                    res
+                };
                 let server = Server::bind(&addr)
                     .serve(new_service)
                     .map_err(ewrap!(ErrorSource::Hyper, ErrorKind::Internal, addr));

@@ -96,6 +96,31 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UserCreateInput'
+  /users/confirm_email:
+    post:
+      summary: Receives confirmation token, confirms email and gives back jwt for login
+      tags:
+        - users
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    $ref: '#/components/schemas/JWT'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/Internal'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsersConfirmEmailInput'
+
   /users/me:
     get:
       summary: Returns current user
@@ -473,6 +498,15 @@ components:
       type: string
       description: Base64 encoded Json web token for a user from API.
       example: gnsiocrto7cr8ctialc34==
+    UsersConfirmEmailInput:
+      type: object
+      required:
+        - emailConfirmToken
+      properties:
+        emailConfirmToken:
+          type: string
+          description: Confirmation token that is sent via email after registration
+          example: lkg7713rlkf==
     SessionCreateInput:
       type: object
       required:
@@ -641,12 +675,6 @@ components:
     OauthProvider:
       type: string
       enum: [facebook|google]
-    Role:
-      type: string
-      enum:
-        - user
-        - admin
-      example: user
     User:
       type: object
       required:
@@ -670,8 +698,6 @@ components:
         lastName:
           type: string
           example: Karasev
-        role:
-          $ref: '#/components/schemas/Role'
     UserCreateInput:
       type: object
       required:
