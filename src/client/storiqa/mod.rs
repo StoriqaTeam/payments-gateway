@@ -17,6 +17,13 @@ use utils::read_body;
 
 pub trait StoriqaClient: Send + Sync + 'static {
     fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
+    fn create_user(
+        &self,
+        email: String,
+        password: Password,
+        first_name: String,
+        last_name: String,
+    ) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
 }
 
 pub struct StoriqaClientImpl {
@@ -58,11 +65,13 @@ impl StoriqaClientImpl {
             .and_then(move |req| {
                 cli.request(req)
                     .map_err(ewrap!(ErrorSource::HttpClient, ErrorKind::Internal, query1))
-            }).and_then(move |resp| read_body(resp.into_body()).map_err(ewrap!(ErrorSource::Hyper, ErrorKind::Internal, query2)))
+            })
+            .and_then(move |resp| read_body(resp.into_body()).map_err(ewrap!(ErrorSource::Hyper, ErrorKind::Internal, query2)))
             .and_then(|bytes| {
                 let bytes_clone = bytes.clone();
                 String::from_utf8(bytes).map_err(ewrap!(ErrorSource::Utf8, ErrorKind::Internal, bytes_clone))
-            }).and_then(|string| serde_json::from_str::<T>(&string).map_err(ewrap!(ErrorSource::Json, ErrorKind::Internal, string)))
+            })
+            .and_then(|string| serde_json::from_str::<T>(&string).map_err(ewrap!(ErrorSource::Json, ErrorKind::Internal, string)))
     }
 }
 
@@ -82,11 +91,44 @@ impl StoriqaClient for StoriqaClientImpl {
         Box::new(
             self.exec_query::<GetJWTResponse>(&query)
                 .and_then(|resp| {
-                    let e = format_err!("Failed at getJWT");
+                    let e = format_err!("Failed at get_jwt");
                     resp.data
                         .clone()
                         .ok_or(ewrap!(raw e, ErrorSource::Itself, ErrorKind::Unauthorized, resp))
-                }).map(|resp_data| resp_data.get_jwt_by_email.token),
+                })
+                .map(|resp_data| resp_data.get_jwt_by_email.token),
+        )
+    }
+
+    fn create_user(
+        &self,
+        email: String,
+        password: Password,
+        first_name: String,
+        last_name: String,
+    ) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
+        let query = format!(
+            r#"
+                mutation M {{
+                    createUser(input: {{email: \"{}\", password: \"{}\", firstName: \"{}\", lastName: \"{}\", clientMutationId:\"\"}}) {{
+                        token
+                    }}
+                }}
+            "#,
+            email,
+            password.inner(),
+            first_name,
+            last_name,
+        );
+        Box::new(
+            self.exec_query::<GetJWTResponse>(&query)
+                .and_then(|resp| {
+                    let e = format_err!("Failed at create_user");
+                    resp.data
+                        .clone()
+                        .ok_or(ewrap!(raw e, ErrorSource::Itself, ErrorKind::Unauthorized, resp))
+                })
+                .map(|resp_data| resp_data.get_jwt_by_email.token),
         )
     }
 }

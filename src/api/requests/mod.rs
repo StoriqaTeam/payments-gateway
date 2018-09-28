@@ -24,8 +24,8 @@ pub struct PostSessionsRequest {
 pub struct PostUsersRequest {
     pub email: String,
     pub password: Password,
-    pub firstName: String,
-    pub lastName: String,
+    pub first_name: String,
+    pub last_name: String,
     pub device_type: DeviceType,
     pub device_os: Option<String>,
     pub device_id: Option<String>,

@@ -16,6 +16,7 @@ mod controllers;
 mod error;
 mod requests;
 mod responses;
+mod utils;
 
 use self::controllers::*;
 use self::error::*;
@@ -61,6 +62,7 @@ impl Service for ApiService {
                     };
                     let router = router! {
                         POST /v1/sessions => post_sessions,
+                        POST /v1/users => post_users,
                         _ => not_found,
                     };
 
