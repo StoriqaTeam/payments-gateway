@@ -13,6 +13,17 @@ pub struct CreateUser {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct MeResponse {
+    pub data: Option<Me>,
+    pub errors: Option<Vec<GraphQLError>>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Me {
+    pub me: User,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct GetJWTResponse {
     pub data: Option<GetJWTByEmail>,
     pub errors: Option<Vec<GraphQLError>>,

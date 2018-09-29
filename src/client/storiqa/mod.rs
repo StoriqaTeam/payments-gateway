@@ -25,6 +25,7 @@ pub trait StoriqaClient: Send + Sync + 'static {
         last_name: String,
     ) -> Box<Future<Item = User, Error = Error> + Send>;
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
+    fn me(&self) -> Box<Future<Item = User, Error = Error> + Send>;
 }
 
 pub struct StoriqaClientImpl {
@@ -66,13 +67,11 @@ impl StoriqaClientImpl {
             .and_then(move |req| {
                 cli.request(req)
                     .map_err(ewrap!(ErrorSource::HttpClient, ErrorKind::Internal, query1))
-            })
-            .and_then(move |resp| read_body(resp.into_body()).map_err(ewrap!(ErrorSource::Hyper, ErrorKind::Internal, query2)))
+            }).and_then(move |resp| read_body(resp.into_body()).map_err(ewrap!(ErrorSource::Hyper, ErrorKind::Internal, query2)))
             .and_then(|bytes| {
                 let bytes_clone = bytes.clone();
                 String::from_utf8(bytes).map_err(ewrap!(ErrorSource::Utf8, ErrorKind::Internal, bytes_clone))
-            })
-            .and_then(|string| serde_json::from_str::<T>(&string).map_err(ewrap!(ErrorSource::Json, ErrorKind::Internal, string)))
+            }).and_then(|string| serde_json::from_str::<T>(&string).map_err(ewrap!(ErrorSource::Json, ErrorKind::Internal, string)))
     }
 }
 
@@ -96,8 +95,7 @@ impl StoriqaClient for StoriqaClientImpl {
                     resp.data
                         .clone()
                         .ok_or(ewrap!(raw e, ErrorSource::Itself, ErrorKind::Unauthorized, resp))
-                })
-                .map(|resp_data| resp_data.get_jwt_by_email.token),
+                }).map(|resp_data| resp_data.get_jwt_by_email.token),
         )
     }
 
@@ -130,8 +128,28 @@ impl StoriqaClient for StoriqaClientImpl {
                     resp.data
                         .clone()
                         .ok_or(ewrap!(raw e, ErrorSource::Itself, ErrorKind::Unauthorized, resp))
-                })
-                .map(|resp_data| resp_data.create_user),
+                }).map(|resp_data| resp_data.create_user),
+        )
+    }
+
+    fn me(&self) -> Box<Future<Item = User, Error = Error> + Send> {
+        let query = r#"
+                query M {{
+                    me {
+                        email
+                        firstName
+                        lastName
+                    }
+                }}
+            "#;
+        Box::new(
+            self.exec_query::<MeResponse>(&query)
+                .and_then(|resp| {
+                    let e = format_err!("Failed at create_user");
+                    resp.data
+                        .clone()
+                        .ok_or(ewrap!(raw e, ErrorSource::Itself, ErrorKind::Unauthorized, resp))
+                }).map(|resp_data| resp_data.me),
         )
     }
 
@@ -153,8 +171,7 @@ impl StoriqaClient for StoriqaClientImpl {
                     resp.data
                         .clone()
                         .ok_or(ewrap!(raw e, ErrorSource::Itself, ErrorKind::Unauthorized, resp))
-                })
-                .map(|resp_data| resp_data.get_jwt_by_email.token),
+                }).map(|resp_data| resp_data.get_jwt_by_email.token),
         )
     }
 }

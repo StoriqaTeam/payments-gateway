@@ -1,5 +1,6 @@
 use super::error::*;
 use client::{HttpClient, StoriqaClient};
+use futures;
 use futures::prelude::*;
 use hyper::{header::HeaderValue, Body, HeaderMap, Method, Response, Uri};
 use models::Auth;
@@ -22,4 +23,15 @@ pub struct Context {
     pub auth: Option<Auth>,
     pub client: Arc<HttpClient>,
     pub storiqa_client: Arc<StoriqaClient>,
+}
+
+fn authorize<F>(ctx: &Context, f: F) -> ControllerFuture
+where
+    F: FnOnce() -> ControllerFuture,
+{
+    if ctx.auth.is_none() {
+        Box::new(futures::future::err(ErrorKind::Unauthorized.into()))
+    } else {
+        f()
+    }
 }
