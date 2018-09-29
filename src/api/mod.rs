@@ -74,7 +74,7 @@ impl Service for ApiService {
         let (parts, http_body) = req.into_parts();
         let client = self.client.clone();
         let storiqa_client = self.storiqa_client.clone();
-        let auth = self.authenticator.authenticate(&parts.headers);
+        let authenticator = self.authenticator.clone();
         Box::new(
             read_body(http_body)
                 .map_err(ewrap!(ErrorSource::Hyper, ErrorKind::Internal))
@@ -86,7 +86,7 @@ impl Service for ApiService {
                         headers: parts.headers,
                         client,
                         storiqa_client,
-                        auth,
+                        authenticator,
                     };
                     let router = router! {
                         POST /v1/sessions => post_sessions,

@@ -9,6 +9,7 @@ use failure::Fail;
 use futures::prelude::*;
 use hyper::Method;
 use hyper::{Body, Request};
+use models::StoriqaJWT;
 use models::*;
 use serde::Deserialize;
 use serde_json;
@@ -25,7 +26,7 @@ pub trait StoriqaClient: Send + Sync + 'static {
         last_name: String,
     ) -> Box<Future<Item = User, Error = Error> + Send>;
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
-    fn me(&self) -> Box<Future<Item = User, Error = Error> + Send>;
+    fn me(&self, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send>;
 }
 
 pub struct StoriqaClientImpl {
@@ -41,7 +42,11 @@ impl StoriqaClientImpl {
         }
     }
 
-    fn exec_query<T: for<'de> Deserialize<'de> + Send>(&self, query: &str) -> impl Future<Item = T, Error = Error> + Send {
+    fn exec_query<T: for<'de> Deserialize<'de> + Send>(
+        &self,
+        query: &str,
+        token: Option<StoriqaJWT>,
+    ) -> impl Future<Item = T, Error = Error> + Send {
         let query = query.to_string();
         let query1 = query.clone();
         let query2 = query.clone();
@@ -58,9 +63,12 @@ impl StoriqaClientImpl {
             "#,
             query
         );
-        Request::builder()
-            .uri(self.storiqa_url.clone())
-            .method(Method::POST)
+        let mut builder = Request::builder();
+        builder.uri(self.storiqa_url.clone()).method(Method::POST);
+        if let Some(token) = token {
+            builder.header("Authorization", format!("Bearer {}", serde_json::to_string(&token).unwrap()));
+        }
+        builder
             .body(Body::from(body))
             .map_err(ewrap!(ErrorSource::Hyper, ErrorKind::MalformedInput, query3))
             .into_future()
@@ -89,7 +97,7 @@ impl StoriqaClient for StoriqaClientImpl {
             password.inner()
         );
         Box::new(
-            self.exec_query::<GetJWTResponse>(&query)
+            self.exec_query::<GetJWTResponse>(&query, None)
                 .and_then(|resp| {
                     let e = format_err!("Failed at get_jwt");
                     resp.data
@@ -122,7 +130,7 @@ impl StoriqaClient for StoriqaClientImpl {
             last_name,
         );
         Box::new(
-            self.exec_query::<CreateUserResponse>(&query)
+            self.exec_query::<CreateUserResponse>(&query, None)
                 .and_then(|resp| {
                     let e = format_err!("Failed at create_user");
                     resp.data
@@ -132,18 +140,18 @@ impl StoriqaClient for StoriqaClientImpl {
         )
     }
 
-    fn me(&self) -> Box<Future<Item = User, Error = Error> + Send> {
+    fn me(&self, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send> {
         let query = r#"
-                query M {{
+                query M {
                     me {
                         email
                         firstName
                         lastName
                     }
-                }}
+                }
             "#;
         Box::new(
-            self.exec_query::<MeResponse>(&query)
+            self.exec_query::<MeResponse>(&query, Some(token))
                 .and_then(|resp| {
                     let e = format_err!("Failed at create_user");
                     resp.data
@@ -165,7 +173,7 @@ impl StoriqaClient for StoriqaClientImpl {
             token,
         );
         Box::new(
-            self.exec_query::<GetJWTResponse>(&query)
+            self.exec_query::<GetJWTResponse>(&query, None)
                 .and_then(|resp| {
                     let e = format_err!("Failed at create_user");
                     resp.data

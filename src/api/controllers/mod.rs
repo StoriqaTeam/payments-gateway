@@ -1,6 +1,7 @@
+use super::auth::Authenticator;
 use super::error::*;
 use client::{HttpClient, StoriqaClient};
-use futures;
+use failure::Fail;
 use futures::prelude::*;
 use hyper::{header::HeaderValue, Body, HeaderMap, Method, Response, Uri};
 use models::Auth;
@@ -20,18 +21,15 @@ pub struct Context {
     pub method: Method,
     pub uri: Uri,
     pub headers: HeaderMap<HeaderValue>,
-    pub auth: Option<Auth>,
+    pub authenticator: Arc<Authenticator>,
     pub client: Arc<HttpClient>,
     pub storiqa_client: Arc<StoriqaClient>,
 }
 
-fn authorize<F>(ctx: &Context, f: F) -> ControllerFuture
-where
-    F: FnOnce() -> ControllerFuture,
-{
-    if ctx.auth.is_none() {
-        Box::new(futures::future::err(ErrorKind::Unauthorized.into()))
-    } else {
-        f()
-    }
+fn authorize(ctx: &Context) -> impl Future<Item = Auth, Error = Error> {
+    let headers = ctx.headers.clone();
+    ctx.authenticator
+        .authenticate(&ctx.headers)
+        .map_err(ewrap!(ErrorSource::JwtAuth, ErrorKind::Unauthorized, headers))
+        .into_future()
 }

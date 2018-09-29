@@ -37,17 +37,12 @@ pub fn post_users(ctx: &Context) -> ControllerFuture {
 
 pub fn get_users_me(ctx: &Context) -> ControllerFuture {
     let cli = ctx.storiqa_client.clone();
-    authorize(ctx, move || {
-        Box::new(
-            parse_body::<PostUsersRequest>(ctx.body.clone())
-                .and_then(move |input| {
-                    let input_clone = input.clone();
-                    cli.create_user(input.email, input.password, input.first_name, input.last_name)
-                        .map_err(ewrap!(catch ErrorSource::StoriqaClient, input_clone))
-                }).and_then(|user| {
-                    let model = GetMeResponse { user };
-                    response_with_model(&model)
-                }),
-        )
-    })
+    Box::new(
+        authorize(ctx)
+            .and_then(move |auth| cli.me(auth.token).map_err(ewrap!(catch ErrorSource::StoriqaClient,)))
+            .and_then(|user| {
+                let model = GetMeResponse { user };
+                response_with_model(&model)
+            }),
+    )
 }

@@ -7,7 +7,7 @@ macro_rules! ewrap {
     (raw $e:ident, $source:expr, $kind:expr, $($arg:expr),*) => {{
         let mut msg = format!("at {}:{}", file!(), line!());
         $(
-            let arg = format!(" {}: {:#?}", stringify!($arg), $arg);
+            let arg = format!("\nargs - {}: {:#?}", stringify!($arg), $arg);
             msg.push_str(&arg);
         )*
         $e.context($source).context(msg).context($kind).into()

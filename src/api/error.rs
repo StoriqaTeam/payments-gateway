@@ -34,6 +34,10 @@ pub enum ErrorSource {
     RequestUTF8,
     #[fail(display = "controller source - error converting json data from request")]
     ResponseJson,
+    #[fail(display = "controller source - error in jwt authentication")]
+    JwtAuth,
+    #[fail(display = "controller source - no source")]
+    NoSource,
 }
 
 #[allow(dead_code)]
