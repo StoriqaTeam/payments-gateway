@@ -147,6 +147,7 @@ impl StoriqaClient for StoriqaClientImpl {
                         email
                         firstName
                         lastName
+                        phone
                     }
                 }
             "#;

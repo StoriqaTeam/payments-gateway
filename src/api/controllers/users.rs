@@ -40,9 +40,6 @@ pub fn get_users_me(ctx: &Context) -> ControllerFuture {
     Box::new(
         authorize(ctx)
             .and_then(move |auth| cli.me(auth.token).map_err(ewrap!(catch ErrorSource::StoriqaClient,)))
-            .and_then(|user| {
-                let model = GetMeResponse { user };
-                response_with_model(&model)
-            }),
+            .and_then(|user| response_with_model(&user)),
     )
 }

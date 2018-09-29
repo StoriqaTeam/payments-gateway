@@ -5,9 +5,3 @@ use models::*;
 pub struct PostSessionsResponse {
     pub token: StoriqaJWT,
 }
-
-#[derive(Debug, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct GetMeResponse {
-    pub user: User,
-}
