@@ -28,6 +28,7 @@ impl HttpClientImpl {
 
 impl HttpClient for HttpClientImpl {
     fn request(&self, req: Request<Body>) -> Box<Future<Item = Response<Body>, Error = Error> + Send> {
+        debug!("Request {} {}\nHeaders: {:#?}", req.method(), req.uri().path(), req.headers());
         Box::new(
             self.cli
                 .request(req)

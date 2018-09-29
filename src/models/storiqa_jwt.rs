@@ -6,3 +6,9 @@ impl StoriqaJWT {
         StoriqaJWT(token)
     }
 }
+
+impl StoriqaJWT {
+    pub fn inner(&self) -> &str {
+        &self.0
+    }
+}

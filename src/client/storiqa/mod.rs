@@ -66,7 +66,7 @@ impl StoriqaClientImpl {
         let mut builder = Request::builder();
         builder.uri(self.storiqa_url.clone()).method(Method::POST);
         if let Some(token) = token {
-            builder.header("Authorization", format!("Bearer {}", serde_json::to_string(&token).unwrap()));
+            builder.header("Authorization", format!("Bearer {}", token.inner()));
         }
         builder
             .body(Body::from(body))
@@ -153,7 +153,7 @@ impl StoriqaClient for StoriqaClientImpl {
         Box::new(
             self.exec_query::<MeResponse>(&query, Some(token))
                 .and_then(|resp| {
-                    let e = format_err!("Failed at create_user");
+                    let e = format_err!("Failed at me");
                     resp.data
                         .clone()
                         .ok_or(ewrap!(raw e, ErrorSource::Itself, ErrorKind::Unauthorized, resp))
@@ -175,7 +175,7 @@ impl StoriqaClient for StoriqaClientImpl {
         Box::new(
             self.exec_query::<GetJWTResponse>(&query, None)
                 .and_then(|resp| {
-                    let e = format_err!("Failed at create_user");
+                    let e = format_err!("Failed at confirm email");
                     resp.data
                         .clone()
                         .ok_or(ewrap!(raw e, ErrorSource::Itself, ErrorKind::Unauthorized, resp))
