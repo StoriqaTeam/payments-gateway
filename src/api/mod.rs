@@ -29,6 +29,7 @@ pub struct ApiService {
     client: Arc<dyn HttpClient>,
     authenticator: Arc<dyn Authenticator>,
     storiqa_client: Arc<dyn StoriqaClient>,
+    server_address: SocketAddr,
     config: Config,
 }
 
@@ -43,12 +44,22 @@ impl ApiService {
             storiqa_jwt_public_key_base64
         ));
         let storiqa_jwt_public_key = storiqa_jwt_public_key?;
+        let server_address: Result<SocketAddr, Error> = format!("{}:{}", config.server.host, config.server.port)
+            .parse::<SocketAddr>()
+            .map_err(ewrap!(
+                ErrorSource::Config,
+                ErrorKind::Internal,
+                config.server.host,
+                config.server.port
+            ));
+        let server_address = server_address?;
         let authenticator = AuthenticatorImpl::new(storiqa_jwt_public_key, config.auth.storiqa_jwt_valid_secs);
         Ok(ApiService {
             client: Arc::new(client),
             storiqa_client: Arc::new(storiqa_client),
             config: config.clone(),
             authenticator: Arc::new(authenticator),
+            server_address,
         })
     }
 }
@@ -117,24 +128,19 @@ impl Service for ApiService {
 
 pub fn start_server(config: Config) {
     hyper::rt::run(future::lazy(move || {
-        let config_clone = config.clone();
-        format!("{}:{}", config.server.host, config.server.port)
-            .parse::<SocketAddr>()
-            .map_err(ewrap!(
-                ErrorSource::Config,
-                ErrorKind::Internal,
-                config.server.host,
-                config.server.port
-            )).and_then(move |addr| ApiService::from_config(&config_clone).map(move |app| (addr, app)))
+        ApiService::from_config(&config)
             .into_future()
-            .and_then(move |(addr, app)| {
+            .and_then(move |api| {
+                let api_clone = api.clone();
                 let new_service = move || {
-                    let res: Result<_, hyper::Error> = Ok(app.clone());
+                    let res: Result<_, hyper::Error> = Ok(api_clone.clone());
                     res
                 };
-                let server = Server::bind(&addr)
-                    .serve(new_service)
-                    .map_err(ewrap!(ErrorSource::Hyper, ErrorKind::Internal, addr));
+                let addr = api.server_address.clone();
+                let server =
+                    Server::bind(&api.server_address)
+                        .serve(new_service)
+                        .map_err(ewrap!(ErrorSource::Hyper, ErrorKind::Internal, addr));
                 info!("Listening on http://{}", addr);
                 server
             }).map_err(|e: Error| log_error(&e))
