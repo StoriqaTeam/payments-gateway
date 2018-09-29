@@ -2,6 +2,7 @@ use super::error::*;
 use client::{HttpClient, StoriqaClient};
 use futures::prelude::*;
 use hyper::{header::HeaderValue, Body, HeaderMap, Method, Response, Uri};
+use models::Auth;
 use std::sync::Arc;
 
 mod fallback;
@@ -18,6 +19,7 @@ pub struct Context {
     pub method: Method,
     pub uri: Uri,
     pub headers: HeaderMap<HeaderValue>,
+    pub auth: Option<Auth>,
     pub client: Arc<HttpClient>,
     pub storiqa_client: Arc<StoriqaClient>,
 }

@@ -1,6 +1,6 @@
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JWTClaims {
-    user_id: usize,
-    exp: u64,
-    provider: String,
+    pub user_id: usize,
+    pub exp: u64,
+    pub provider: String,
 }

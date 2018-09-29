@@ -13,20 +13,21 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use utils::read_body;
 
+mod auth;
 mod controllers;
 mod error;
-mod middleware;
 mod requests;
 mod responses;
 mod utils;
 
+use self::auth::{Authenticator, AuthenticatorImpl};
 use self::controllers::*;
 use self::error::*;
-use self::middleware::AuthMiddleware;
 
 #[derive(Clone)]
 pub struct ApiService {
     client: Arc<dyn HttpClient>,
+    authenticator: Arc<dyn Authenticator>,
     storiqa_client: Arc<dyn StoriqaClient>,
     config: Config,
 }
@@ -35,10 +36,19 @@ impl ApiService {
     fn from_config(config: &Config) -> Result<Self, Error> {
         let client = HttpClientImpl::new(config);
         let storiqa_client = StoriqaClientImpl::new(&config, client.clone());
+        let storiqa_jwt_public_key_base64 = config.auth.storiqa_jwt_public_key_base64.clone();
+        let storiqa_jwt_public_key: Result<Vec<u8>, Error> = base64::decode(&config.auth.storiqa_jwt_public_key_base64).map_err(ewrap!(
+            ErrorSource::Config,
+            ErrorKind::Internal,
+            storiqa_jwt_public_key_base64
+        ));
+        let storiqa_jwt_public_key = storiqa_jwt_public_key?;
+        let authenticator = AuthenticatorImpl::new(storiqa_jwt_public_key, config.auth.storiqa_jwt_valid_secs);
         Ok(ApiService {
             client: Arc::new(client),
             storiqa_client: Arc::new(storiqa_client),
             config: config.clone(),
+            authenticator: Arc::new(authenticator),
         })
     }
 }
@@ -53,6 +63,7 @@ impl Service for ApiService {
         let (parts, http_body) = req.into_parts();
         let client = self.client.clone();
         let storiqa_client = self.storiqa_client.clone();
+        let auth = self.authenticator.authenticate(&parts.headers);
         Box::new(
             read_body(http_body)
                 .map_err(ewrap!(ErrorSource::Hyper, ErrorKind::Internal))
@@ -64,6 +75,7 @@ impl Service for ApiService {
                         headers: parts.headers,
                         client,
                         storiqa_client,
+                        auth,
                     };
                     let router = router! {
                         POST /v1/sessions => post_sessions,
@@ -113,17 +125,10 @@ pub fn start_server(config: Config) {
                 config.server.host,
                 config.server.port
             )).and_then(move |addr| ApiService::from_config(&config_clone).map(move |app| (addr, app)))
-            .and_then(|(addr, app)| {
-                let storiqa_jwt_public_key_base64 = app.config.client.storiqa_jwt_public_key_base64.clone();
-                let storiqa_jwt_public_key: Result<Vec<u8>, Error> = base64::decode(&app.config.client.storiqa_jwt_public_key_base64)
-                    .map_err(ewrap!(ErrorSource::Config, ErrorKind::Internal, storiqa_jwt_public_key_base64));
-                storiqa_jwt_public_key.map(move |public_key| (addr, public_key, app))
-            }).into_future()
-            .and_then(move |(addr, storiqa_jwt_public_key, app)| {
-                let storiqa_jwt_valid_secs = app.config.client.storiqa_jwt_valid_secs;
-                let auth_middleware = AuthMiddleware::new(app, storiqa_jwt_public_key, storiqa_jwt_valid_secs);
+            .into_future()
+            .and_then(move |(addr, app)| {
                 let new_service = move || {
-                    let res: Result<_, hyper::Error> = Ok(auth_middleware.clone());
+                    let res: Result<_, hyper::Error> = Ok(app.clone());
                     res
                 };
                 let server = Server::bind(&addr)

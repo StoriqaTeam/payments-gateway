@@ -6,12 +6,17 @@ pub struct Config {
     pub server: Server,
     pub database: Database,
     pub client: Client,
+    pub auth: Auth,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Client {
     pub dns_threads: usize,
     pub storiqa_url: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Auth {
     pub storiqa_jwt_public_key_base64: String,
     pub storiqa_jwt_valid_secs: usize,
 }
