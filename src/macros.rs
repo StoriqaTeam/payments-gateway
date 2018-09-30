@@ -1,24 +1,30 @@
 macro_rules! ewrap {
-    (raw $e:ident, $source:expr, $kind:expr $(,$arg:expr)*) => {{
+    (err $e:ident (,$context:expr)* $(=> $($arg:expr),*)*) => {{
         let mut msg = "at ".to_string();
-        msg.push_str(&format!("{}:{}", file!(), line!()));
+        msg.push_str(&format!("at {}:{}", file!(), line!()));
         $(
-            let arg = format!("\nargs - {}: {:#?}", stringify!($arg), $arg);
-            msg.push_str(&arg);
+            $(
+                let arg = format!("\nwith args - {}: {:#?}", stringify!($arg), $arg);
+                msg.push_str(&arg);
+            )*
         )*
-        $e.context($source).context(msg).context($kind).into()
+        let err = e.context(msg);
+        $(
+            let err = err.context($context);
+        )*
+        err.into()
     }};
 
-    (catch $source:expr $(,$arg:expr)*) => {{
+    (catch ($context:expr),* $(=> $($arg:expr),*)*) => {{
         move |e| {
             let kind = e.kind().into();
-            ewrap!(raw e, $source, kind $(,$arg)*)
+            ewrap!(err e, $(,$context)* $(=> $($arg),*)*)
         }
     }};
 
-    ($source:expr, $kind:expr $(,$arg:expr)*) => {{
+    (($context:expr),* (=> $($arg:expr),*)*) => {{
         move |e| {
-            ewrap!(raw e, $source, $kind $(,$arg)*)
+            ewrap!(err e $(,$context)* $(=> $($arg),*)*)
         }
     }};
 }

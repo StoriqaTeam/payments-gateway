@@ -35,11 +35,11 @@ impl Authenticator for AuthenticatorImpl {
             .get(AUTHORIZATION)
             .ok_or_else(|| {
                 let e = format_err!("No auth header");
-                ewrap!(raw e, ErrorSource::NoAuthHeader, ErrorKind::Unauthorized, headers_clone)
+                ewrap1!(raw e, ErrorSource::NoAuthHeader, ErrorKind::Unauthorized => headers_clone)
             }).and_then(|header| {
                 header
                     .to_str()
-                    .map_err(ewrap!(ErrorSource::ParseAuthHeader, ErrorKind::Unauthorized, header))
+                    .map_err(ewrap!(ErrorSource::ParseAuthHeader, ErrorKind::Unauthorized))
             }).and_then(|header| {
                 let len = "Bearer ".len();
                 if header.len() > len {
