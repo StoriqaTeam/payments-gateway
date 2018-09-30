@@ -21,6 +21,21 @@ pub fn post_sessions(ctx: &Context) -> ControllerFuture {
     )
 }
 
+pub fn post_sessions_oauth(ctx: &Context) -> ControllerFuture {
+    let cli = ctx.storiqa_client.clone();
+    Box::new(
+        parse_body::<PostSessionsOauthRequest>(ctx.body.clone())
+            .and_then(move |input| {
+                let input_clone = input.clone();
+                cli.get_jwt_by_oauth(input.oauth_token, input.oauth_provider)
+                    .map_err(ectx!(catch => input_clone))
+            }).and_then(|jwt| {
+                let model = PostSessionsResponse { token: jwt };
+                response_with_model(&model)
+            }),
+    )
+}
+
 pub fn post_users(ctx: &Context) -> ControllerFuture {
     let cli = ctx.storiqa_client.clone();
     Box::new(

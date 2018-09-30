@@ -21,6 +21,17 @@ pub struct PostSessionsRequest {
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct PostSessionsOauthRequest {
+    pub oauth_token: OauthToken,
+    pub oauth_provider: Provider,
+    pub password: Password,
+    pub device_type: DeviceType,
+    pub device_os: Option<String>,
+    pub device_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct PostUsersRequest {
     pub email: String,
     pub password: Password,

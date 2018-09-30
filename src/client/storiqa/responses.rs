@@ -36,6 +36,18 @@ pub struct GetJWTByEmail {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct GetJWTByProviderResponse {
+    pub data: Option<GetJWTByProvider>,
+    pub errors: Option<Vec<GraphQLError>>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct GetJWTByProvider {
+    #[serde(rename = "getJWTByProvider")]
+    pub get_jwt_by_provider: Token,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct Token {
     pub token: StoriqaJWT,
 }

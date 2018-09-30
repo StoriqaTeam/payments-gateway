@@ -18,6 +18,7 @@ use utils::read_body;
 
 pub trait StoriqaClient: Send + Sync + 'static {
     fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
+    fn get_jwt_by_oauth(&self, oauth_token: OauthToken, oauth_provider: Provider) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn create_user(
         &self,
         email: String,
@@ -101,6 +102,27 @@ impl StoriqaClient for StoriqaClientImpl {
                         .clone()
                         .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
                 }).map(|resp_data| resp_data.get_jwt_by_email.token),
+        )
+    }
+
+    fn get_jwt_by_oauth(&self, oauth_token: OauthToken, oauth_provider: Provider) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
+        let query = format!(
+            r#"
+                mutation M {{
+                    getJWTByProvider(input: {{token: \"{}\", provider: \"{}\", clientMutationId:\"\"}}) {{
+                        token
+                    }}
+                }}
+            "#,
+            oauth_token, oauth_provider,
+        );
+        Box::new(
+            self.exec_query::<GetJWTByProviderResponse>(&query, None)
+                .and_then(|resp| {
+                    resp.data
+                        .clone()
+                        .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
+                }).map(|resp_data| resp_data.get_jwt_by_provider.token),
         )
     }
 
