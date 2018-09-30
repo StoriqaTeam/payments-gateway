@@ -1,5 +1,5 @@
-use client::ErrorKind as ClientErrorKind;
 use failure::{Backtrace, Context, Fail};
+use services::ErrorKind as ServiceErrorKind;
 use std::fmt;
 use std::fmt::Display;
 
@@ -74,12 +74,14 @@ impl From<Context<ErrorKind>> for Error {
     }
 }
 
-impl From<ClientErrorKind> for ErrorKind {
-    fn from(err: ClientErrorKind) -> Self {
+impl From<ServiceErrorKind> for ErrorKind {
+    fn from(err: ServiceErrorKind) -> Self {
         match err {
-            ClientErrorKind::Internal => ErrorKind::Internal,
-            ClientErrorKind::Unauthorized => ErrorKind::Unauthorized,
-            ClientErrorKind::MalformedInput => ErrorKind::BadRequest,
+            ServiceErrorKind::Internal => ErrorKind::Internal,
+            ServiceErrorKind::Unauthorized => ErrorKind::Unauthorized,
+            ServiceErrorKind::MalformedInput => ErrorKind::BadRequest,
+            // Todo - update to 3XX
+            ServiceErrorKind::InvalidInput => ErrorKind::BadRequest,
         }
     }
 }

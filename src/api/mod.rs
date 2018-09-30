@@ -4,14 +4,14 @@ use hyper::{service::Service, Body, Request, Response};
 use super::config::Config;
 use super::utils::{log_error, log_warn};
 use base64;
-use client::{HttpClient, HttpClientImpl, StoriqaClient, StoriqaClientImpl};
+use client::{HttpClientImpl, StoriqaClient, StoriqaClientImpl};
 use failure::{Compat, Fail};
 use futures::future;
 use futures::prelude::*;
 use hyper::Server;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use utils::read_body;
+use utils::{format_error, read_body};
 
 mod auth;
 mod controllers;
@@ -23,10 +23,10 @@ mod utils;
 use self::auth::{Authenticator, AuthenticatorImpl};
 use self::controllers::*;
 use self::error::*;
+use services::UsersServiceImpl;
 
 #[derive(Clone)]
 pub struct ApiService {
-    client: Arc<dyn HttpClient>,
     authenticator: Arc<dyn Authenticator>,
     storiqa_client: Arc<dyn StoriqaClient>,
     server_address: SocketAddr,
@@ -36,7 +36,7 @@ pub struct ApiService {
 impl ApiService {
     fn from_config(config: &Config) -> Result<Self, Error> {
         let client = HttpClientImpl::new(config);
-        let storiqa_client = StoriqaClientImpl::new(&config, client.clone());
+        let storiqa_client = StoriqaClientImpl::new(&config, client);
         let storiqa_jwt_public_key_base64 = config.auth.storiqa_jwt_public_key_base64.clone();
         let storiqa_jwt_public_key: Result<Vec<u8>, Error> = base64::decode(&config.auth.storiqa_jwt_public_key_base64).map_err(ectx!(
             ErrorContext::Config,
@@ -55,9 +55,8 @@ impl ApiService {
         let server_address = server_address?;
         let authenticator = AuthenticatorImpl::new(storiqa_jwt_public_key, config.auth.storiqa_jwt_valid_secs);
         Ok(ApiService {
-            client: Arc::new(client),
-            storiqa_client: Arc::new(storiqa_client),
             config: config.clone(),
+            storiqa_client: Arc::new(storiqa_client),
             authenticator: Arc::new(authenticator),
             server_address,
         })
@@ -72,22 +71,12 @@ impl Service for ApiService {
 
     fn call(&mut self, req: Request<Body>) -> Self::Future {
         let (parts, http_body) = req.into_parts();
-        let client = self.client.clone();
         let storiqa_client = self.storiqa_client.clone();
         let authenticator = self.authenticator.clone();
         Box::new(
             read_body(http_body)
                 .map_err(ectx!(ErrorSource::Hyper, ErrorKind::Internal))
                 .and_then(move |body| {
-                    let ctx = Context {
-                        body,
-                        method: parts.method.clone(),
-                        uri: parts.uri.clone(),
-                        headers: parts.headers,
-                        client,
-                        storiqa_client,
-                        authenticator,
-                    };
                     let router = router! {
                         POST /v1/sessions => post_sessions,
                         POST /v1/sessions/oauth => post_sessions_oauth,
@@ -95,6 +84,18 @@ impl Service for ApiService {
                         POST /v1/users/confirm_email => post_users_confirm_email,
                         GET /v1/users/me => get_users_me,
                         _ => not_found,
+                    };
+
+                    let auth = authenticator.authenticate(&parts.headers).map_err(|e| format_error(&e));
+                    let users_service = UsersServiceImpl::new(auth.clone(), storiqa_client);
+
+                    let ctx = Context {
+                        body,
+                        method: parts.method.clone(),
+                        uri: parts.uri.clone(),
+                        headers: parts.headers,
+                        auth,
+                        users_service: Arc::new(users_service),
                     };
 
                     router(ctx, parts.method.into(), parts.uri.path())

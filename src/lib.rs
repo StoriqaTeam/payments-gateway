@@ -23,6 +23,8 @@ mod api;
 mod client;
 mod config;
 mod models;
+mod prelude;
+mod services;
 mod utils;
 
 use config::Config;
