@@ -24,7 +24,6 @@ pub struct PostSessionsRequest {
 pub struct PostSessionsOauthRequest {
     pub oauth_token: OauthToken,
     pub oauth_provider: Provider,
-    pub password: Password,
     pub device_type: DeviceType,
     pub device_os: Option<String>,
     pub device_id: Option<String>,

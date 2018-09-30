@@ -109,13 +109,15 @@ impl StoriqaClient for StoriqaClientImpl {
         let query = format!(
             r#"
                 mutation M {{
-                    getJWTByProvider(input: {{token: \"{}\", provider: \"{}\", clientMutationId:\"\"}}) {{
+                    getJWTByProvider(input: {{token: \"{}\", provider: {}, clientMutationId:\"\"}}) {{
                         token
                     }}
                 }}
             "#,
-            oauth_token, oauth_provider,
+            oauth_token,
+            format!("{}", oauth_provider).to_uppercase(),
         );
+        info!("{}", query);
         Box::new(
             self.exec_query::<GetJWTByProviderResponse>(&query, None)
                 .and_then(|resp| {

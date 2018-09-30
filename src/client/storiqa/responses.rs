@@ -55,8 +55,8 @@ pub struct Token {
 #[derive(Debug, Deserialize, Clone)]
 pub struct GraphQLError {
     pub message: String,
-    pub path: Vec<String>,
-    pub data: GraphQLErrorData,
+    pub path: Option<Vec<String>>,
+    pub data: Option<GraphQLErrorData>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
