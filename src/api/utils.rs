@@ -13,9 +13,9 @@ where
     T: for<'de> Deserialize<'de> + Send,
 {
     String::from_utf8(body.clone())
-        .map_err(ewrap!(ErrorContext::RequestUTF8, ErrorKind::BadRequest => body))
+        .map_err(ectx!(ErrorContext::RequestUTF8, ErrorKind::BadRequest => body))
         .into_future()
-        .and_then(|string| serde_json::from_str::<T>(&string).map_err(ewrap!(ErrorContext::RequestJson, ErrorKind::BadRequest => string)))
+        .and_then(|string| serde_json::from_str::<T>(&string).map_err(ectx!(ErrorContext::RequestJson, ErrorKind::BadRequest => string)))
 }
 
 pub fn response_with_model<M>(model: &M) -> ControllerFuture
@@ -24,7 +24,7 @@ where
 {
     Box::new(
         serde_json::to_string(&model)
-            .map_err(ewrap!(ErrorContext::ResponseJson, ErrorKind::Internal => model))
+            .map_err(ectx!(ErrorContext::ResponseJson, ErrorKind::Internal => model))
             .into_future()
             .map(|text| {
                 Response::builder()

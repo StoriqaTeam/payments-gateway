@@ -31,17 +31,17 @@ impl HttpClient for HttpClientImpl {
         Box::new(
             self.cli
                 .request(req)
-                .map_err(ewrap!(ErrorSource::Hyper, ErrorKind::Internal))
+                .map_err(ectx!(ErrorSource::Hyper, ErrorKind::Internal))
                 .and_then(|resp| {
                     if resp.status().is_client_error() || resp.status().is_server_error() {
                         match resp.status().as_u16() {
-                            400 => Err(ewrap!(err ErrorSource::Server, ErrorKind::BadRequest)),
-                            401 => Err(ewrap!(err ErrorSource::Server, ErrorKind::Unauthorized)),
-                            404 => Err(ewrap!(err ErrorSource::Server, ErrorKind::NotFound)),
-                            500 => Err(ewrap!(err ErrorSource::Server, ErrorKind::Internal)),
-                            502 => Err(ewrap!(err ErrorSource::Server, ErrorKind::BadGateway)),
-                            504 => Err(ewrap!(err ErrorSource::Server, ErrorKind::GatewayTimeout)),
-                            _ => Err(ewrap!(err ErrorSource::Server, ErrorKind::UnknownServerError)),
+                            400 => Err(ectx!(err ErrorSource::Server, ErrorKind::BadRequest)),
+                            401 => Err(ectx!(err ErrorSource::Server, ErrorKind::Unauthorized)),
+                            404 => Err(ectx!(err ErrorSource::Server, ErrorKind::NotFound)),
+                            500 => Err(ectx!(err ErrorSource::Server, ErrorKind::Internal)),
+                            502 => Err(ectx!(err ErrorSource::Server, ErrorKind::BadGateway)),
+                            504 => Err(ectx!(err ErrorSource::Server, ErrorKind::GatewayTimeout)),
+                            _ => Err(ectx!(err ErrorSource::Server, ErrorKind::UnknownServerError)),
                         }
                     } else {
                         Ok(resp)
