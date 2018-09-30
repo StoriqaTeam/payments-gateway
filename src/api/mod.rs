@@ -91,6 +91,7 @@ impl Service for ApiService {
                     let router = router! {
                         POST /v1/sessions => post_sessions,
                         POST /v1/users => post_users,
+                        POST /v1/users/confirm_email => post_users_confirm_email,
                         GET /v1/users/me => get_users_me,
                         _ => not_found,
                     };

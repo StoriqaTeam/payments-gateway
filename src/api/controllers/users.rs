@@ -33,6 +33,17 @@ pub fn post_users(ctx: &Context) -> ControllerFuture {
     )
 }
 
+pub fn post_users_confirm_email(ctx: &Context) -> ControllerFuture {
+    let cli = ctx.storiqa_client.clone();
+    Box::new(
+        parse_body::<PostUsersConfirmEmailRequest>(ctx.body.clone())
+            .and_then(move |input| {
+                let input_clone = input.clone();
+                cli.confirm_email(input.email_confirm_token).map_err(ectx!(catch => input_clone))
+            }).and_then(|token| response_with_model(&token)),
+    )
+}
+
 pub fn get_users_me(ctx: &Context) -> ControllerFuture {
     let cli = ctx.storiqa_client.clone();
     Box::new(
