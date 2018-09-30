@@ -21,16 +21,19 @@ pub enum ErrorKind {
 #[allow(dead_code)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorSource {
-    #[fail(display = "storiqa client source - error inside http client")]
-    HttpClient,
     #[fail(display = "storiqa client source - error inside of Hyper library")]
     Hyper,
     #[fail(display = "storiqa client source - error parsing bytes to utf8")]
     Utf8,
     #[fail(display = "storiqa client source - error parsing string to json")]
     Json,
-    #[fail(display = "storiqa client source - itself")]
-    Itself,
+}
+
+#[allow(dead_code)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
+pub enum ErrorContext {
+    #[fail(display = "storiqa client source - no data returned from graphql")]
+    NoGraphQLData,
 }
 
 impl Fail for Error {

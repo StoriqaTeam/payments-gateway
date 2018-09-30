@@ -30,6 +30,6 @@ fn authorize(ctx: &Context) -> impl Future<Item = Auth, Error = Error> {
     let headers = ctx.headers.clone();
     ctx.authenticator
         .authenticate(&ctx.headers)
-        .map_err(ewrap!(ErrorSource::JwtAuth, ErrorKind::Unauthorized, headers))
+        .map_err(ewrap!(ErrorKind::Unauthorized => headers))
         .into_future()
 }

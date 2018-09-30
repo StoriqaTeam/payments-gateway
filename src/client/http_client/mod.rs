@@ -28,22 +28,20 @@ impl HttpClientImpl {
 
 impl HttpClient for HttpClientImpl {
     fn request(&self, req: Request<Body>) -> Box<Future<Item = Response<Body>, Error = Error> + Send> {
-        debug!("Request {} {}\nHeaders: {:#?}", req.method(), req.uri().path(), req.headers());
         Box::new(
             self.cli
                 .request(req)
                 .map_err(ewrap!(ErrorSource::Hyper, ErrorKind::Internal))
                 .and_then(|resp| {
                     if resp.status().is_client_error() || resp.status().is_server_error() {
-                        let e = format_err!("Error in server response");
                         match resp.status().as_u16() {
-                            400 => Err(ewrap!(raw e, ErrorSource::Response, ErrorKind::BadRequest)),
-                            401 => Err(ewrap!(raw e, ErrorSource::Response, ErrorKind::Unauthorized)),
-                            404 => Err(ewrap!(raw e, ErrorSource::Response, ErrorKind::NotFound)),
-                            500 => Err(ewrap!(raw e, ErrorSource::Response, ErrorKind::Internal)),
-                            502 => Err(ewrap!(raw e, ErrorSource::Response, ErrorKind::BadGateway)),
-                            504 => Err(ewrap!(raw e, ErrorSource::Response, ErrorKind::GatewayTimeout)),
-                            _ => Err(ewrap!(raw e, ErrorSource::Response, ErrorKind::UnknownServerError)),
+                            400 => Err(ewrap!(err ErrorSource::Server, ErrorKind::BadRequest)),
+                            401 => Err(ewrap!(err ErrorSource::Server, ErrorKind::Unauthorized)),
+                            404 => Err(ewrap!(err ErrorSource::Server, ErrorKind::NotFound)),
+                            500 => Err(ewrap!(err ErrorSource::Server, ErrorKind::Internal)),
+                            502 => Err(ewrap!(err ErrorSource::Server, ErrorKind::BadGateway)),
+                            504 => Err(ewrap!(err ErrorSource::Server, ErrorKind::GatewayTimeout)),
+                            _ => Err(ewrap!(err ErrorSource::Server, ErrorKind::UnknownServerError)),
                         }
                     } else {
                         Ok(resp)

@@ -35,8 +35,8 @@ pub enum ErrorKind {
 pub enum ErrorSource {
     #[fail(display = "http client source - error inside of Hyper library")]
     Hyper,
-    #[fail(display = "http client source - error in server response")]
-    Response,
+    #[fail(display = "http client source - server returned response with error")]
+    Server,
 }
 
 impl Fail for Error {

@@ -39,16 +39,16 @@ impl ApiService {
         let storiqa_client = StoriqaClientImpl::new(&config, client.clone());
         let storiqa_jwt_public_key_base64 = config.auth.storiqa_jwt_public_key_base64.clone();
         let storiqa_jwt_public_key: Result<Vec<u8>, Error> = base64::decode(&config.auth.storiqa_jwt_public_key_base64).map_err(ewrap!(
-            ErrorSource::Config,
-            ErrorKind::Internal,
+            ErrorContext::Config,
+            ErrorKind::Internal =>
             storiqa_jwt_public_key_base64
         ));
         let storiqa_jwt_public_key = storiqa_jwt_public_key?;
         let server_address: Result<SocketAddr, Error> = format!("{}:{}", config.server.host, config.server.port)
             .parse::<SocketAddr>()
             .map_err(ewrap!(
-                ErrorSource::Config,
-                ErrorKind::Internal,
+                ErrorContext::Config,
+                ErrorKind::Internal =>
                 config.server.host,
                 config.server.port
             ));
@@ -137,10 +137,9 @@ pub fn start_server(config: Config) {
                     res
                 };
                 let addr = api.server_address.clone();
-                let server =
-                    Server::bind(&api.server_address)
-                        .serve(new_service)
-                        .map_err(ewrap!(ErrorSource::Hyper, ErrorKind::Internal, addr));
+                let server = Server::bind(&api.server_address)
+                    .serve(new_service)
+                    .map_err(ewrap!(ErrorSource::Hyper, ErrorKind::Internal => addr));
                 info!("Listening on http://{}", addr);
                 server
             }).map_err(|e: Error| log_error(&e))

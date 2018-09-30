@@ -16,9 +16,11 @@ pub enum ErrorKind {
 
 #[allow(dead_code)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum ErrorSource {
+pub enum ErrorContext {
     #[fail(display = "jwt auth error - no auth header supplied")]
     NoAuthHeader,
+    #[fail(display = "jwt auth error - invalid auth header, not starting with Bearer")]
+    InvalidBearer,
     #[fail(display = "jwt auth error - couldn't parse auth header to string")]
     ParseAuthHeader,
     #[fail(display = "jwt auth error - no bearer field supplied")]

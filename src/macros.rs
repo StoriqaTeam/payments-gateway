@@ -1,5 +1,5 @@
 macro_rules! ewrap {
-    (err $e:ident $(,$context:expr)* $(=> $($arg:expr),*)*) => {{
+    (err $e:expr $(,$context:expr)* $(=> $($arg:expr),*)*) => {{
         let mut msg = "at ".to_string();
         msg.push_str(&format!("at {}:{}", file!(), line!()));
         $(
@@ -8,17 +8,22 @@ macro_rules! ewrap {
                 msg.push_str(&arg);
             )*
         )*
-        let err = e.context(msg);
+        let err = $e.context(msg);
         $(
             let err = err.context($context);
         )*
         err.into()
     }};
 
+    (catch err $e:expr $(,$context:expr)* $(=> $($arg:expr),*)*) => {{
+        let e = $e.kind().into();
+        ewrap!(err $e $(,$context)*, e $(=> $($arg),*)*)
+    }};
+
+
     (catch $($context:expr),* $(=> $($arg:expr),*)*) => {{
         move |e| {
-            let kind = e.kind().into();
-            ewrap!(err e $(,$context)*, kind $(=> $($arg),*)*)
+            ewrap!(catch err e $(,$context)* $(=> $($arg),*)*)
         }
     }};
 
