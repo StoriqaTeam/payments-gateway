@@ -9,9 +9,10 @@ use failure::{Compat, Fail};
 use futures::future;
 use futures::prelude::*;
 use hyper::Server;
+use models::AuthError;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use utils::{format_error, read_body};
+use utils::read_body;
 
 mod auth;
 mod controllers;
@@ -86,20 +87,21 @@ impl Service for ApiService {
                         _ => not_found,
                     };
 
-                    let auth = authenticator.authenticate(&parts.headers).map_err(|e| format_error(&e));
-                    let users_service = UsersServiceImpl::new(auth.clone(), storiqa_client);
+                    let auth_result = authenticator.authenticate(&parts.headers).map_err(AuthError::new);
+                    let users_service = UsersServiceImpl::new(auth_result.clone(), storiqa_client);
 
                     let ctx = Context {
                         body,
                         method: parts.method.clone(),
                         uri: parts.uri.clone(),
                         headers: parts.headers,
-                        auth,
+                        auth_result,
                         users_service: Arc::new(users_service),
                     };
 
                     router(ctx, parts.method.into(), parts.uri.path())
-                }).or_else(|e| match e.kind() {
+                })
+                .or_else(|e| match e.kind() {
                     ErrorKind::BadRequest => {
                         log_error(&e);
                         Ok(Response::builder()
@@ -145,6 +147,7 @@ pub fn start_server(config: Config) {
                     .map_err(ectx!(ErrorSource::Hyper, ErrorKind::Internal => addr));
                 info!("Listening on http://{}", addr);
                 server
-            }).map_err(|e: Error| log_error(&e))
+            })
+            .map_err(|e: Error| log_error(&e))
     }));
 }

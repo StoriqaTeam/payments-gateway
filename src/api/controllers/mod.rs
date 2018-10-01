@@ -1,7 +1,7 @@
 use super::error::*;
 use futures::prelude::*;
 use hyper::{header::HeaderValue, Body, HeaderMap, Method, Response, Uri};
-use models::Auth;
+use models::AuthResult;
 use services::UsersService;
 use std::sync::Arc;
 
@@ -19,14 +19,6 @@ pub struct Context {
     pub method: Method,
     pub uri: Uri,
     pub headers: HeaderMap<HeaderValue>,
-    pub auth: Result<Auth, String>,
+    pub auth_result: AuthResult,
     pub users_service: Arc<dyn UsersService>,
 }
-
-// fn authenticate(ctx: &Context) -> impl Future<Item = Auth, Error = Error> {
-//     let headers = ctx.headers.clone();
-//     ctx.authenticator
-//         .authenticate(&ctx.headers)
-//         .map_err(ectx!(ErrorKind::Unauthorized => headers))
-//         .into_future()
-// }

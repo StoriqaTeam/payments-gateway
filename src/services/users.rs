@@ -19,13 +19,16 @@ pub trait UsersService: Send + Sync + 'static {
 }
 
 pub struct UsersServiceImpl {
-    auth: Result<Auth, String>,
+    auth_result: AuthResult,
     storiqa_client: Arc<dyn StoriqaClient>,
 }
 
 impl UsersServiceImpl {
-    pub fn new(auth: Result<Auth, String>, storiqa_client: Arc<dyn StoriqaClient>) -> Self {
-        UsersServiceImpl { auth, storiqa_client }
+    pub fn new(auth_result: AuthResult, storiqa_client: Arc<dyn StoriqaClient>) -> Self {
+        UsersServiceImpl {
+            auth_result,
+            storiqa_client,
+        }
     }
 }
 
@@ -62,13 +65,12 @@ impl UsersService for UsersServiceImpl {
 
     fn me(&self) -> Box<Future<Item = User, Error = Error> + Send> {
         let cli = self.storiqa_client.clone();
-        let auth = self.auth.clone();
+        let auth_result = self.auth_result.clone();
         Box::new(
-            auth.map_err(|e| {
-                let e = format_err!("{}", e);
-                ectx!(err e, ErrorKind::Unauthorized)
-            }).into_future()
-            .and_then(move |auth| cli.me(auth.token).map_err(ectx!(catch))),
+            auth_result
+                .map_err(ectx!(ErrorKind::Unauthorized))
+                .into_future()
+                .and_then(move |auth| cli.me(auth.token).map_err(ectx!(catch))),
         )
     }
 }
