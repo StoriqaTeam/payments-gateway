@@ -62,7 +62,7 @@ pipeline:
     - CARGO_HOME=deps
     commands:
     - apt-get update && apt-get install -y clang
-    - cargo build --release --locked
+    - cargo build
     when:
       event: push
   build:
@@ -71,7 +71,7 @@ pipeline:
     - CARGO_HOME=deps
     commands:
     - apt-get update && apt-get install -y clang
-    - cargo build
+    - cargo build --release --locked
     when:
       event: tag
   package:
