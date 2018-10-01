@@ -1,7 +1,7 @@
 macro_rules! ectx {
     (err $e:expr $(,$context:expr)* $(=> $($arg:expr),*)*) => {{
         let mut msg = "at ".to_string();
-        msg.push_str(&format!("at {}:{}", file!(), line!()));
+        msg.push_str(&format!("{}:{}", file!(), line!()));
         $(
             $(
                 let arg = format!("\nwith args - {}: {:#?}", stringify!($arg), $arg);
