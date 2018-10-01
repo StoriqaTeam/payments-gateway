@@ -81,14 +81,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
-        303:
+        400:
+          $ref: '#/components/responses/BadRequest'
+        422:
           description: Json object matched schema, but didn't pass validations
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrors'
-        400:
-          $ref: '#/components/responses/BadRequest'
         500:
           $ref: '#/components/responses/Internal'
       requestBody:

@@ -2,6 +2,7 @@ use client::ErrorKind as ClientErrorKind;
 use failure::{Backtrace, Context, Fail};
 use std::fmt;
 use std::fmt::Display;
+use validator::ValidationErrors;
 
 #[derive(Debug)]
 pub struct Error {
@@ -9,14 +10,14 @@ pub struct Error {
 }
 
 #[allow(dead_code)]
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
+#[derive(Clone, Debug, Fail)]
 pub enum ErrorKind {
     #[fail(display = "service error - unauthorized")]
     Unauthorized,
     #[fail(display = "service error - malformed input")]
     MalformedInput,
-    #[fail(display = "service error - invalid input")]
-    InvalidInput,
+    #[fail(display = "service error - invalid input, errors: {}", _0)]
+    InvalidInput(ValidationErrors),
     #[fail(display = "service error - internal error")]
     Internal,
 }
@@ -31,7 +32,7 @@ pub enum ErrorContext {
 #[allow(dead_code)]
 impl Error {
     pub fn kind(&self) -> ErrorKind {
-        *self.inner.get_context()
+        self.inner.get_context().clone()
     }
 }
 

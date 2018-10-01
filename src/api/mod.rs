@@ -118,6 +118,14 @@ impl Service for ApiService {
                             .body(Body::from(r#"{"description": "Unauthorized"}"#))
                             .unwrap())
                     }
+                    ErrorKind::UnprocessableEntity(errors) => {
+                        log_warn(&e);
+                        Ok(Response::builder()
+                            .status(422)
+                            .header("Content-Type", "application/json")
+                            .body(Body::from(format!("{}", errors)))
+                            .unwrap())
+                    }
                     ErrorKind::Internal => {
                         log_error(&e);
                         Ok(Response::builder()
