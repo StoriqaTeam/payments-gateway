@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate clap;
 extern crate env_logger;
-extern crate payments_lib;
+extern crate payments_gateway_lib as payments_lib;
 
 use clap::App;
 

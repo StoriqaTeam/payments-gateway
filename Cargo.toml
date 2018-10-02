@@ -1,10 +1,10 @@
 [package]
-name = "payments"
+name = "payments_gateway"
 version = "0.1.0"
 authors = ["Alexey Karasev <karasev.alexey@gmail.com>"]
 
 [lib]
-name = "payments_lib"
+name = "payments_gateway_lib"
 path = "src/lib.rs"
 
 [dependencies]

@@ -29,4 +29,4 @@ WORKDIR /app
 ENV PATH=$PATH:/usr/local/cargo/bin/
 EXPOSE 8000
 
-ENTRYPOINT ["sh", "-c", "diesel migration run && /app/payments server"]
+ENTRYPOINT ["sh", "-c", "diesel migration run && /app/payments_gateway server"]
