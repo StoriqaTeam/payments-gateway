@@ -30,7 +30,7 @@ pipeline:
     environment:
     - RUN_MODE=k8s
     - DATABASE_HOST=db-postgresql
-    - DATABASE_URL=postgresql://users:users@db-postgresql/users
+    - DATABASE_URL=postgresql://payments:payments@db-postgresql/payments
     - RUST_BACKTRACE=1
     - CARGO_HOME=deps
     - PGPASSWORD=a1a1a1a1
@@ -42,8 +42,8 @@ pipeline:
     - wget -q https://www.postgresql.org/media/keys/ACCC4CF8.asc -O - | apt-key add -
     - echo "deb http://apt.postgresql.org/pub/repos/apt/ stretch-pgdg main" >> /etc/apt/sources.list.d/pgdg.list
     - apt-get update && apt-get install -y libpq5 postgresql-client-10
-    - psql -U postgres -h db-postgresql -c "CREATE ROLE users WITH PASSWORD 'users' LOGIN REPLICATION" -c "CREATE DATABASE users OWNER users"
-    - psql -U postgres -h db-postgresql -d users -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"";
+    - psql -U postgres -h db-postgresql -c "CREATE ROLE payments WITH PASSWORD 'payments' LOGIN REPLICATION" -c "CREATE DATABASE payments OWNER payments"
+    - psql -U postgres -h db-postgresql -d payments -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"";
     - mkdir -p /usr/local/cargo/bin || true
     - wget -q https://s3.eu-central-1.amazonaws.com/dumpster.stq/diesel -O /usr/local/cargo/bin/diesel
     - chmod +x /usr/local/cargo/bin/diesel
@@ -63,6 +63,7 @@ pipeline:
     commands:
     - apt-get update && apt-get install -y clang
     - cargo build
+    - mkdir migrations || true
     when:
       event: push
   build:
@@ -72,6 +73,7 @@ pipeline:
     commands:
     - apt-get update && apt-get install -y clang
     - cargo build --release --locked
+    - mkdir migrations || true
     when:
       event: tag
   package:
@@ -119,70 +121,6 @@ pipeline:
     when:
       branch: master
       event: push
-  deploy2stage:
-    image: jackthestripper/drone_setimage
-    namespace: default
-    kind: deployment
-    object: users
-    img_names: storiqateam/stq-users
-    img_tags: '${DRONE_TAG}'
-    img_cnts: users
-    secrets:
-    - source: k8s_stage_ca
-      target: k8s_ca
-    - source: k8s_stage_user
-      target: k8s_user
-    - source: k8s_stage_token
-      target: k8s_token
-    - source: k8s_stage_addr
-      target: k8s_addr
-    when:
-      event: tag
-
-###
-# Deploy to stable / production
-###
-
-  deploy2stable:
-    image: jackthestripper/drone_setimage
-    namespace: default
-    kind: deployment
-    object: users
-    img_names: storiqateam/stq-users
-    img_tags: ${DRONE_BRANCH//\//_}${DRONE_PARENT_BUILD_NUMBER}
-    img_cnts: users
-    secrets:
-    - source: k8s_stable_ca
-      target: k8s_ca
-    - source: k8s_stable_user
-      target: k8s_user
-    - source: k8s_stable_token
-      target: k8s_token
-    - source: k8s_stable_addr
-      target: k8s_addr
-    when:
-      event: deployment
-      environment: stable
-  deploy2production:
-    image: jackthestripper/drone_setimage
-    namespace: default
-    kind: deployment
-    object: users
-    img_names: storiqateam/stq-users
-    img_tags: '${DRONE_TAG}'
-    img_cnts: users
-    secrets:
-    - source: k8s_prod_ca
-      target: k8s_ca
-    - source: k8s_prod_user
-      target: k8s_user
-    - source: k8s_prod_token
-      target: k8s_token
-    - source: k8s_prod_addr
-      target: k8s_addr
-    when:
-      event: deployment
-      environment: production
 
 ###
 # Notifications and post deploy ops
@@ -198,41 +136,6 @@ pipeline:
     when:
       event: push
       branch: master
-  slack:
-    image: plugins/slack
-    webhook: https://hooks.slack.com/services/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
-    channel: release
-    icon_url: https://drone.io/favicon.ico
-    username: cd.stq.cloud
-    template: >
-      {{#success build.status}}
-        {{repo.name}} has been released to stage.stq.cloud!
-      {{else}}
-        Failed to deploy {{repo.name}} to stage.stq.cloud! More details here {{build.link}}
-      {{/success}}
-    when:
-      event: tag
-      status:
-      - success
-      - failure
-  slack:
-    image: plugins/slack
-    webhook: https://hooks.slack.com/services/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
-    channel: release
-    icon_url: https://drone.io/favicon.ico
-    username: cd.stq.cloud
-    template: >
-      {{#success build.status}}
-        {{repo.name}} has been released to production.stq.cloud!
-      {{else}}
-        Failed to deploy {{repo.name}} to production.stq.cloud! More details here {{build.link}}
-      {{/success}}
-    when:
-      event: deployment
-      environment: production
-      status:
-      - success
-      - failure
 
 ###
 # Test services
