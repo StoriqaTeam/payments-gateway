@@ -79,7 +79,7 @@ pipeline:
   package:
     group: package
     image: plugins/docker
-    repo: storiqateam/stq-users
+    repo: storiqateam/payments
     dockerfile: docker/Dockerfile.default
     tags:
     - ${DRONE_BRANCH//\//_}
@@ -91,7 +91,7 @@ pipeline:
       event: push
   package:
     image: plugins/docker
-    repo: storiqateam/stq-users
+    repo: storiqateam/payments
     dockerfile: docker/Dockerfile.run
     tags:
     - '${DRONE_TAG}'
@@ -105,10 +105,10 @@ pipeline:
     image: jackthestripper/drone_setimage
     namespace: default
     kind: deployment
-    object: users
-    img_names: storiqateam/stq-users
+    object: payments
+    img_names: storiqateam/stq-payments
     img_tags: ${DRONE_BRANCH//\//_}${DRONE_BUILD_NUMBER}
-    img_cnts: users
+    img_cnts: payments
     secrets:
     - source: k8s_nightly_ca
       target: k8s_ca
