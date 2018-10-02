@@ -1,0 +1,45 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: payments-gateway
+  labels:
+    stack: payments
+    app: gateway
+spec:
+  selector:
+    matchLabels:
+      app: gateway
+      stack: payments
+  replicas: 1
+  template:
+    metadata:
+      name: payments-gateway
+      labels:
+        app: gateway
+        stack: payments
+    spec:
+      imagePullSecrets:
+      - name: stq
+      containers:
+      - name: gateway
+        image: storiqateam/payments-gateway
+        ports:
+        - containerPort: 8000
+        env:
+        - name: RUN_MODE
+          value: k8s
+        - name: RUST_BACKTRACE
+          value: "1"
+        - name: RUST_LOG
+          value: payments=debug
+        - name: DATABASE_HOST
+          value: postgres
+        - name: DATABASE_URL
+          value: postgresql://gateway:gateway@postgres/gateway
+        volumeMounts:
+        - name: conf
+          mountPath: /app/config/
+      volumes:
+      - name: conf
+        configMap:
+          name: payments-gateway
