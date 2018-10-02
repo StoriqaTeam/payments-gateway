@@ -4,25 +4,25 @@ metadata:
   name: payments-gateway
   labels:
     stack: payments
-    app: payments-gateway
+    app: gateway
 spec:
   selector:
     matchLabels:
-      app: payments-gateway
+      app: gateway
       stack: payments
   replicas: 1
   template:
     metadata:
       name: payments-gateway
       labels:
-        app: payments-gateway
+        app: gateway
         stack: payments
     spec:
       imagePullSecrets:
       - name: stq
       containers:
-      - name: payments-gateway
-        image: storiqateam/payments
+      - name: gateway
+        image: storiqateam/payments-gateway
         ports:
         - containerPort: 8000
         env:

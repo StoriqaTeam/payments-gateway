@@ -79,7 +79,7 @@ pipeline:
   package:
     group: package
     image: plugins/docker
-    repo: storiqateam/payments
+    repo: storiqateam/payments-gateway
     dockerfile: docker/Dockerfile.default
     tags:
     - ${DRONE_BRANCH//\//_}
@@ -91,7 +91,7 @@ pipeline:
       event: push
   package:
     image: plugins/docker
-    repo: storiqateam/payments
+    repo: storiqateam/payments-gateway
     dockerfile: docker/Dockerfile.run
     tags:
     - '${DRONE_TAG}'

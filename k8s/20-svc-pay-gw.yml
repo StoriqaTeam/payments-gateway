@@ -7,7 +7,7 @@ metadata:
 spec:
   selector:
     stack: payments
-    app: payments-gateway
+    app: gateway
   ports:
   - name: main
     protocol: TCP
