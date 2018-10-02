@@ -18,7 +18,7 @@ RUN mkdir -p /app/config \
   && adduser --disabled-password --gecos "" --home /app --no-create-home -u 5000 app \
   && chown -R app: /app
 
-COPY target/release/payments /app
+COPY target/release/payments_gateway /app
 COPY config /app/config
 COPY migrations /app/migrations
 COPY Cargo.toml /app/Cargo.toml
