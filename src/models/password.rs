@@ -1,5 +1,7 @@
-use serde::{Serialize, Serializer};
 use std::fmt::{Debug, Error, Formatter};
+
+use serde::{Serialize, Serializer};
+use validator::{Validate, ValidationErrors};
 
 #[derive(Deserialize, Clone)]
 pub struct Password(String);
@@ -18,6 +20,20 @@ impl Serialize for Password {
         S: Serializer,
     {
         serializer.serialize_str(PASSWORD_MASK)
+    }
+}
+
+impl Validate for Password {
+    fn validate(&self) -> Result<(), ValidationErrors> {
+        let password_len = self.0.len();
+        if password_len < 8 || password_len > 30 {
+            let error = validation_errors!({
+                "password": ["len" => "Password should be between 8 and 30 symbols"]
+            });
+            Err(error)
+        } else {
+            Ok(())
+        }
     }
 }
 
