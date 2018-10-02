@@ -106,17 +106,17 @@ pipeline:
     namespace: default
     kind: deployment
     object: payments
-    img_names: storiqateam/stq-payments
+    img_names: storiqateam/payments
     img_tags: ${DRONE_BRANCH//\//_}${DRONE_BUILD_NUMBER}
     img_cnts: payments
     secrets:
-    - source: k8s_nightly_ca
+    - source: k8s_pay_nightly_ca
       target: k8s_ca
-    - source: k8s_nightly_user
+    - source: k8s_pay_nightly_user
       target: k8s_user
-    - source: k8s_nightly_token
+    - source: k8s_pay_nightly_token
       target: k8s_token
-    - source: k8s_nightly_addr
+    - source: k8s_pay_nightly_addr
       target: k8s_addr
     when:
       branch: master
