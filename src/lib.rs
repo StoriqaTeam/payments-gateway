@@ -16,6 +16,8 @@ extern crate base64;
 extern crate hyper_tls;
 extern crate jsonwebtoken;
 extern crate regex;
+#[macro_use]
+extern crate validator;
 
 #[macro_use]
 mod macros;
@@ -23,6 +25,8 @@ mod api;
 mod client;
 mod config;
 mod models;
+mod prelude;
+mod services;
 mod utils;
 
 use config::Config;

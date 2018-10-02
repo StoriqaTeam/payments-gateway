@@ -1,10 +1,8 @@
-use super::auth::Authenticator;
 use super::error::*;
-use client::{HttpClient, StoriqaClient};
-use failure::Fail;
 use futures::prelude::*;
 use hyper::{header::HeaderValue, Body, HeaderMap, Method, Response, Uri};
-use models::Auth;
+use models::AuthResult;
+use services::UsersService;
 use std::sync::Arc;
 
 mod fallback;
@@ -21,15 +19,6 @@ pub struct Context {
     pub method: Method,
     pub uri: Uri,
     pub headers: HeaderMap<HeaderValue>,
-    pub authenticator: Arc<Authenticator>,
-    pub client: Arc<HttpClient>,
-    pub storiqa_client: Arc<StoriqaClient>,
-}
-
-fn authorize(ctx: &Context) -> impl Future<Item = Auth, Error = Error> {
-    let headers = ctx.headers.clone();
-    ctx.authenticator
-        .authenticate(&ctx.headers)
-        .map_err(ectx!(ErrorKind::Unauthorized => headers))
-        .into_future()
+    pub auth_result: AuthResult,
+    pub users_service: Arc<dyn UsersService>,
 }

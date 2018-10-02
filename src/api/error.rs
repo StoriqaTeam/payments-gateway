@@ -1,7 +1,8 @@
-use client::ErrorKind as ClientErrorKind;
 use failure::{Backtrace, Context, Fail};
+use services::ErrorKind as ServiceErrorKind;
 use std::fmt;
 use std::fmt::Display;
+use validator::ValidationErrors;
 
 #[derive(Debug)]
 pub struct Error {
@@ -9,12 +10,14 @@ pub struct Error {
 }
 
 #[allow(dead_code)]
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
+#[derive(Clone, Debug, Fail)]
 pub enum ErrorKind {
     #[fail(display = "controller error - unauthorized")]
     Unauthorized,
     #[fail(display = "controller error - bad request")]
     BadRequest,
+    #[fail(display = "controller error - unprocessable entity")]
+    UnprocessableEntity(ValidationErrors),
     #[fail(display = "controller error - internal error")]
     Internal,
 }
@@ -42,7 +45,7 @@ pub enum ErrorContext {
 #[allow(dead_code)]
 impl Error {
     pub fn kind(&self) -> ErrorKind {
-        *self.inner.get_context()
+        self.inner.get_context().clone()
     }
 }
 
@@ -74,12 +77,13 @@ impl From<Context<ErrorKind>> for Error {
     }
 }
 
-impl From<ClientErrorKind> for ErrorKind {
-    fn from(err: ClientErrorKind) -> Self {
+impl From<ServiceErrorKind> for ErrorKind {
+    fn from(err: ServiceErrorKind) -> Self {
         match err {
-            ClientErrorKind::Internal => ErrorKind::Internal,
-            ClientErrorKind::Unauthorized => ErrorKind::Unauthorized,
-            ClientErrorKind::MalformedInput => ErrorKind::BadRequest,
+            ServiceErrorKind::Internal => ErrorKind::Internal,
+            ServiceErrorKind::Unauthorized => ErrorKind::Unauthorized,
+            ServiceErrorKind::MalformedInput => ErrorKind::BadRequest,
+            ServiceErrorKind::InvalidInput(validation_errors) => ErrorKind::UnprocessableEntity(validation_errors),
         }
     }
 }

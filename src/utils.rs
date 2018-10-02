@@ -4,7 +4,7 @@ use futures::prelude::*;
 use hyper;
 use regex;
 
-fn format_error<E: Fail>(error: &E) -> String {
+pub fn format_error<E: Fail>(error: &E) -> String {
     let mut result = String::new();
     let mut chain: Vec<&Fail> = Vec::new();
     let mut iter: Option<&Fail> = Some(error);
