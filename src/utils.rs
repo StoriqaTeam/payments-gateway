@@ -3,6 +3,7 @@ use futures::future;
 use futures::prelude::*;
 use hyper;
 use regex;
+use sentry::integrations::failure::capture_error;
 
 pub fn format_error<E: Fail>(error: &E) -> String {
     let mut result = String::new();
@@ -39,7 +40,9 @@ pub fn format_error<E: Fail>(error: &E) -> String {
 }
 
 pub fn log_error<E: Fail>(error: &E) {
-    error!("\n{}", format_error(error));
+    let err = format_error(error);
+    error!("\n{}", err);
+    capture_error(&format_err!("{}", err));
 }
 
 pub fn log_warn<E: Fail>(error: &E) {
