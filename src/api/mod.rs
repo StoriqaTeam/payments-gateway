@@ -100,8 +100,7 @@ impl Service for ApiService {
                     };
 
                     router(ctx, parts.method.into(), parts.uri.path())
-                })
-                .or_else(|e| match e.kind() {
+                }).or_else(|e| match e.kind() {
                     ErrorKind::BadRequest => {
                         log_error(&e);
                         Ok(Response::builder()
@@ -155,7 +154,6 @@ pub fn start_server(config: Config) {
                     .map_err(ectx!(ErrorSource::Hyper, ErrorKind::Internal => addr));
                 info!("Listening on http://{}", addr);
                 server
-            })
-            .map_err(|e: Error| log_error(&e))
+            }).map_err(|e: Error| log_error(&e))
     }));
 }

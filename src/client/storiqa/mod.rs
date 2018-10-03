@@ -19,13 +19,7 @@ use utils::read_body;
 pub trait StoriqaClient: Send + Sync + 'static {
     fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn get_jwt_by_oauth(&self, oauth_token: OauthToken, oauth_provider: Provider) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
-    fn create_user(
-        &self,
-        email: String,
-        password: Password,
-        first_name: String,
-        last_name: String,
-    ) -> Box<Future<Item = User, Error = Error> + Send>;
+    fn create_user(&self, new_user: NewUser) -> Box<Future<Item = User, Error = Error> + Send>;
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn me(&self, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send>;
 }
@@ -128,13 +122,13 @@ impl StoriqaClient for StoriqaClientImpl {
         )
     }
 
-    fn create_user(
-        &self,
-        email: String,
-        password: Password,
-        first_name: String,
-        last_name: String,
-    ) -> Box<Future<Item = User, Error = Error> + Send> {
+    fn create_user(&self, new_user: NewUser) -> Box<Future<Item = User, Error = Error> + Send> {
+        let NewUser {
+            email,
+            password,
+            first_name,
+            last_name,
+        } = new_user;
         let query = format!(
             r#"
                 mutation M {{

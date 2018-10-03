@@ -8,6 +8,8 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
+extern crate lazy_static;
+#[macro_use]
 extern crate log;
 extern crate config as config_crate;
 #[macro_use]
@@ -17,6 +19,7 @@ extern crate hyper_tls;
 extern crate jsonwebtoken;
 extern crate regex;
 #[macro_use]
+extern crate validator_derive;
 extern crate validator;
 
 #[macro_use]

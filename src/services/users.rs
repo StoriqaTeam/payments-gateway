@@ -1,8 +1,11 @@
+use std::sync::Arc;
+
+use validator::Validate;
+
 use super::error::*;
 use client::StoriqaClient;
 use models::*;
 use prelude::*;
-use std::sync::Arc;
 
 pub trait UsersService: Send + Sync + 'static {
     fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
@@ -52,10 +55,14 @@ impl UsersService for UsersServiceImpl {
         first_name: String,
         last_name: String,
     ) -> Box<Future<Item = User, Error = Error> + Send> {
+        let new_user = NewUser::new(email, first_name, last_name, password);
+        let client = self.storiqa_client.clone();
         Box::new(
-            self.storiqa_client
-                .create_user(email, password, first_name, last_name)
-                .map_err(ectx!(catch)),
+            new_user
+                .validate()
+                .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(e) => new_user))
+                .into_future()
+                .and_then(move |_| client.create_user(new_user).map_err(ectx!(catch))),
         )
     }
 
