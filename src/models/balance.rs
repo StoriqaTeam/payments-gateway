@@ -70,6 +70,10 @@ fn pg_decimal_to_u128(numeric: &PgNumeric) -> deserialize::Result<u128> {
         return Err(Box::from(format!("Nonzero scale is not supported in u128: {:#?}", numeric)));
     }
 
+    if weight < 0 {
+        return Err(Box::from(format!("Negative weight is not supported in u128: {:#?}", numeric)));
+    }
+
     let mut result = 0u128;
     for digit in digits {
         result = result
@@ -78,8 +82,9 @@ fn pg_decimal_to_u128(numeric: &PgNumeric) -> deserialize::Result<u128> {
             .ok_or(Box::from(format!("Overflow in Pgnumeric to u128 (digits phase): {:#?}", numeric)) as Box<StdError + Send + Sync>)?;
     }
 
-    let correction_exp = 4 * (i64::from(weight) - (digits.len() as i64) + 1);
-    let pow = 10u128.pow(correction_exp as u32);
+    let correction_exp = 4 * ((weight as u32) - (digits.len() as u32) + 1);
+    // Todo - checked by using iteration;
+    let pow = 10u128.pow(correction_exp);
     let result = result
         .checked_mul(pow)
         .ok_or(Box::from(format!("Overflow in Pgnumeric to u128 (correction phase): {:#?}", numeric)) as Box<StdError + Send + Sync>)?;
