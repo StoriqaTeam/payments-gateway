@@ -1,3 +1,4 @@
+use std::error::Error as StdError;
 use std::io::prelude::*;
 
 use diesel::deserialize::{self, FromSql};
@@ -5,24 +6,19 @@ use diesel::pg::data_types::PgNumeric;
 use diesel::pg::Pg;
 use diesel::serialize::{self, Output, ToSql};
 use diesel::sql_types::Numeric;
-use num::{BigUint, FromPrimitive, Integer, ToPrimitive, Zero};
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub struct Balance(pub u128);
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
+pub struct Balance(u128);
 
 impl<'a> From<&'a Balance> for PgNumeric {
     fn from(balance: &'a Balance) -> Self {
-        let integer = balance.to_biguint().unwrap_or_default();
-        let mut digits = ToBase10000(Some(integer)).collect::<Vec<_>>();
-        digits.reverse();
-        let weight = digits.len() as i16;
-        PgNumeric::Positive { digits, scale: 0, weight }
+        u128_to_pg_decimal(balance.0)
     }
 }
 
 impl From<Balance> for PgNumeric {
-    fn from(bigdecimal: Balance) -> Self {
-        (&bigdecimal).into()
+    fn from(balance: Balance) -> Self {
+        (&balance).into()
     }
 }
 
@@ -35,52 +31,58 @@ impl ToSql<Numeric, Pg> for Balance {
 
 impl FromSql<Numeric, Pg> for Balance {
     fn from_sql(numeric: Option<&[u8]>) -> deserialize::Result<Self> {
-        // FIXME: Use the TryFrom impl when try_from is stable
         let numeric = PgNumeric::from_sql(numeric)?;
-        pg_decimal_to_balance(&numeric)
+        pg_decimal_to_u128(&numeric).map(Balance)
     }
-}
-
-fn pg_decimal_to_balance(numeric: &PgNumeric) -> deserialize::Result<Balance> {
-    let digits = match *numeric {
-        PgNumeric::Positive { ref digits, .. } => digits,
-        _ => return Err(Box::from("NaN and Negative are not (yet) supported in Balance")),
-    };
-
-    let mut result = BigUint::default();
-    for digit in digits {
-        result *= BigUint::from(10_000u64);
-        result += BigUint::from(*digit as u64);
-    }
-    Balance::from_biguint(result).ok_or(Box::from("Could not create balance from BigUint"))
 }
 
 /// Iterator over the digits of a big uint in base 10k.
 /// The digits will be returned in little endian order.
-struct ToBase10000(Option<BigUint>);
+struct ToBase10000(Option<u128>);
 
 impl Iterator for ToBase10000 {
     type Item = i16;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.take().map(|v| {
-            let (div, rem) = v.div_rem(&BigUint::from(10_000u16));
-            if !div.is_zero() {
+            let rem = v % 10_000u128;
+            let div = v / 10_000u128;
+            if div != 0 {
                 self.0 = Some(div);
             }
-            rem.to_i16().expect("10000 always fits in an i16")
+            rem as i16
         })
     }
 }
 
-impl Balance {
-    #[inline]
-    pub fn from_biguint(biguint: BigUint) -> Option<Self> {
-        biguint.to_u128().map(Balance)
+fn pg_decimal_to_u128(numeric: &PgNumeric) -> deserialize::Result<u128> {
+    let (weight, scale, digits) = match *numeric {
+        PgNumeric::Positive { weight, scale, ref digits } => (weight, scale, digits),
+        PgNumeric::Negative { .. } => return Err(Box::from(format!("Negative is not supported in u128: {:#?}", numeric))),
+        PgNumeric::NaN => return Err(Box::from(format!("NaN is not supported in u128: {:#?}", numeric))),
+    };
+
+    if scale != 0 {
+        return Err(Box::from(format!("Nonzero scale is not supported in u128: {:#?}", numeric)));
     }
 
-    #[inline]
-    pub fn to_biguint(&self) -> Option<BigUint> {
-        BigUint::from_u128(self.0)
+    if (digits.len() as i16) != weight {
+        return Err(Box::from(format!("Unexpected weight in Pgnumeric: {:#?}", numeric)));
     }
+
+    let mut result = 0u128;
+    for digit in digits {
+        result = result
+            .checked_mul(10_000u128)
+            .and_then(|res| res.checked_add(*digit as u128))
+            .ok_or(Box::from("Negative is not supported in u128") as Box<StdError + Send + Sync>)?;
+    }
+    Ok(result)
+}
+
+fn u128_to_pg_decimal(value: u128) -> PgNumeric {
+    let mut digits = ToBase10000(Some(value)).collect::<Vec<_>>();
+    digits.reverse();
+    let weight = digits.len() as i16 - 1;
+    PgNumeric::Positive { digits, scale: 0, weight }
 }

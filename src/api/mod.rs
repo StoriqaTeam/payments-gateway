@@ -29,6 +29,7 @@ mod utils;
 use self::auth::{Authenticator, AuthenticatorImpl};
 use self::controllers::*;
 use self::error::*;
+use r2d2;
 use services::UsersServiceImpl;
 
 #[derive(Clone)]
