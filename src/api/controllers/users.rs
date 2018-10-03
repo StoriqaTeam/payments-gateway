@@ -7,7 +7,6 @@ use failure::Fail;
 use futures::prelude::*;
 
 pub fn post_sessions(ctx: &Context) -> ControllerFuture {
-    debug!("Received request to post_sessions");
     let users_service = ctx.users_service.clone();
     Box::new(
         parse_body::<PostSessionsRequest>(ctx.body.clone())
@@ -24,7 +23,6 @@ pub fn post_sessions(ctx: &Context) -> ControllerFuture {
 }
 
 pub fn post_sessions_oauth(ctx: &Context) -> ControllerFuture {
-    debug!("Received request to post_sessions_oauth");
     let users_service = ctx.users_service.clone();
     Box::new(
         parse_body::<PostSessionsOauthRequest>(ctx.body.clone())
@@ -41,7 +39,6 @@ pub fn post_sessions_oauth(ctx: &Context) -> ControllerFuture {
 }
 
 pub fn post_users(ctx: &Context) -> ControllerFuture {
-    debug!("Received request to post_users");
     let users_service = ctx.users_service.clone();
     Box::new(
         parse_body::<PostUsersRequest>(ctx.body.clone())
@@ -55,7 +52,6 @@ pub fn post_users(ctx: &Context) -> ControllerFuture {
 }
 
 pub fn post_users_confirm_email(ctx: &Context) -> ControllerFuture {
-    debug!("Received request to post_users_confirm_email");
     let users_service = ctx.users_service.clone();
     Box::new(
         parse_body::<PostUsersConfirmEmailRequest>(ctx.body.clone())
@@ -69,7 +65,6 @@ pub fn post_users_confirm_email(ctx: &Context) -> ControllerFuture {
 }
 
 pub fn get_users_me(ctx: &Context) -> ControllerFuture {
-    debug!("Received request to get_users_me");
     let users_service = ctx.users_service.clone();
     Box::new(users_service.me().map_err(ectx!(catch)).and_then(|user| response_with_model(&user)))
 }

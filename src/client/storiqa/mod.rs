@@ -78,7 +78,6 @@ impl StoriqaClientImpl {
 
 impl StoriqaClient for StoriqaClientImpl {
     fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
-        debug!("StoriqaClient, received request to get_jwt with email: {}, password: {:?}", email, password);
         let query = format!(
             r#"
                 mutation M {{
@@ -101,7 +100,6 @@ impl StoriqaClient for StoriqaClientImpl {
     }
 
     fn get_jwt_by_oauth(&self, oauth_token: OauthToken, oauth_provider: Provider) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
-        debug!("StoriqaClient, received request to get_jwt_by_oauth with token: {}, provider: {}", oauth_token, oauth_provider);
         let query = format!(
             r#"
                 mutation M {{
@@ -157,7 +155,6 @@ impl StoriqaClient for StoriqaClientImpl {
     }
 
     fn me(&self, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send> {
-        debug!("StoriqaClient, received request to me endpoint with token: {:?}", token);
         let query = r#"
                 query M {
                     me {
@@ -179,7 +176,6 @@ impl StoriqaClient for StoriqaClientImpl {
     }
 
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
-        debug!("StoriqaClient, received request to confirm_email endpoint with token: {}", token);
         let query = format!(
             r#"
                 mutation M {{

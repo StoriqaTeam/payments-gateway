@@ -28,6 +28,12 @@ impl HttpClientImpl {
 
 impl HttpClient for HttpClientImpl {
     fn request(&self, req: Request<Body>) -> Box<Future<Item = Response<Body>, Error = Error> + Send> {
+        let (parts, body) = req.into_parts();
+        debug!(
+            "HttpClient, sent request {} {}, headers: {:#?} and body: {:?}",
+            parts.method, parts.uri, parts.headers, body
+        );
+        let req = Request::from_parts(parts, body);
         Box::new(
             self.cli
                 .request(req)

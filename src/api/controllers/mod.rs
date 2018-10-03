@@ -1,9 +1,12 @@
-use super::error::*;
+use std::fmt::{self, Display};
+use std::sync::Arc;
+
 use futures::prelude::*;
 use hyper::{header::HeaderValue, Body, HeaderMap, Method, Response, Uri};
+
+use super::error::*;
 use models::AuthResult;
 use services::UsersService;
-use std::sync::Arc;
 
 mod fallback;
 mod users;
@@ -21,4 +24,13 @@ pub struct Context {
     pub headers: HeaderMap<HeaderValue>,
     pub auth_result: AuthResult,
     pub users_service: Arc<dyn UsersService>,
+}
+
+impl Display for Context {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(&format!(
+            "{} {}, headers: {:#?}, auth_result:{:?}",
+            self.method, self.uri, self.headers, self.auth_result
+        ))
+    }
 }
