@@ -20,6 +20,7 @@ extern crate jsonwebtoken;
 extern crate regex;
 #[macro_use]
 extern crate validator;
+extern crate num;
 
 #[macro_use]
 mod macros;

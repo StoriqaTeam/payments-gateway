@@ -1,4 +1,5 @@
 mod auth;
+mod balance;
 mod email_confirm_token;
 mod jwt_claims;
 mod oauth_token;
@@ -8,6 +9,7 @@ mod storiqa_jwt;
 mod user;
 
 pub use self::auth::*;
+pub use self::balance::*;
 pub use self::email_confirm_token::*;
 pub use self::jwt_claims::*;
 pub use self::oauth_token::*;
