@@ -8,6 +8,8 @@ use hyper;
 use hyper::{client::HttpConnector, Body, Request, Response};
 use hyper_tls::HttpsConnector;
 
+use utils::read_body;
+
 pub trait HttpClient: Send + Sync + 'static {
     fn request(&self, req: Request<Body>) -> Box<Future<Item = Response<Body>, Error = Error> + Send>;
 }
@@ -28,17 +30,34 @@ impl HttpClientImpl {
 
 impl HttpClient for HttpClientImpl {
     fn request(&self, req: Request<Body>) -> Box<Future<Item = Response<Body>, Error = Error> + Send> {
+        let cli = self.cli.clone();
         let (parts, body) = req.into_parts();
-        debug!(
-            "HttpClient, sent request {} {}, headers: {:#?} and body: {:?}",
-            parts.method, parts.uri, parts.headers, body
-        );
-        let req = Request::from_parts(parts, body);
         Box::new(
-            self.cli
-                .request(req)
+            read_body(body)
                 .map_err(ectx!(ErrorSource::Hyper, ErrorKind::Internal))
-                .and_then(|resp| {
+                .and_then(move |body| {
+                    debug!(
+                        "HttpClient, sent request {} {}, headers: {:#?}, body: {:?}",
+                        parts.method,
+                        parts.uri,
+                        parts.headers,
+                        String::from_utf8(body.clone())
+                    );
+                    let req = Request::from_parts(parts, body.into());
+                    cli.request(req).map_err(ectx!(ErrorSource::Hyper, ErrorKind::Internal))
+                }).and_then(|resp| {
+                    let (parts, body) = resp.into_parts();
+                    read_body(body)
+                        .map_err(ectx!(ErrorSource::Hyper, ErrorKind::Internal))
+                        .map(|body| (parts, body))
+                }).and_then(|(parts, body)| {
+                    debug!(
+                        "HttpClient, recieved response with status {} headers: {:#?} and body: {:?}",
+                        parts.status.as_u16(),
+                        parts.headers,
+                        String::from_utf8(body.clone())
+                    );
+                    let resp = Response::from_parts(parts, body.into());
                     if resp.status().is_client_error() || resp.status().is_server_error() {
                         match resp.status().as_u16() {
                             400 => Err(ectx!(err ErrorSource::Server, ErrorKind::BadRequest)),
