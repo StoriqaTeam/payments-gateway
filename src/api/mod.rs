@@ -2,7 +2,7 @@ use hyper;
 use hyper::{service::Service, Body, Request, Response};
 
 use super::config::Config;
-use super::utils::{log_error, log_warn};
+use super::utils::{log_and_capture_error, log_error, log_warn};
 use base64;
 use client::{HttpClientImpl, StoriqaClient, StoriqaClientImpl};
 use failure::{Compat, Fail};
@@ -126,7 +126,7 @@ impl Service for ApiService {
                             .unwrap())
                     }
                     ErrorKind::Internal => {
-                        log_error(&e);
+                        log_and_capture_error(e);
                         Ok(Response::builder()
                             .status(500)
                             .header("Content-Type", "application/json")

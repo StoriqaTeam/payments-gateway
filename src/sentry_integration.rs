@@ -7,7 +7,7 @@ pub struct SentryConfig {
 
 pub fn init(sentry_config: Option<&SentryConfig>) -> Option<sentry::internals::ClientInitGuard> {
     sentry_config.map(|config_sentry| {
-        debug!("initialization support with sentry");
+        info!("initialization support with sentry");
         let result = sentry::init((
             config_sentry.dsn.clone(),
             sentry::ClientOptions {

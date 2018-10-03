@@ -40,9 +40,12 @@ pub fn format_error<E: Fail>(error: &E) -> String {
 }
 
 pub fn log_error<E: Fail>(error: &E) {
-    let err = format_error(error);
-    error!("\n{}", err);
-    capture_error(&format_err!("{}", err));
+    error!("\n{}", format_error(error));
+}
+
+pub fn log_and_capture_error<E: Fail>(error: E) {
+    log_error(&error);
+    capture_error(&error.into());
 }
 
 pub fn log_warn<E: Fail>(error: &E) {
