@@ -2,7 +2,9 @@ extern crate futures;
 #[macro_use]
 extern crate failure;
 extern crate diesel;
+extern crate futures_cpupool;
 extern crate hyper;
+extern crate r2d2;
 extern crate serde;
 extern crate serde_json;
 #[macro_use]
