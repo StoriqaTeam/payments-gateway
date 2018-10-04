@@ -8,31 +8,31 @@ use diesel::serialize::{self, Output, ToSql};
 use diesel::sql_types::Numeric;
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
-pub struct Balance(u128);
+pub struct Amount(u128);
 
-impl<'a> From<&'a Balance> for PgNumeric {
-    fn from(balance: &'a Balance) -> Self {
-        u128_to_pg_decimal(balance.0)
+impl<'a> From<&'a Amount> for PgNumeric {
+    fn from(amount: &'a Amount) -> Self {
+        u128_to_pg_decimal(amount.0)
     }
 }
 
-impl From<Balance> for PgNumeric {
-    fn from(balance: Balance) -> Self {
-        (&balance).into()
+impl From<Amount> for PgNumeric {
+    fn from(amount: Amount) -> Self {
+        (&amount).into()
     }
 }
 
-impl ToSql<Numeric, Pg> for Balance {
+impl ToSql<Numeric, Pg> for Amount {
     fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
         let numeric = PgNumeric::from(self);
         ToSql::<Numeric, Pg>::to_sql(&numeric, out)
     }
 }
 
-impl FromSql<Numeric, Pg> for Balance {
+impl FromSql<Numeric, Pg> for Amount {
     fn from_sql(numeric: Option<&[u8]>) -> deserialize::Result<Self> {
         let numeric = PgNumeric::from_sql(numeric)?;
-        pg_decimal_to_u128(&numeric).map(Balance)
+        pg_decimal_to_u128(&numeric).map(Amount)
     }
 }
 
@@ -82,9 +82,15 @@ fn pg_decimal_to_u128(numeric: &PgNumeric) -> deserialize::Result<u128> {
             .ok_or(Box::from(format!("Overflow in Pgnumeric to u128 (digits phase): {:#?}", numeric)) as Box<StdError + Send + Sync>)?;
     }
 
-    let correction_exp = 4 * ((weight as u32) - (digits.len() as u32) + 1);
+    let correction_exp = 4 * ((weight as i32) - (digits.len() as i32) + 1);
+    if correction_exp < 0 {
+        return Err(Box::from(format!(
+            "Negative correction exp is not supported in u128: {:#?}",
+            numeric
+        )));
+    }
     // Todo - checked by using iteration;
-    let pow = 10u128.pow(correction_exp);
+    let pow = 10u128.pow(correction_exp as u32);
     let result = result
         .checked_mul(pow)
         .ok_or(Box::from(format!("Overflow in Pgnumeric to u128 (correction phase): {:#?}", numeric)) as Box<StdError + Send + Sync>)?;
@@ -108,15 +114,24 @@ mod tests {
 
     impl Into<PgNumeric> for PgBinary {
         fn into(self) -> PgNumeric {
-            let bytes: Vec<i16> = self.0.split(" ").map(|x| i16::from_str_radix(x, 16).unwrap()).collect();
-            let weight = bytes[1];
-            let scale = bytes[3];
-            let digits = bytes[4..].to_vec();
+            let bytes: Vec<i64> = self.0.split(" ").map(|x| i64::from_str_radix(x, 16).unwrap()).collect();
+            let weight = bytes[1] as i16;
+            let sign = bytes[2];
+            let scale = bytes[3] as i16;
+            let digits: Vec<i16> = bytes[4..].iter().map(|x| *x as i16).collect();
 
-            PgNumeric::Positive {
-                weight: weight,
-                scale: scale as u16,
-                digits: digits,
+            match sign {
+                0 => PgNumeric::Positive {
+                    weight: weight,
+                    scale: scale as u16,
+                    digits: digits,
+                },
+                0x4000 => PgNumeric::Negative {
+                    weight: weight,
+                    scale: scale as u16,
+                    digits: digits,
+                },
+                _ => PgNumeric::NaN,
             }
         }
     }
@@ -124,7 +139,7 @@ mod tests {
     // psql -U postgres -d challenge -c 'COPY ( SELECT CAST (34534 AS NUMERIC) ) TO STDOUT WITH ( FORMAT BINARY );' |   od --skip-bytes=25 -h --endian big
 
     #[test]
-    fn test_conversions() {
+    fn test_pg_numeric_happy_conversions() {
         let cases = [
             ("0003 0006 0000 0000 03e8 0000 03e8", 1000000010000000000000000000u128),
             (
@@ -160,4 +175,40 @@ mod tests {
             assert_eq!(number, pg_decimal_to_u128(&pg_num).unwrap(), "PgDecimal -> u128");
         }
     }
+
+    #[test]
+    fn test_pg_numeric_error_conversions() {
+        let error_cases = [
+            // Nan
+            "0000 0000 C000 0000",
+            // -1
+            "0001 0000 4000 0000 0001",
+            // -10_000
+            "0001 0001 4000 0000 0001",
+            // 0.1
+            "0001 ffff 0000 0001 03e8",
+            // 0.00001
+            "0001 fffe 0000 0005 03e8",
+            // 1.1
+            "0002 0000 0000 0001 0001 03e8",
+            // 10000.00001
+            "0004 0001 0000 0005 0001 0000 0000 03e8",
+            // u128::max_value + 1
+            "000a 0009 0000 0000 0154 0b07 1a24 03aa 121a 18c1 11ff 10dd 1aa5 05b0",
+            // u128::max_value.1
+            "000b 0009 0000 0001 0154 0b07 1a24 03aa 121a 18c1 11ff 10dd 1aa5 05af 03e8",
+            // -u128::max_value
+            "000a 0009 4000 0000 0154 0b07 1a24 03aa 121a 18c1 11ff 10dd 1aa5 05af",
+            // i128::min_value
+            "000a 0009 4000 0000 00aa 0583 209a 01d5 090d 0c60 1c87 1bf6 20da 1660",
+            // i128::min_value - 1
+            "000a 0009 4000 0000 00aa 0583 209a 01d5 090d 0c60 1c87 1bf6 20da 1661",
+        ];
+        for case in error_cases.into_iter() {
+            let binary: PgBinary = PgBinary(case.to_string());
+            let pg_num: PgNumeric = binary.into();
+            assert_eq!(pg_decimal_to_u128(&pg_num).is_err(), true, "Case: {}", case);
+        }
+    }
+
 }
