@@ -7,14 +7,24 @@ use diesel::pg::Pg;
 use diesel::serialize::{self, Output, ToSql};
 use diesel::sql_types::Numeric;
 
+/// This is a wrapper for monetary amounts in blockchain.
+/// You have to be careful that it has a limited amount of 38 significant digits
+/// So make sure that total monetary supply of a coin (in satoshis, wei, etc) does not exceed that.
+/// It has json and postgres serialization / deserialization implemented.
+/// Numeric type from postgres has bigger precision, so you need to impose contraint
+/// that your db contains only limited precision numbers, i.e. no floating point and limited by u128 values.
+///
+/// As a monetary amount it only implements checked_add and checked_sub
 #[derive(Deserialize, Serialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Amount(u128);
 
 impl Amount {
+    ///Make addition, return None on overflow
     fn checked_add(&self, other: Amount) -> Option<Self> {
         self.0.checked_add(other.0).map(Amount)
     }
 
+    /// Make saubtraction, return None on overflow
     fn checked_sub(&self, other: Amount) -> Option<Self> {
         self.0.checked_sub(other.0).map(Amount)
     }
@@ -46,8 +56,8 @@ impl FromSql<Numeric, Pg> for Amount {
     }
 }
 
-/// Iterator over the digits of a big uint in base 10k.
-/// The digits will be returned in little endian order.
+// Iterator over the digits of a big uint in base 10k.
+// The digits will be returned in little endian order.
 struct ToBase10000(Option<u128>);
 
 impl Iterator for ToBase10000 {
@@ -121,6 +131,10 @@ mod tests {
     use super::*;
     use serde_json;
 
+    // This thing converts binary postgres representation to PgNumeric
+    // All test cases are generated using postgres command
+    // psql -U postgres -d <your_db_name> -c 'COPY ( SELECT CAST (34534 AS NUMERIC) ) TO STDOUT WITH ( FORMAT BINARY );' |   od --skip-bytes=25 -h --endian big
+    // bytes are: digits_count, weight, sign, scale, digit1, digit2, ..., last 2 bytes are trash and always equal ffff
     struct PgBinary(String);
 
     impl Into<PgNumeric> for PgBinary {
@@ -146,8 +160,6 @@ mod tests {
             }
         }
     }
-
-    // psql -U postgres -d challenge -c 'COPY ( SELECT CAST (34534 AS NUMERIC) ) TO STDOUT WITH ( FORMAT BINARY );' |   od --skip-bytes=25 -h --endian big
 
     #[test]
     fn test_pg_numeric_happy_conversions() {
