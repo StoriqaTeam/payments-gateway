@@ -1,17 +1,22 @@
-use hyper;
-use hyper::{service::Service, Body, Request, Response};
+use std::net::SocketAddr;
+use std::sync::Arc;
 
-use super::config::Config;
-use super::utils::{log_and_capture_error, log_error, log_warn};
 use base64;
-use client::{HttpClientImpl, StoriqaClient, StoriqaClientImpl};
+use diesel::pg::PgConnection;
+use diesel::r2d2::ConnectionManager;
 use failure::{Compat, Fail};
 use futures::future;
 use futures::prelude::*;
+use futures_cpupool::CpuPool;
+use hyper;
 use hyper::Server;
+use hyper::{service::Service, Body, Request, Response};
+use r2d2::Pool;
+
+use super::config::Config;
+use super::utils::{log_and_capture_error, log_error, log_warn};
+use client::{HttpClientImpl, StoriqaClient, StoriqaClientImpl};
 use models::AuthError;
-use std::net::SocketAddr;
-use std::sync::Arc;
 use utils::read_body;
 
 mod auth;
@@ -24,6 +29,7 @@ mod utils;
 use self::auth::{Authenticator, AuthenticatorImpl};
 use self::controllers::*;
 use self::error::*;
+use r2d2;
 use services::UsersServiceImpl;
 
 #[derive(Clone)]
@@ -32,6 +38,8 @@ pub struct ApiService {
     storiqa_client: Arc<dyn StoriqaClient>,
     server_address: SocketAddr,
     config: Config,
+    db_pool: Pool<ConnectionManager<PgConnection>>,
+    cpu_pool: CpuPool,
 }
 
 impl ApiService {
@@ -55,11 +63,22 @@ impl ApiService {
             ));
         let server_address = server_address?;
         let authenticator = AuthenticatorImpl::new(storiqa_jwt_public_key, config.auth.storiqa_jwt_valid_secs);
+        let database_url = config.database.url.clone();
+        let manager = ConnectionManager::<PgConnection>::new(database_url.clone());
+        let db_pool: Result<Pool<ConnectionManager<PgConnection>>, Error> = r2d2::Pool::builder().build(manager).map_err(ectx!(
+            ErrorContext::Config,
+            ErrorKind::Internal =>
+            database_url
+        ));
+        let db_pool = db_pool?;
+        let cpu_pool = CpuPool::new(config.cpu_pool.size);
         Ok(ApiService {
             config: config.clone(),
             storiqa_client: Arc::new(storiqa_client),
             authenticator: Arc::new(authenticator),
             server_address,
+            db_pool,
+            cpu_pool,
         })
     }
 }

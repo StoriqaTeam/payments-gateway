@@ -1,3 +1,4 @@
+mod amount;
 mod auth;
 mod email_confirm_token;
 mod jwt_claims;
@@ -7,6 +8,7 @@ mod provider;
 mod storiqa_jwt;
 mod user;
 
+pub use self::amount::*;
 pub use self::auth::*;
 pub use self::email_confirm_token::*;
 pub use self::jwt_claims::*;

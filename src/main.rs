@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate clap;
 extern crate env_logger;
-extern crate payments_gateway_lib as payments_lib;
+extern crate payments_gateway_lib;
 
 use clap::App;
 
@@ -13,9 +13,9 @@ fn main() {
     let matches = app.clone().get_matches();
 
     if let Some(_) = matches.subcommand_matches("config") {
-        payments_lib::print_config();
+        payments_gateway_lib::print_config();
     } else if let Some(_) = matches.subcommand_matches("server") {
-        payments_lib::start_server();
+        payments_gateway_lib::start_server();
     } else {
         let _ = app.print_help();
         println!("\n")
