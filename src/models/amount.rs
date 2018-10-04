@@ -109,6 +109,7 @@ fn u128_to_pg_decimal(value: u128) -> PgNumeric {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json;
 
     struct PgBinary(String);
 
@@ -208,6 +209,66 @@ mod tests {
             let binary: PgBinary = PgBinary(case.to_string());
             let pg_num: PgNumeric = binary.into();
             assert_eq!(pg_decimal_to_u128(&pg_num).is_err(), true, "Case: {}", case);
+        }
+    }
+
+    #[test]
+    fn test_serde_conversions() {
+        let cases = [
+            ("1000000010000000000000000000", 1000000010000000000000000000u128),
+            ("354890005000010004355680400034758", 354890005000010004355680400034758u128),
+            ("0", 0u128),
+            ("1", 1u128),
+            ("2", 2u128),
+            ("10", 10u128),
+            ("9999", 9999u128),
+            ("10000", 10000u128),
+            ("10001", 10001u128),
+            ("11111", 11111u128),
+            ("55555555", 55555555u128),
+            ("99999999", 99999999u128),
+            ("12379871239800000000", 12379871239800000000u128),
+            (
+                // u128 max value - 1
+                "340282366920938463463374607431768211454",
+                340282366920938463463374607431768211454u128,
+            ),
+            (
+                "340282366920938463463374607431768211455",
+                // u128 max value
+                340282366920938463463374607431768211455u128,
+            ),
+        ];
+        for case in cases.into_iter() {
+            let (string, number) = case.clone();
+            let parsed: Amount = serde_json::from_str(string).unwrap();
+            assert_eq!(parsed, Amount(number));
+        }
+    }
+
+    #[test]
+    fn test_serde_error_conversions() {
+        let error_cases = [
+            "-1",
+            "-10000",
+            "0.1",
+            "0.00001",
+            "1.1",
+            "10000.00001",
+            // u128::max_value + 1
+            "340282366920938463463374607431768211456",
+            // u128::max_value.1
+            "340282366920938463463374607431768211455.1",
+            // -u128::max_value
+            "-340282366920938463463374607431768211455",
+            // i128::min_value
+            "-170141183460469231731687303715884105728",
+            // i128::min_value - 1
+            "-170141183460469231731687303715884105729",
+        ];
+        for case in error_cases.into_iter() {
+            let parsed: Result<Amount, _> = serde_json::from_str(case);
+            assert_eq!(parsed.is_err(), true, "Case: {}", case);
         }
     }
 
