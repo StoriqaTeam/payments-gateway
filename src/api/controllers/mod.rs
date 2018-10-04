@@ -29,8 +29,12 @@ pub struct Context {
 impl Display for Context {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(&format!(
-            "{} {}, headers: {:#?}, auth_result:{:?}",
-            self.method, self.uri, self.headers, self.auth_result
+            "{} {}, headers: {:#?}, auth_result:{:?}, body: {:?}",
+            self.method,
+            self.uri,
+            self.headers,
+            self.auth_result,
+            String::from_utf8(self.body.clone()).ok()
         ))
     }
 }
