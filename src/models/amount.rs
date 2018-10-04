@@ -7,8 +7,18 @@ use diesel::pg::Pg;
 use diesel::serialize::{self, Output, ToSql};
 use diesel::sql_types::Numeric;
 
-#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Amount(u128);
+
+impl Amount {
+    fn checked_add(&self, other: Amount) -> Option<Self> {
+        self.0.checked_add(other.0).map(Amount)
+    }
+
+    fn checked_sub(&self, other: Amount) -> Option<Self> {
+        self.0.checked_sub(other.0).map(Amount)
+    }
+}
 
 impl<'a> From<&'a Amount> for PgNumeric {
     fn from(amount: &'a Amount) -> Self {
@@ -270,6 +280,15 @@ mod tests {
             let parsed: Result<Amount, _> = serde_json::from_str(case);
             assert_eq!(parsed.is_err(), true, "Case: {}", case);
         }
+    }
+
+    #[test]
+    fn test_checked_ops() {
+        assert_eq!(Amount(5).checked_add(Amount(8)), Some(Amount(13)));
+        assert_eq!(Amount(u128::max_value()).checked_add(Amount(1)), None);
+        assert_eq!(Amount(u128::max_value()).checked_sub(Amount(u128::max_value())), Some(Amount(0)));
+        assert_eq!(Amount(13).checked_sub(Amount(11)), Some(Amount(2)));
+        assert_eq!(Amount(8).checked_sub(Amount(11)), None);
     }
 
 }
