@@ -99,6 +99,8 @@ impl Service for ApiService {
                         users_service: Arc::new(users_service),
                     };
 
+                    debug!("Received request {}", ctx);
+
                     router(ctx, parts.method.into(), parts.uri.path())
                 }).or_else(|e| match e.kind() {
                     ErrorKind::BadRequest => {
