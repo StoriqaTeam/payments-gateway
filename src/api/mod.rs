@@ -14,7 +14,7 @@ use hyper::{service::Service, Body, Request, Response};
 use r2d2::Pool;
 
 use super::config::Config;
-use super::utils::{log_error, log_warn};
+use super::utils::{log_and_capture_error, log_error, log_warn};
 use client::{HttpClientImpl, StoriqaClient, StoriqaClientImpl};
 use models::AuthError;
 use utils::read_body;
@@ -118,6 +118,8 @@ impl Service for ApiService {
                         users_service: Arc::new(users_service),
                     };
 
+                    debug!("Received request {}", ctx);
+
                     router(ctx, parts.method.into(), parts.uri.path())
                 }).or_else(|e| match e.kind() {
                     ErrorKind::BadRequest => {
@@ -145,7 +147,7 @@ impl Service for ApiService {
                             .unwrap())
                     }
                     ErrorKind::Internal => {
-                        log_error(&e);
+                        log_and_capture_error(e);
                         Ok(Response::builder()
                             .status(500)
                             .header("Content-Type", "application/json")

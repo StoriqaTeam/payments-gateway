@@ -10,6 +10,8 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
+extern crate lazy_static;
+#[macro_use]
 extern crate log;
 extern crate config as config_crate;
 #[macro_use]
@@ -19,8 +21,11 @@ extern crate hyper_tls;
 extern crate jsonwebtoken;
 extern crate regex;
 #[macro_use]
-extern crate validator;
+extern crate validator_derive;
 extern crate num;
+extern crate validator;
+#[macro_use]
+extern crate sentry;
 
 #[macro_use]
 mod macros;
@@ -29,6 +34,7 @@ mod client;
 mod config;
 mod models;
 mod prelude;
+mod sentry_integration;
 mod services;
 mod utils;
 
@@ -44,6 +50,8 @@ pub fn print_config() {
 
 pub fn start_server() {
     let config = get_config();
+    // Prepare sentry integration
+    let _sentry = sentry_integration::init(config.sentry.as_ref());
     api::start_server(config);
 }
 

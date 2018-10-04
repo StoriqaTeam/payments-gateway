@@ -1,5 +1,8 @@
-use config_crate::{Config as RawConfig, ConfigError, Environment, File};
 use std::env;
+
+use sentry_integration::SentryConfig;
+
+use config_crate::{Config as RawConfig, ConfigError, Environment, File};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
@@ -8,6 +11,7 @@ pub struct Config {
     pub client: Client,
     pub auth: Auth,
     pub cpu_pool: CpuPool,
+    pub sentry: Option<SentryConfig>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
