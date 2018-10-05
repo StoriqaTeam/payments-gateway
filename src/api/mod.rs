@@ -53,24 +53,22 @@ impl ApiService {
             storiqa_jwt_public_key_base64
         ));
         let storiqa_jwt_public_key = storiqa_jwt_public_key?;
-        let server_address: Result<SocketAddr, Error> = format!("{}:{}", config.server.host, config.server.port)
+        let server_address = format!("{}:{}", config.server.host, config.server.port)
             .parse::<SocketAddr>()
-            .map_err(ectx!(
+            .map_err(ectx!(try
                 ErrorContext::Config,
                 ErrorKind::Internal =>
                 config.server.host,
                 config.server.port
-            ));
-        let server_address = server_address?;
+            ))?;
         let authenticator = AuthenticatorImpl::new(storiqa_jwt_public_key, config.auth.storiqa_jwt_valid_secs);
         let database_url = config.database.url.clone();
         let manager = ConnectionManager::<PgConnection>::new(database_url.clone());
-        let db_pool: Result<Pool<ConnectionManager<PgConnection>>, Error> = r2d2::Pool::builder().build(manager).map_err(ectx!(
+        let db_pool = r2d2::Pool::builder().build(manager).map_err(ectx!(try
             ErrorContext::Config,
             ErrorKind::Internal =>
             database_url
-        ));
-        let db_pool = db_pool?;
+        ))?;
         let cpu_pool = CpuPool::new(config.cpu_pool.size);
         Ok(ApiService {
             config: config.clone(),

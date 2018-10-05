@@ -1,5 +1,5 @@
 macro_rules! ectx {
-    (err $e:expr $(,$context:expr)* $(=> $($arg:expr),*)*) => {{
+    (try err $e:expr $(,$context:expr)* $(=> $($arg:expr),*)*) => {{
         let mut msg = "at ".to_string();
         msg.push_str(&format!("{}:{}", file!(), line!()));
         $(
@@ -12,18 +12,39 @@ macro_rules! ectx {
         $(
             let err = err.context($context);
         )*
+        err
+    }};
+
+    (err $e:expr $(,$context:expr)* $(=> $($arg:expr),*)*) => {{
+        let err = ectx!(try err $e $(,$context)* $(=> $($arg),*)*);
         err.into()
     }};
 
-    (catch err $e:expr $(,$context:expr)* $(=> $($arg:expr),*)*) => {{
+    (try convert err $e:expr $(,$context:expr)* $(=> $($arg:expr),*)*) => {{
+        let e = $e.kind().into();
+        ectx!(try err $e $(,$context)*, e $(=> $($arg),*)*)
+    }};
+
+    (convert err $e:expr $(,$context:expr)* $(=> $($arg:expr),*)*) => {{
         let e = $e.kind().into();
         ectx!(err $e $(,$context)*, e $(=> $($arg),*)*)
     }};
 
-
-    (catch $($context:expr),* $(=> $($arg:expr),*)*) => {{
+    (try convert $($context:expr),* $(=> $($arg:expr),*)*) => {{
         move |e| {
-            ectx!(catch err e $(,$context)* $(=> $($arg),*)*)
+            ectx!(try convert err e $(,$context)* $(=> $($arg),*)*)
+        }
+    }};
+
+    (convert $($context:expr),* $(=> $($arg:expr),*)*) => {{
+        move |e| {
+            ectx!(convert err e $(,$context)* $(=> $($arg),*)*)
+        }
+    }};
+
+    (try $($context:expr),* $(=> $($arg:expr),*)*) => {{
+        move |e| {
+            ectx!(try err e $(,$context)* $(=> $($arg),*)*)
         }
     }};
 

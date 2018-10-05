@@ -37,14 +37,14 @@ impl UsersServiceImpl {
 
 impl UsersService for UsersServiceImpl {
     fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
-        Box::new(self.storiqa_client.get_jwt(email, password).map_err(ectx!(catch)))
+        Box::new(self.storiqa_client.get_jwt(email, password).map_err(ectx!(convert)))
     }
 
     fn get_jwt_by_oauth(&self, oauth_token: OauthToken, oauth_provider: Provider) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
         Box::new(
             self.storiqa_client
                 .get_jwt_by_oauth(oauth_token, oauth_provider)
-                .map_err(ectx!(catch)),
+                .map_err(ectx!(convert)),
         )
     }
 
@@ -62,12 +62,12 @@ impl UsersService for UsersServiceImpl {
                 .validate()
                 .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(e) => new_user))
                 .into_future()
-                .and_then(move |_| client.create_user(new_user).map_err(ectx!(catch))),
+                .and_then(move |_| client.create_user(new_user).map_err(ectx!(convert))),
         )
     }
 
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
-        Box::new(self.storiqa_client.confirm_email(token).map_err(ectx!(catch)))
+        Box::new(self.storiqa_client.confirm_email(token).map_err(ectx!(convert)))
     }
 
     fn me(&self) -> Box<Future<Item = User, Error = Error> + Send> {
@@ -77,7 +77,7 @@ impl UsersService for UsersServiceImpl {
             auth_result
                 .map_err(ectx!(ErrorKind::Unauthorized))
                 .into_future()
-                .and_then(move |auth| cli.me(auth.token).map_err(ectx!(catch))),
+                .and_then(move |auth| cli.me(auth.token).map_err(ectx!(convert))),
         )
     }
 }
