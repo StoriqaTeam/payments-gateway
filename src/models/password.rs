@@ -4,7 +4,7 @@ use std::fmt::{Debug, Error, Formatter};
 
 use regex::Regex;
 use serde::{Serialize, Serializer};
-use validator::{Validate, ValidationErrors};
+use validator::{Validate, ValidationError, ValidationErrors};
 
 #[derive(Deserialize, Clone)]
 pub struct Password(String);
@@ -35,21 +35,21 @@ impl Validate for Password {
         let password_len = self.0.len();
         let mut errors = ValidationErrors::new();
         if password_len < 8 || password_len > 30 {
-            let error = validator::ValidationError {
+            let error = ValidationError {
                 code: Cow::from("len"),
                 message: Some(Cow::from("Password should be between 8 and 30 symbols")),
                 params: HashMap::new(),
             };
             errors.add("password", error);
         } else if self.0 == self.0.to_lowercase() {
-            let error = validator::ValidationError {
+            let error = ValidationError {
                 code: Cow::from("upper case"),
                 message: Some(Cow::from("Password should contain at least one upper case character")),
                 params: HashMap::new(),
             };
             errors.add("password", error);
         } else if !REG_CONTAINS_NUMBERS.is_match(&self.0) {
-            let error = validator::ValidationError {
+            let error = ValidationError {
                 code: Cow::from("numbers"),
                 message: Some(Cow::from("Password should contain at least one number")),
                 params: HashMap::new(),
