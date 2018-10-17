@@ -1,11 +1,9 @@
-
 use jsonwebtoken::{decode, Algorithm, Validation};
 
 use super::error::*;
 use super::ServiceFuture;
 use models::*;
 use prelude::*;
-
 
 pub trait AuthService: Send + Sync + 'static {
     fn authenticate(&self, token: AuthenticationToken) -> ServiceFuture<Auth>;
@@ -32,12 +30,13 @@ impl AuthService for AuthServiceImpl {
             ..Validation::new(Algorithm::RS256)
         };
         let token_clone = token.clone();
-        Box::new(decode::<JWTClaims>(token_clone.raw(), &self.jwt_public_key, &validation)
-            .map_err(ectx!(ErrorContext::JsonWebToken, ErrorKind::Unauthorized => token_clone.raw()))
-            .map(move |t| Auth {
-                user_id: t.claims.user_id,
-                token: StoriqaJWT::new(token.raw().to_string()),
-            })
-            .into_future())
+        Box::new(
+            decode::<JWTClaims>(token_clone.raw(), &self.jwt_public_key, &validation)
+                .map_err(ectx!(ErrorContext::JsonWebToken, ErrorKind::Unauthorized => token_clone.raw()))
+                .map(move |t| Auth {
+                    user_id: t.claims.user_id,
+                    token: StoriqaJWT::new(token.raw().to_string()),
+                }).into_future(),
+        )
     }
 }

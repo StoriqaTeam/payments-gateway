@@ -11,7 +11,6 @@ use services::UsersService;
 mod fallback;
 mod users;
 
-
 pub use self::fallback::*;
 pub use self::users::*;
 

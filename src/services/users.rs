@@ -73,9 +73,10 @@ impl UsersService for UsersServiceImpl {
 
     fn me(&self, token: AuthenticationToken) -> Box<Future<Item = User, Error = Error> + Send> {
         let cli = self.storiqa_client.clone();
-        Box::new(self.auth_service.authenticate(token).and_then(move |auth| {
-            cli.me(auth.token).map_err(ectx!(convert))
-        })
+        Box::new(
+            self.auth_service
+                .authenticate(token)
+                .and_then(move |auth| cli.me(auth.token).map_err(ectx!(convert))),
         )
     }
 }

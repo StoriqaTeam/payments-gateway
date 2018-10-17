@@ -1,68 +1,65 @@
 mod error;
+mod requests;
 mod responses;
 
 pub use self::error::*;
-use self::responses::*;
-use super::HttpClient;
-use config::Config;
+
+use std::sync::Arc;
+
 use failure::Fail;
 use futures::prelude::*;
 use hyper::Method;
 use hyper::{Body, Request};
-use models::StoriqaJWT;
-use models::*;
 use serde::Deserialize;
 use serde_json;
-use std::sync::Arc;
+
+use self::responses::*;
+use super::HttpClient;
+use config::Config;
+use models::*;
 use utils::read_body;
 
-pub trait StoriqaClient: Send + Sync + 'static {
-    fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
-    fn get_jwt_by_oauth(&self, oauth_token: OauthToken, oauth_provider: Provider) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
-    fn create_user(&self, new_user: NewUser) -> Box<Future<Item = User, Error = Error> + Send>;
-    fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
-    fn me(&self, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send>;
+pub trait TransactionsClient: Send + Sync + 'static {
+    fn create_account(&self, input: CreateAccount) -> Box<Future<Item = AccountResponse, Error = Error> + Send>;
+    fn update_account(&self, account_id: AccountId, payload: UpdateAccount) -> Box<Future<Item = AccountResponse, Error = Error> + Send>;
+    fn delete_account(&self, account_id: AccountId) -> Box<Future<Item = AccountResponse, Error = Error> + Send>;
+    fn get_account_balance(&self, account_id: AccountId) -> Box<Future<Item = BalanceResponse, Error = Error> + Send>;
+    fn create_transaction(&self, input: CreateTransaction) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send>;
+    fn get_account_transactions(&self, account_id: AccountId) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send>;
 }
 
-pub struct StoriqaClientImpl {
+pub struct TransactionsClientImpl {
     cli: Arc<HttpClient>,
-    storiqa_url: String,
+    transactions_url: String,
+    token: AuthenticationToken,
+    workspace_id: WorkspaceId,
 }
 
-impl StoriqaClientImpl {
+impl TransactionsClientImpl {
     pub fn new<C: HttpClient>(config: &Config, cli: C) -> Self {
         Self {
             cli: Arc::new(cli),
-            storiqa_url: config.client.storiqa_url.clone(),
+            transactions_url: config.client.transactions_url.clone(),
+            token: config.auth.storiqa_transactions_token.clone(),
+            workspace_id: config.auth.storiqa_transactions_user_id.clone(),
         }
     }
 
     fn exec_query<T: for<'de> Deserialize<'de> + Send>(
         &self,
         query: &str,
-        token: Option<StoriqaJWT>,
+        body: String,
+        method: Method,
     ) -> impl Future<Item = T, Error = Error> + Send {
         let query = query.to_string();
         let query1 = query.clone();
         let query2 = query.clone();
         let query3 = query.clone();
         let cli = self.cli.clone();
-        let query = query.replace("\n", "");
-        let body = format!(
-            r#"
-                {{
-                    "operationName": "M",
-                    "query": "{}",
-                    "variables": null
-                }}
-            "#,
-            query
-        );
         let mut builder = Request::builder();
-        builder.uri(self.storiqa_url.clone()).method(Method::POST);
-        if let Some(token) = token {
-            builder.header("Authorization", format!("Bearer {}", token.inner()));
-        }
+        let url = format!("{}{}", self.transactions_url, query);
+        builder.uri(url).method(method);
+        builder.header("Authorization", format!("Bearer {}", self.token.raw()));
         builder
             .body(Body::from(body))
             .map_err(ectx!(ErrorSource::Hyper, ErrorKind::MalformedInput => query3))
@@ -76,123 +73,23 @@ impl StoriqaClientImpl {
     }
 }
 
-impl StoriqaClient for StoriqaClientImpl {
-    fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
-        let query = format!(
-            r#"
-                mutation M {{
-                    getJWTByEmail(input: {{email: \"{}\", password: \"{}\", clientMutationId:\"\"}}) {{
-                        token
-                    }}
-                }}
-            "#,
-            email,
-            password.inner()
-        );
-        Box::new(
-            self.exec_query::<GetJWTResponse>(&query, None)
-                .and_then(|resp| {
-                    resp.data
-                        .clone()
-                        .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
-                }).map(|resp_data| resp_data.get_jwt_by_email.token),
-        )
+impl TransactionsClient for TransactionsClientImpl {
+    fn create_account(&self, input: CreateAccount) -> Box<Future<Item = AccountResponse, Error = Error> + Send> {
+        unimplemented!()
     }
-
-    fn get_jwt_by_oauth(&self, oauth_token: OauthToken, oauth_provider: Provider) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
-        let query = format!(
-            r#"
-                mutation M {{
-                    getJWTByProvider(input: {{token: \"{}\", provider: {}, clientMutationId:\"\"}}) {{
-                        token
-                    }}
-                }}
-            "#,
-            oauth_token,
-            format!("{}", oauth_provider).to_uppercase(),
-        );
-        info!("{}", query);
-        Box::new(
-            self.exec_query::<GetJWTByProviderResponse>(&query, None)
-                .and_then(|resp| {
-                    resp.data
-                        .clone()
-                        .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
-                }).map(|resp_data| resp_data.get_jwt_by_provider.token),
-        )
+    fn update_account(&self, account_id: AccountId, payload: UpdateAccount) -> Box<Future<Item = AccountResponse, Error = Error> + Send> {
+        unimplemented!()
     }
-
-    fn create_user(&self, new_user: NewUser) -> Box<Future<Item = User, Error = Error> + Send> {
-        let NewUser {
-            email,
-            password,
-            first_name,
-            last_name,
-        } = new_user;
-        let query = format!(
-            r#"
-                mutation M {{
-                    createUser(input: {{email: \"{}\", password: \"{}\", firstName: \"{}\", lastName: \"{}\", clientMutationId:\"\"}}) {{
-                        email
-                        firstName
-                        lastName
-                    }}
-                }}
-            "#,
-            email,
-            password.inner(),
-            first_name,
-            last_name,
-        );
-        Box::new(
-            self.exec_query::<CreateUserResponse>(&query, None)
-                .and_then(|resp| {
-                    resp.data
-                        .clone()
-                        .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
-                }).map(|resp_data| resp_data.create_user),
-        )
+    fn delete_account(&self, account_id: AccountId) -> Box<Future<Item = AccountResponse, Error = Error> + Send> {
+        unimplemented!()
     }
-
-    fn me(&self, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send> {
-        let query = r#"
-                query M {
-                    me {
-                        email
-                        firstName
-                        lastName
-                        phone
-                    }
-                }
-            "#;
-        Box::new(
-            self.exec_query::<MeResponse>(&query, Some(token))
-                .and_then(|resp| {
-                    resp.data
-                        .clone()
-                        .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
-                }).map(|resp_data| resp_data.me),
-        )
+    fn get_account_balance(&self, account_id: AccountId) -> Box<Future<Item = BalanceResponse, Error = Error> + Send> {
+        unimplemented!()
     }
-
-    fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
-        let query = format!(
-            r#"
-                mutation M {{
-                    verifyEmail(input: {{token: \"{}\", clientMutationId:\"\"}}) {{
-                        token
-                    }}
-                }}
-            "#,
-            token,
-        );
-        Box::new(
-            self.exec_query::<GetJWTResponse>(&query, None)
-                .and_then(|resp| {
-                    resp.data
-                        .clone()
-                        .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
-                }).map(|resp_data| resp_data.get_jwt_by_email.token),
-        )
+    fn create_transaction(&self, input: CreateTransaction) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send> {
+        unimplemented!()
+    }
+    fn get_account_transactions(&self, account_id: AccountId) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send> {
+        unimplemented!()
     }
 }

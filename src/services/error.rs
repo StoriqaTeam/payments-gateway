@@ -1,8 +1,11 @@
-use client::ErrorKind as ClientErrorKind;
-use failure::{Backtrace, Context, Fail};
 use std::fmt;
 use std::fmt::Display;
+
+use failure::{Backtrace, Context, Fail};
 use validator::ValidationErrors;
+
+use client::storiqa::ErrorKind as StoriqaClientErrorKind;
+use client::transactions::ErrorKind as TransactionsClientErrorKind;
 
 #[derive(Debug)]
 pub struct Error {
@@ -66,12 +69,22 @@ impl From<Context<ErrorKind>> for Error {
     }
 }
 
-impl From<ClientErrorKind> for ErrorKind {
-    fn from(err: ClientErrorKind) -> Self {
+impl From<StoriqaClientErrorKind> for ErrorKind {
+    fn from(err: StoriqaClientErrorKind) -> Self {
         match err {
-            ClientErrorKind::Internal => ErrorKind::Internal,
-            ClientErrorKind::Unauthorized => ErrorKind::Unauthorized,
-            ClientErrorKind::MalformedInput => ErrorKind::MalformedInput,
+            StoriqaClientErrorKind::Internal => ErrorKind::Internal,
+            StoriqaClientErrorKind::Unauthorized => ErrorKind::Unauthorized,
+            StoriqaClientErrorKind::MalformedInput => ErrorKind::MalformedInput,
+        }
+    }
+}
+
+impl From<TransactionsClientErrorKind> for ErrorKind {
+    fn from(err: TransactionsClientErrorKind) -> Self {
+        match err {
+            TransactionsClientErrorKind::Internal => ErrorKind::Internal,
+            TransactionsClientErrorKind::Unauthorized => ErrorKind::Unauthorized,
+            TransactionsClientErrorKind::MalformedInput => ErrorKind::MalformedInput,
         }
     }
 }

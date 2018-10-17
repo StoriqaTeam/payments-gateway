@@ -102,7 +102,7 @@ pub mod tests {
         let db_executor = create_executor();
         let accounts_repo = AccountsRepoImpl::default();
         let _ = core.run(db_executor.execute_test_transaction(move || {
-            let mut new_account = NewAccount::default();
+            let new_account = NewAccount::default();
             let res = accounts_repo.create(new_account);
             assert!(res.is_ok());
             res
@@ -115,7 +115,7 @@ pub mod tests {
         let db_executor = create_executor();
         let accounts_repo = AccountsRepoImpl::default();
         let _ = core.run(db_executor.execute_test_transaction(move || {
-            let mut new_account = NewAccount::default();
+            let new_account = NewAccount::default();
             let account = accounts_repo.create(new_account).unwrap();
             let res = accounts_repo.get(account.id);
             assert!(res.is_ok());
@@ -129,7 +129,7 @@ pub mod tests {
         let db_executor = create_executor();
         let accounts_repo = AccountsRepoImpl::default();
         let _ = core.run(db_executor.execute_test_transaction(move || {
-            let mut new_account = NewAccount::default();
+            let new_account = NewAccount::default();
             let account = accounts_repo.create(new_account).unwrap();
 
             let payload = UpdateAccount {
@@ -148,7 +148,7 @@ pub mod tests {
         let db_executor = create_executor();
         let accounts_repo = AccountsRepoImpl::default();
         let _ = core.run(db_executor.execute_test_transaction(move || {
-            let mut new_account = NewAccount::default();
+            let new_account = NewAccount::default();
             let account = accounts_repo.create(new_account).unwrap();
             let res = accounts_repo.delete(account.id);
             assert!(res.is_ok());
@@ -161,7 +161,7 @@ pub mod tests {
         let db_executor = create_executor();
         let accounts_repo = AccountsRepoImpl::default();
         let _ = core.run(db_executor.execute_test_transaction(move || {
-            let mut new_account = NewAccount::default();
+            let new_account = NewAccount::default();
             let account = accounts_repo.create(new_account).unwrap();
             let res = accounts_repo.list_for_user(account.user_id, account.id, 1);
             assert!(res.is_ok());

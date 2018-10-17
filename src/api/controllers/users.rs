@@ -69,14 +69,15 @@ pub fn get_users_me(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
     let maybe_token = ctx.get_auth_token();
 
-    Box::new(maybe_token
+    Box::new(
+        maybe_token
             .ok_or_else(|| ectx!(err ErrorContext::Token, ErrorKind::Unauthorized))
             .into_future()
             .and_then(move |token| {
-        users_service
-            .me(token)
-            .map_err(ectx!(convert))
-            .and_then(|user| response_with_model(&user))
-            })
+                users_service
+                    .me(token)
+                    .map_err(ectx!(convert))
+                    .and_then(|user| response_with_model(&user))
+            }),
     )
 }
