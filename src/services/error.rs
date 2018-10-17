@@ -6,6 +6,7 @@ use validator::ValidationErrors;
 
 use client::storiqa::ErrorKind as StoriqaClientErrorKind;
 use client::transactions::ErrorKind as TransactionsClientErrorKind;
+use repos::{Error as ReposError, ErrorKind as ReposErrorKind};
 
 #[derive(Debug)]
 pub struct Error {
@@ -32,40 +33,26 @@ pub enum ErrorContext {
     Internal,
     #[fail(display = "jwt auth error - error inside json web token crate")]
     JsonWebToken,
+    #[fail(display = "service error context - invalid auth token")]
+    InvalidToken,
 }
 
-#[allow(dead_code)]
-impl Error {
-    pub fn kind(&self) -> ErrorKind {
-        self.inner.get_context().clone()
+derive_error_impls!();
+
+impl From<ReposError> for Error {
+    fn from(e: ReposError) -> Error {
+        let kind: ErrorKind = e.kind().into();
+        e.context(kind).into()
     }
 }
 
-impl Fail for Error {
-    fn cause(&self) -> Option<&Fail> {
-        self.inner.cause()
-    }
-
-    fn backtrace(&self) -> Option<&Backtrace> {
-        self.inner.backtrace()
-    }
-}
-
-impl Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        Display::fmt(&self.inner, f)
-    }
-}
-
-impl From<ErrorKind> for Error {
-    fn from(kind: ErrorKind) -> Error {
-        Error { inner: Context::new(kind) }
-    }
-}
-
-impl From<Context<ErrorKind>> for Error {
-    fn from(inner: Context<ErrorKind>) -> Error {
-        Error { inner: inner }
+impl From<ReposErrorKind> for ErrorKind {
+    fn from(e: ReposErrorKind) -> ErrorKind {
+        match e {
+            ReposErrorKind::Internal => ErrorKind::Internal,
+            ReposErrorKind::Unauthorized => ErrorKind::Unauthorized,
+            ReposErrorKind::Constraints(validation_errors) => ErrorKind::InvalidInput(validation_errors),
+        }
     }
 }
 

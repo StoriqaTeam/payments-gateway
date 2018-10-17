@@ -1,9 +1,13 @@
+mod accounts;
 mod auth;
 mod error;
+mod transactions;
 mod users;
 
+pub use self::accounts::*;
 pub use self::auth::*;
 pub use self::error::*;
+pub use self::transactions::*;
 pub use self::users::*;
 
 use prelude::*;

@@ -1,13 +1,15 @@
-use super::storiqa_jwt::StoriqaJWT;
-use prelude::*;
 use std::{fmt, fmt::Display};
+
+use super::storiqa_jwt::StoriqaJWT;
+use models::*;
+use prelude::*;
 use utils::format_error;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Auth {
     pub token: StoriqaJWT,
-    pub user_id: usize,
+    pub user_id: UserId,
 }
 
 pub type AuthResult = Result<Auth, AuthError>;

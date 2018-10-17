@@ -116,3 +116,15 @@ impl Default for CreateAccount {
         }
     }
 }
+
+impl From<(CreateAccount, AccountAddress)> for NewAccount {
+    fn from(acc: (CreateAccount, AccountAddress)) -> Self {
+        Self {
+            id: acc.0.id,
+            user_id: acc.0.user_id,
+            currency: acc.0.currency,
+            account_address: acc.1,
+            name: acc.0.name,
+        }
+    }
+}
