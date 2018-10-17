@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use validator::Validate;
 
+use super::auth::AuthService;
 use super::error::*;
 use client::StoriqaClient;
 use models::*;
@@ -18,18 +19,18 @@ pub trait UsersService: Send + Sync + 'static {
         last_name: String,
     ) -> Box<Future<Item = User, Error = Error> + Send>;
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
-    fn me(&self) -> Box<Future<Item = User, Error = Error> + Send>;
+    fn me(&self, token: AuthenticationToken) -> Box<Future<Item = User, Error = Error> + Send>;
 }
 
 pub struct UsersServiceImpl {
-    auth_result: AuthResult,
+    auth_service: Arc<dyn AuthService>,
     storiqa_client: Arc<dyn StoriqaClient>,
 }
 
 impl UsersServiceImpl {
-    pub fn new(auth_result: AuthResult, storiqa_client: Arc<dyn StoriqaClient>) -> Self {
+    pub fn new(auth_service: Arc<dyn AuthService>, storiqa_client: Arc<dyn StoriqaClient>) -> Self {
         UsersServiceImpl {
-            auth_result,
+            auth_service,
             storiqa_client,
         }
     }
@@ -70,14 +71,11 @@ impl UsersService for UsersServiceImpl {
         Box::new(self.storiqa_client.confirm_email(token).map_err(ectx!(convert)))
     }
 
-    fn me(&self) -> Box<Future<Item = User, Error = Error> + Send> {
+    fn me(&self, token: AuthenticationToken) -> Box<Future<Item = User, Error = Error> + Send> {
         let cli = self.storiqa_client.clone();
-        let auth_result = self.auth_result.clone();
-        Box::new(
-            auth_result
-                .map_err(ectx!(ErrorKind::Unauthorized))
-                .into_future()
-                .and_then(move |auth| cli.me(auth.token).map_err(ectx!(convert))),
+        Box::new(self.auth_service.authenticate(token).and_then(move |auth| {
+            cli.me(auth.token).map_err(ectx!(convert))
+        })
         )
     }
 }

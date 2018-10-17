@@ -40,6 +40,8 @@ pub enum ErrorContext {
     RequestUTF8,
     #[fail(display = "controller source - error converting json data from request")]
     ResponseJson,
+    #[fail(display = "controller context - error with authentication token")]
+    Token,
 }
 
 #[allow(dead_code)]

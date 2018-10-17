@@ -27,6 +27,8 @@ pub enum ErrorKind {
 pub enum ErrorContext {
     #[fail(display = "service error context - internal error")]
     Internal,
+    #[fail(display = "jwt auth error - error inside json web token crate")]
+    JsonWebToken,
 }
 
 #[allow(dead_code)]

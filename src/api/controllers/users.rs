@@ -3,6 +3,7 @@ use super::super::responses::*;
 use super::super::utils::{parse_body, response_with_model};
 use super::Context;
 use super::ControllerFuture;
+use api::error::*;
 use failure::Fail;
 use futures::prelude::*;
 
@@ -66,10 +67,16 @@ pub fn post_users_confirm_email(ctx: &Context) -> ControllerFuture {
 
 pub fn get_users_me(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
-    Box::new(
+    let maybe_token = ctx.get_auth_token();
+
+    Box::new(maybe_token
+            .ok_or_else(|| ectx!(err ErrorContext::Token, ErrorKind::Unauthorized))
+            .into_future()
+            .and_then(move |token| {
         users_service
-            .me()
+            .me(token)
             .map_err(ectx!(convert))
-            .and_then(|user| response_with_model(&user)),
+            .and_then(|user| response_with_model(&user))
+            })
     )
 }

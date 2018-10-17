@@ -1,6 +1,9 @@
+#![allow(proc_macro_derive_resolution_fallback)]
+
 extern crate futures;
 #[macro_use]
 extern crate failure;
+#[macro_use]
 extern crate diesel;
 extern crate futures_cpupool;
 extern crate hyper;
@@ -26,6 +29,8 @@ extern crate num;
 extern crate validator;
 #[macro_use]
 extern crate sentry;
+extern crate tokio_core;
+extern crate uuid;
 
 #[macro_use]
 mod macros;
@@ -34,10 +39,13 @@ mod client;
 mod config;
 mod models;
 mod prelude;
+mod repos;
+mod schema;
 mod sentry_integration;
 mod services;
 mod utils;
 
+use self::prelude::*;
 use config::Config;
 
 pub fn hello() {
