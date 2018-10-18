@@ -1,6 +1,6 @@
 use models::*;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateAccountRequest {
     pub id: AccountId,
@@ -27,7 +27,7 @@ pub struct GetUsersAccountsParams {
     pub offset: AccountId,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateTransactionRequest {
     pub user_id: WorkspaceId,

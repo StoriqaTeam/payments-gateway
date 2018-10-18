@@ -46,7 +46,6 @@ mod sentry_integration;
 mod services;
 mod utils;
 
-use self::prelude::*;
 use config::Config;
 
 pub fn hello() {

@@ -203,9 +203,10 @@ mod tests {
         let mut dr_account = CreateAccount::default();
         dr_account.name = "test test test acc".to_string();
         dr_account.user_id = user_id;
-        core.run(acc_service.create_account(token.clone(), user_id, dr_account)).unwrap();
+        core.run(acc_service.create_account(token.clone(), user_id, dr_account.clone()))
+            .unwrap();
 
-;        let mut cr_account = CreateAccount::default();
+        let mut cr_account = CreateAccount::default();
         cr_account.name = "test test test acc".to_string();
         cr_account.user_id = user_id;
         core.run(acc_service.create_account(token.clone(), user_id, cr_account.clone()))
@@ -213,6 +214,7 @@ mod tests {
 
         let mut new_transaction = CreateTransaction::default();
         new_transaction.value = Amount::new(100500);
+        new_transaction.from = dr_account.id;
 
         let transaction = core.run(trans_service.create_transaction(token, new_transaction));
         assert!(transaction.is_ok());
@@ -253,6 +255,7 @@ mod tests {
 
         let mut new_transaction = CreateTransaction::default();
         new_transaction.value = Amount::new(100500);
+        new_transaction.from = dr_account.id;
 
         core.run(trans_service.create_transaction(token.clone(), new_transaction)).unwrap();
         let transaction = core.run(trans_service.get_account_transactions(token, dr_account.id));

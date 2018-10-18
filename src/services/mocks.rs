@@ -13,10 +13,10 @@ pub struct AuthServiceMock {
 impl AuthServiceMock {
     pub fn new(allowed_tokens: Vec<(AuthenticationToken, UserId)>) -> Self {
         let mut auths = HashMap::new();
-        for (token, id) in allowed_tokens {
+        for (token, user_id) in allowed_tokens {
             let auth = Auth {
                 token: StoriqaJWT::default(),
-                user_id: id,
+                user_id,
             };
             auths.insert(token, auth);
         }

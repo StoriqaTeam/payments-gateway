@@ -69,7 +69,7 @@ impl Default for NewAccount {
     }
 }
 
-#[derive(Debug, Insertable, Validate, AsChangeset, Clone, Default)]
+#[derive(Debug, Insertable, Validate, AsChangeset, Clone, Default, Serialize)]
 #[table_name = "accounts"]
 pub struct UpdateAccount {
     #[validate(length(min = "1", max = "40", message = "Name must not be empty "))]

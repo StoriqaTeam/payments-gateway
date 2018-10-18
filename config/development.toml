@@ -14,7 +14,7 @@ storiqa_url = "https://stable.stq.cloud/graphql"
 transactions_url = "https://payments.transactions.stq.cloud/graphql"
 
 [database]
-url = "postgresql://payments:payments@payments-pg/payments"
+url = "postgresql://payments-gateway:payments-gateway@payments-gateway-pg/payments-gateway"
 
 [cpu_pool]
 size = 1

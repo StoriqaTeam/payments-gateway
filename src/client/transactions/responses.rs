@@ -2,7 +2,7 @@ use std::time::SystemTime;
 
 use models::*;
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AccountResponse {
     pub id: AccountId,
@@ -28,7 +28,7 @@ impl Default for AccountResponse {
     }
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BalanceResponse {
     pub balance: Amount,
@@ -44,7 +44,7 @@ impl Default for BalanceResponse {
     }
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BalancesResponse {
     #[serde(flatten)]
@@ -59,7 +59,7 @@ impl Default for BalancesResponse {
     }
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TransactionResponse {
     pub id: TransactionId,
