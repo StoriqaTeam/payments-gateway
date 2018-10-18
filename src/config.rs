@@ -3,6 +3,7 @@ use std::env;
 use sentry_integration::SentryConfig;
 
 use config_crate::{Config as RawConfig, ConfigError, Environment, File};
+use models::*;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
@@ -18,12 +19,15 @@ pub struct Config {
 pub struct Client {
     pub dns_threads: usize,
     pub storiqa_url: String,
+    pub transactions_url: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Auth {
     pub storiqa_jwt_public_key_base64: String,
     pub storiqa_jwt_valid_secs: usize,
+    pub storiqa_transactions_token: AuthenticationToken,
+    pub storiqa_transactions_user_id: WorkspaceId,
 }
 
 #[derive(Debug, Deserialize, Clone)]
