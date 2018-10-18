@@ -93,3 +93,27 @@ impl TransactionsClient for TransactionsClientImpl {
         unimplemented!()
     }
 }
+
+#[derive(Default)]
+pub struct TransactionsClientMock;
+
+impl TransactionsClient for TransactionsClientMock {
+    fn create_account(&self, input: CreateAccount) -> Box<Future<Item = AccountResponse, Error = Error> + Send> {
+        Box::new(Ok(AccountResponse::default()).into_future())
+    }
+    fn update_account(&self, account_id: AccountId, payload: UpdateAccount) -> Box<Future<Item = AccountResponse, Error = Error> + Send> {
+        Box::new(Ok(AccountResponse::default()).into_future())
+    }
+    fn delete_account(&self, account_id: AccountId) -> Box<Future<Item = AccountResponse, Error = Error> + Send> {
+        Box::new(Ok(AccountResponse::default()).into_future())
+    }
+    fn get_account_balance(&self, account_id: AccountId) -> Box<Future<Item = BalanceResponse, Error = Error> + Send> {
+        Box::new(Ok(BalanceResponse::default()).into_future())
+    }
+    fn create_transaction(&self, input: CreateTransaction) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send> {
+        Box::new(Ok(vec![TransactionResponse::default()]).into_future())
+    }
+    fn get_account_transactions(&self, account_id: AccountId) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send> {
+        Box::new(Ok(vec![TransactionResponse::default()]).into_future())
+    }
+}

@@ -24,6 +24,8 @@ pub enum ErrorKind {
     InvalidInput(ValidationErrors),
     #[fail(display = "service error - internal error")]
     Internal,
+    #[fail(display = "service error - not found")]
+    NotFound,
 }
 
 #[allow(dead_code)]
@@ -31,7 +33,7 @@ pub enum ErrorKind {
 pub enum ErrorContext {
     #[fail(display = "service error context - internal error")]
     Internal,
-    #[fail(display = "jwt auth error - error inside json web token crate")]
+    #[fail(display = "service error context - error inside json web token crate")]
     JsonWebToken,
     #[fail(display = "service error context - invalid auth token")]
     InvalidToken,

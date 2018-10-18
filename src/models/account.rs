@@ -82,12 +82,6 @@ pub struct Balance {
     pub balance: Amount,
 }
 
-impl Balance {
-    pub fn new(currency: Currency, balance: Amount) -> Self {
-        Self { currency, balance }
-    }
-}
-
 impl From<Account> for Balance {
     fn from(acc: Account) -> Self {
         Self {

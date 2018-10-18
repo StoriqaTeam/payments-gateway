@@ -46,6 +46,10 @@ impl AccountsRepo for AccountsRepoMock {
         let data = self.data.lock().unwrap();
         Ok(data.clone().into_iter().filter(|x| x.user_id == user_id_arg).collect())
     }
+    fn get_by_user(&self, user_id_arg: UserId) -> RepoResult<Vec<Account>> {
+        let data = self.data.lock().unwrap();
+        Ok(data.clone().into_iter().filter(|x| x.user_id == user_id_arg).collect())
+    }
 }
 
 #[derive(Clone, Default)]

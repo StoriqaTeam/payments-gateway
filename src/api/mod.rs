@@ -15,7 +15,8 @@ use r2d2::Pool;
 
 use super::config::Config;
 use super::utils::{log_and_capture_error, log_error, log_warn};
-use client::{HttpClientImpl, StoriqaClient, StoriqaClientImpl};
+use client::{HttpClientImpl, StoriqaClient, StoriqaClientImpl, TransactionsClient, TransactionsClientImpl};
+use repos::{AccountsRepoImpl, DbExecutorImpl};
 use utils::read_body;
 
 mod controllers;
@@ -26,8 +27,9 @@ mod utils;
 
 use self::controllers::*;
 use self::error::*;
+use models::*;
 use r2d2;
-use services::{AuthServiceImpl, UsersServiceImpl};
+use services::{AccountsServiceImpl, AuthServiceImpl, TransactionsServiceImpl, UsersServiceImpl};
 
 #[derive(Clone)]
 pub struct ApiService {
@@ -37,6 +39,7 @@ pub struct ApiService {
     config: Config,
     db_pool: Pool<ConnectionManager<PgConnection>>,
     cpu_pool: CpuPool,
+    transactions_client: Arc<dyn TransactionsClient>,
 }
 
 impl ApiService {
@@ -65,6 +68,8 @@ impl ApiService {
             database_url
         ))?;
         let cpu_pool = CpuPool::new(config.cpu_pool.size);
+        let client = HttpClientImpl::new(config);
+        let transactions_client = TransactionsClientImpl::new(&config, client.clone());
         Ok(ApiService {
             config: config.clone(),
             storiqa_client: Arc::new(storiqa_client),
@@ -72,6 +77,7 @@ impl ApiService {
             server_address,
             db_pool,
             cpu_pool,
+            transactions_client: Arc::new(transactions_client),
         })
     }
 }
@@ -87,6 +93,11 @@ impl Service for ApiService {
         let storiqa_client = self.storiqa_client.clone();
         let storiqa_jwt_public_key = self.storiqa_jwt_public_key.clone();
         let storiqa_jwt_valid_secs = self.config.auth.storiqa_jwt_valid_secs.clone();
+        let db_pool = self.db_pool.clone();
+        let cpu_pool = self.cpu_pool.clone();
+        let db_executor = DbExecutorImpl::new(db_pool.clone(), cpu_pool.clone());
+        let transactions_client = self.transactions_client.clone();
+
         Box::new(
             read_body(http_body)
                 .map_err(ectx!(ErrorSource::Hyper, ErrorKind::Internal))
@@ -97,18 +108,40 @@ impl Service for ApiService {
                         POST /v1/users => post_users,
                         POST /v1/users/confirm_email => post_users_confirm_email,
                         GET /v1/users/me => get_users_me,
+                        POST /v1/users/{user_id: UserId}/accounts => post_accounts,
+                        GET /v1/users/{user_id: UserId}/accounts => get_users_accounts,
+                        GET /v1/accounts/{account_id: AccountId} => get_accounts,
+                        PUT /v1/accounts/{account_id: AccountId} => put_accounts,
+                        DELETE /v1/accounts/{account_id: AccountId} => delete_accounts,
+                        GET /v1/accounts/{account_id: AccountId}/transactions => get_accounts_transactions,
+                        GET /v1/users/{user_id: UserId}/transactions => get_users_transactions,
+                        POST /v1/transactions => post_transactions,
                         _ => not_found,
                     };
 
                     let auth_service = Arc::new(AuthServiceImpl::new(storiqa_jwt_public_key, storiqa_jwt_valid_secs));
-                    let users_service = UsersServiceImpl::new(auth_service.clone(), storiqa_client);
+                    let users_service = Arc::new(UsersServiceImpl::new(auth_service.clone(), storiqa_client));
+                    let accounts_service = Arc::new(AccountsServiceImpl::new(
+                        auth_service.clone(),
+                        Arc::new(AccountsRepoImpl),
+                        db_executor.clone(),
+                        transactions_client.clone(),
+                    ));
+                    let transactions_service = Arc::new(TransactionsServiceImpl::new(
+                        auth_service.clone(),
+                        Arc::new(AccountsRepoImpl),
+                        db_executor.clone(),
+                        transactions_client,
+                    ));
 
                     let ctx = Context {
                         body,
                         method: parts.method.clone(),
                         uri: parts.uri.clone(),
                         headers: parts.headers,
-                        users_service: Arc::new(users_service),
+                        users_service,
+                        accounts_service,
+                        transactions_service,
                     };
 
                     debug!("Received request {}", ctx);
@@ -129,6 +162,14 @@ impl Service for ApiService {
                             .status(401)
                             .header("Content-Type", "application/json")
                             .body(Body::from(r#"{"description": "Unauthorized"}"#))
+                            .unwrap())
+                    }
+                    ErrorKind::NotFound => {
+                        log_warn(&e);
+                        Ok(Response::builder()
+                            .status(404)
+                            .header("Content-Type", "application/json")
+                            .body(Body::from(r#"{"description": "Not found"}"#))
                             .unwrap())
                     }
                     ErrorKind::UnprocessableEntity(errors) => {

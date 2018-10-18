@@ -20,6 +20,8 @@ pub enum ErrorKind {
     UnprocessableEntity(ValidationErrors),
     #[fail(display = "controller error - internal error")]
     Internal,
+    #[fail(display = "controller error - not found")]
+    NotFound,
 }
 
 #[allow(dead_code)]
@@ -42,42 +44,13 @@ pub enum ErrorContext {
     ResponseJson,
     #[fail(display = "controller context - error with authentication token")]
     Token,
+    #[fail(display = "controller context - missing query despite required params")]
+    RequestMissingQuery,
+    #[fail(display = "controller context - failed to extract query params")]
+    RequestQueryParams,
 }
 
-#[allow(dead_code)]
-impl Error {
-    pub fn kind(&self) -> ErrorKind {
-        self.inner.get_context().clone()
-    }
-}
-
-impl Fail for Error {
-    fn cause(&self) -> Option<&Fail> {
-        self.inner.cause()
-    }
-
-    fn backtrace(&self) -> Option<&Backtrace> {
-        self.inner.backtrace()
-    }
-}
-
-impl Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        Display::fmt(&self.inner, f)
-    }
-}
-
-impl From<ErrorKind> for Error {
-    fn from(kind: ErrorKind) -> Error {
-        Error { inner: Context::new(kind) }
-    }
-}
-
-impl From<Context<ErrorKind>> for Error {
-    fn from(inner: Context<ErrorKind>) -> Error {
-        Error { inner: inner }
-    }
-}
+derive_error_impls!();
 
 impl From<ServiceErrorKind> for ErrorKind {
     fn from(err: ServiceErrorKind) -> Self {
@@ -85,6 +58,7 @@ impl From<ServiceErrorKind> for ErrorKind {
             ServiceErrorKind::Internal => ErrorKind::Internal,
             ServiceErrorKind::Unauthorized => ErrorKind::Unauthorized,
             ServiceErrorKind::MalformedInput => ErrorKind::BadRequest,
+            ServiceErrorKind::NotFound => ErrorKind::NotFound,
             ServiceErrorKind::InvalidInput(validation_errors) => ErrorKind::UnprocessableEntity(validation_errors),
         }
     }

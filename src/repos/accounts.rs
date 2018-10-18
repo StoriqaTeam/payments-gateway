@@ -13,6 +13,7 @@ pub trait AccountsRepo: Send + Sync + 'static {
     fn update(&self, account_id: AccountId, payload: UpdateAccount) -> RepoResult<Account>;
     fn delete(&self, account_id: AccountId) -> RepoResult<Account>;
     fn list_for_user(&self, user_id_arg: UserId, offset: AccountId, limit: i64) -> RepoResult<Vec<Account>>;
+    fn get_by_user(&self, user_id_arg: UserId) -> RepoResult<Vec<Account>>;
 }
 
 #[derive(Clone, Default)]
@@ -71,6 +72,15 @@ impl<'a> AccountsRepo for AccountsRepoImpl {
             query.get_results(conn).map_err(move |e| {
                 let error_kind = ErrorKind::from(&e);
                 ectx!(err e, error_kind => user_id_arg, offset, limit)
+            })
+        })
+    }
+    fn get_by_user(&self, user_id_arg: UserId) -> RepoResult<Vec<Account>> {
+        with_tls_connection(|conn| {
+            let query = accounts.filter(user_id.eq(user_id_arg)).order(id);
+            query.get_results(conn).map_err(move |e| {
+                let error_kind = ErrorKind::from(&e);
+                ectx!(err e, error_kind => user_id_arg)
             })
         })
     }
@@ -164,6 +174,19 @@ pub mod tests {
             let new_account = NewAccount::default();
             let account = accounts_repo.create(new_account).unwrap();
             let res = accounts_repo.list_for_user(account.user_id, account.id, 1);
+            assert!(res.is_ok());
+            res
+        }));
+    }
+    #[test]
+    fn accounts_get_by_user() {
+        let mut core = Core::new().unwrap();
+        let db_executor = create_executor();
+        let accounts_repo = AccountsRepoImpl::default();
+        let _ = core.run(db_executor.execute_test_transaction(move || {
+            let new_account = NewAccount::default();
+            let account = accounts_repo.create(new_account).unwrap();
+            let res = accounts_repo.get_by_user(account.user_id);
             assert!(res.is_ok());
             res
         }));

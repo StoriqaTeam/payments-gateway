@@ -101,15 +101,16 @@ pub struct PostTransactionsRequest {
     pub hold_until: Option<SystemTime>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct PutTransactionsRequest {
-    pub status: TransactionStatus,
-}
-
-impl From<PutTransactionsRequest> for TransactionStatus {
-    fn from(req: PutTransactionsRequest) -> Self {
-        req.status
+impl From<PostTransactionsRequest> for CreateTransaction {
+    fn from(req: PostTransactionsRequest) -> Self {
+        Self {
+            from: req.from,
+            to: req.to,
+            to_type: req.to_type,
+            to_currency: req.to_currency,
+            value: req.value,
+            fee: req.fee,
+        }
     }
 }
 

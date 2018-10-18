@@ -115,12 +115,12 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
                         }
                     }
                     Ok(account)
-                }).and_then(move |mut account| {
-                    if let Some(account) = account {
+                }).and_then(move |account| {
+                    if let Some(mut account) = account {
                         Either::A(
                             transactions_client
                                 .get_account_balance(account.id)
-                                .map_err(ectx!(convert => account.id))
+                                .map_err(ectx!(convert => account_id))
                                 .map(|balance| {
                                     account.balance = balance.balance;
                                     Some(account)
@@ -162,7 +162,7 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
                 }).and_then(move |mut account| {
                     transactions_client
                         .get_account_balance(account.id)
-                        .map_err(ectx!(convert => account.id))
+                        .map_err(ectx!(convert => account_id))
                         .map(|balance| {
                             account.balance = balance.balance;
                             account
@@ -205,14 +205,15 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
                         .list_for_user(user_id, offset, limit)
                         .map_err(ectx!(ErrorKind::Internal => user_id, offset, limit))
                 }).and_then(move |accounts| {
-                    iter_ok::<_, Error>(accounts).fold(vec![], move |mut accounts, account| {
+                    iter_ok::<_, Error>(accounts).fold(vec![], move |mut accounts, mut account| {
+                        let account_id = account.id;
                         transactions_client
-                            .get_account_balance(account.id)
-                            .map_err(ectx!(convert => account.id))
-                            .map(|balance| {
+                            .get_account_balance(account_id)
+                            .map_err(ectx!(convert => account_id))
+                            .and_then(|balance| {
                                 account.balance = balance.balance;
                                 accounts.push(account);
-                                accounts
+                                Ok(accounts) as Result<Vec<Account>, Error>
                             })
                     })
                 })
@@ -231,7 +232,7 @@ mod tests {
     fn create_account_service(token: AuthenticationToken, user_id: UserId) -> AccountsServiceImpl<DbExecutorMock> {
         let auth_service = Arc::new(AuthServiceMock::new(vec![(token, user_id)]));
         let accounts_repo = Arc::new(AccountsRepoMock::default());
-        let transactions_client = Arc::new(KeysClientMock::default());
+        let transactions_client = Arc::new(TransactionsClientMock::default());
         let db_executor = DbExecutorMock::default();
         AccountsServiceImpl::new(auth_service, accounts_repo, db_executor, transactions_client)
     }
@@ -279,7 +280,7 @@ mod tests {
             .unwrap();
 
         let mut payload = UpdateAccount::default();
-        payload.name = Some("test test test 2acc".to_string());
+        payload.name = "test test test 2acc".to_string();
         let account = core.run(service.update_account(token, new_account.id, payload));
         assert!(account.is_ok());
     }

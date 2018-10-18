@@ -14,6 +14,20 @@ pub struct AccountResponse {
     pub updated_at: SystemTime,
 }
 
+impl Default for AccountResponse {
+    fn default() -> Self {
+        Self {
+            id: AccountId::generate(),
+            user_id: UserId::generate(),
+            currency: Currency::Eth,
+            address: AccountAddress::default(),
+            name: Some("new acc".to_string()),
+            created_at: SystemTime::now(),
+            updated_at: SystemTime::now(),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BalanceResponse {
@@ -21,11 +35,28 @@ pub struct BalanceResponse {
     pub currency: Currency,
 }
 
+impl Default for BalanceResponse {
+    fn default() -> Self {
+        Self {
+            balance: Amount::default(),
+            currency: Currency::Eth,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BalancesResponse {
     #[serde(flatten)]
     pub data: Vec<BalanceResponse>,
+}
+
+impl Default for BalancesResponse {
+    fn default() -> Self {
+        Self {
+            data: vec![BalanceResponse::default()],
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -42,4 +73,34 @@ pub struct TransactionResponse {
     pub hold_until: Option<SystemTime>,
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
+}
+
+impl Default for TransactionResponse {
+    fn default() -> Self {
+        Self {
+            id: TransactionId::generate(),
+            user_id: UserId::generate(),
+            dr_account_id: AccountId::generate(),
+            cr_account_id: AccountId::generate(),
+            currency: Currency::Stq,
+            value: Amount::default(),
+            status: TransactionStatus::Pending,
+            blockchain_tx_id: None,
+            hold_until: None,
+            created_at: SystemTime::now(),
+            updated_at: SystemTime::now(),
+        }
+    }
+}
+
+impl From<TransactionResponse> for Transaction {
+    fn from(resp: TransactionResponse) -> Self {
+        Self {
+            from: resp.dr_account_id,
+            to: resp.cr_account_id,
+            to_currency: resp.currency,
+            value: resp.value,
+            blockchain_tx_id: resp.blockchain_tx_id,
+        }
+    }
 }
