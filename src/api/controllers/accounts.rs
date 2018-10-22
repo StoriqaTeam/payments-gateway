@@ -23,7 +23,7 @@ pub fn post_accounts(ctx: &Context, user_id: UserId) -> ControllerFuture {
                     .and_then(move |input| {
                         let input_clone = input.clone();
                         accounts_service
-                            .create_account(token, user_id, input.into())
+                            .create_account(token, user_id, (input, user_id).into())
                             .map_err(ectx!(convert => input_clone))
                     }).and_then(|account| response_with_model(&AccountsResponse::from(account)))
             }),
