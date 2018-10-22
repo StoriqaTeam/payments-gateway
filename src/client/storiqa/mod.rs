@@ -133,7 +133,7 @@ impl StoriqaClient for StoriqaClientImpl {
             r#"
                 mutation M {{
                     createUser(input: {{email: \"{}\", password: \"{}\", firstName: \"{}\", lastName: \"{}\", clientMutationId:\"\"}}) {{
-                        id
+                        rawId
                         email
                         firstName
                         lastName
@@ -159,7 +159,7 @@ impl StoriqaClient for StoriqaClientImpl {
         let query = r#"
                 query M {
                     me {
-                        id
+                        rawId
                         email
                         firstName
                         lastName
