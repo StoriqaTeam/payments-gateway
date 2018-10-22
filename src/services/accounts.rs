@@ -43,6 +43,7 @@ pub trait AccountsService: Send + Sync + 'static {
         user_id: UserId,
         input: CreateAccount,
     ) -> Box<Future<Item = Account, Error = Error> + Send>;
+    fn create_default_accounts(&self, user_id: UserId) -> Box<Future<Item = (), Error = Error> + Send>;
     fn get_account(&self, token: AuthenticationToken, account_id: AccountId) -> Box<Future<Item = Option<Account>, Error = Error> + Send>;
     fn update_account(
         &self,
@@ -55,8 +56,8 @@ pub trait AccountsService: Send + Sync + 'static {
         &self,
         token: AuthenticationToken,
         user_id: UserId,
-        offset: AccountId,
-        limit: i64,
+        offset: Option<AccountId>,
+        limit: Option<i64>,
     ) -> Box<Future<Item = Vec<Account>, Error = Error> + Send>;
 }
 
@@ -79,8 +80,9 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
                 Either::B(
                     input
                         .validate()
-                        .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(e) => input))
-                        .into_future()
+                        .map_err(
+                            |e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_string(&e).unwrap_or(e.to_string())) => input),
+                        ).into_future()
                         .and_then({
                             let input = input.clone();
                             move |_| {
@@ -98,6 +100,37 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
                 )
             }
         }))
+    }
+    fn create_default_accounts(&self, user_id: UserId) -> Box<Future<Item = (), Error = Error> + Send> {
+        let accounts_repo = self.accounts_repo.clone();
+        let db_executor = self.db_executor.clone();
+        let transactions_client = self.transactions_client.clone();
+
+        let f = iter_ok::<_, Error>(vec![Currency::Stq, Currency::Btc, Currency::Eth]).fold((), move |_res, currency| {
+            let input = CreateAccount {
+                id: AccountId::generate(),
+                user_id,
+                currency,
+                name: currency.to_string(),
+            };
+            let input_clone = input.clone();
+            let accounts_repo = accounts_repo.clone();
+            let db_executor = db_executor.clone();
+            transactions_client
+                .create_account(input.clone())
+                .map_err(ectx!(convert => input_clone))
+                .map(|acc| acc.address)
+                .and_then(move |account_address| {
+                    db_executor.execute(move || {
+                        let new_account: NewAccount = (input.clone(), account_address).into();
+                        accounts_repo
+                            .create(new_account.clone())
+                            .map_err(ectx!(try convert => new_account))?;
+                        Ok(()) as Result<(), Error>
+                    })
+                })
+        });
+        Box::new(f)
     }
     fn get_account(&self, token: AuthenticationToken, account_id: AccountId) -> Box<Future<Item = Option<Account>, Error = Error> + Send> {
         let accounts_repo = self.accounts_repo.clone();
@@ -145,7 +178,7 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
         Box::new(
             payload
                 .validate()
-                .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(e) => payload))
+                .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_string(&e).unwrap_or(e.to_string())) => payload))
                 .into_future()
                 .and_then(move |_| {
                     auth_service.authenticate(token).and_then(move |auth| {
@@ -189,8 +222,8 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
         &self,
         token: AuthenticationToken,
         user_id: UserId,
-        offset: AccountId,
-        limit: i64,
+        offset: Option<AccountId>,
+        limit: Option<i64>,
     ) -> Box<Future<Item = Vec<Account>, Error = Error> + Send> {
         let accounts_repo = self.accounts_repo.clone();
         let db_executor = self.db_executor.clone();
@@ -311,7 +344,7 @@ mod tests {
         new_account.name = "test test test acc".to_string();
         new_account.user_id = user_id;
 
-        let account = core.run(service.get_accounts_for_user(token, new_account.user_id, new_account.id, 10));
+        let account = core.run(service.get_accounts_for_user(token, new_account.user_id, None, None));
         assert!(account.is_ok());
     }
 }

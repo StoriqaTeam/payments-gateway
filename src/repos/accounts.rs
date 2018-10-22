@@ -12,7 +12,7 @@ pub trait AccountsRepo: Send + Sync + 'static {
     fn get(&self, account_id: AccountId) -> RepoResult<Option<Account>>;
     fn update(&self, account_id: AccountId, payload: UpdateAccount) -> RepoResult<Account>;
     fn delete(&self, account_id: AccountId) -> RepoResult<Account>;
-    fn list_for_user(&self, user_id_arg: UserId, offset: AccountId, limit: i64) -> RepoResult<Vec<Account>>;
+    fn list_for_user(&self, user_id_arg: UserId, offset: Option<AccountId>, limit: Option<i64>) -> RepoResult<Vec<Account>>;
     fn get_by_user(&self, user_id_arg: UserId) -> RepoResult<Vec<Account>>;
 }
 
@@ -62,13 +62,15 @@ impl<'a> AccountsRepo for AccountsRepoImpl {
             })
         })
     }
-    fn list_for_user(&self, user_id_arg: UserId, offset: AccountId, limit: i64) -> RepoResult<Vec<Account>> {
+    fn list_for_user(&self, user_id_arg: UserId, offset: Option<AccountId>, limit: Option<i64>) -> RepoResult<Vec<Account>> {
         with_tls_connection(|conn| {
-            let query = accounts
-                .filter(user_id.eq(user_id_arg))
-                .order(id)
-                .filter(id.ge(offset))
-                .limit(limit);
+            let mut query = accounts.filter(user_id.eq(user_id_arg)).order(id).into_boxed();
+            if let Some(offset) = offset {
+                query = query.filter(id.ge(offset));
+            }
+            if let Some(limit) = limit {
+                query = query.limit(limit);
+            }
             query.get_results(conn).map_err(move |e| {
                 let error_kind = ErrorKind::from(&e);
                 ectx!(err e, error_kind => user_id_arg, offset, limit)
@@ -173,7 +175,7 @@ pub mod tests {
         let _ = core.run(db_executor.execute_test_transaction(move || {
             let new_account = NewAccount::default();
             let account = accounts_repo.create(new_account).unwrap();
-            let res = accounts_repo.list_for_user(account.user_id, account.id, 1);
+            let res = accounts_repo.list_for_user(account.user_id, None, None);
             assert!(res.is_ok());
             res
         }));

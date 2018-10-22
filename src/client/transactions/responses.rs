@@ -68,6 +68,7 @@ pub struct TransactionResponse {
     pub cr_account_id: AccountId,
     pub currency: Currency,
     pub value: Amount,
+    pub fee: Amount,
     pub status: TransactionStatus,
     pub blockchain_tx_id: Option<BlockchainTransactionId>,
     pub hold_until: Option<SystemTime>,
@@ -84,6 +85,7 @@ impl Default for TransactionResponse {
             cr_account_id: AccountId::generate(),
             currency: Currency::Stq,
             value: Amount::default(),
+            fee: Amount::default(),
             status: TransactionStatus::Pending,
             blockchain_tx_id: None,
             hold_until: None,
@@ -101,6 +103,9 @@ impl From<TransactionResponse> for Transaction {
             to_currency: resp.currency,
             value: resp.value,
             blockchain_tx_id: resp.blockchain_tx_id,
+            fee: resp.fee,
+            created_at: resp.created_at,
+            updated_at: resp.updated_at,
         }
     }
 }

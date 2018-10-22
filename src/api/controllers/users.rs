@@ -41,6 +41,7 @@ pub fn post_sessions_oauth(ctx: &Context) -> ControllerFuture {
 
 pub fn post_users(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
+    let accounts_service = ctx.accounts_service.clone();
     Box::new(
         parse_body::<PostUsersRequest>(ctx.body.clone())
             .and_then(move |input| {
@@ -48,7 +49,11 @@ pub fn post_users(ctx: &Context) -> ControllerFuture {
                 users_service
                     .create_user(input.email, input.password, input.first_name, input.last_name)
                     .map_err(ectx!(convert => input_clone))
-            }).and_then(|user| response_with_model(&user)),
+            }).and_then(move |user| {
+                accounts_service
+                    .create_default_accounts(user.id)
+                    .then(move |_| response_with_model(&user))
+            }),
     )
 }
 
