@@ -2,6 +2,7 @@ use std::fmt;
 use std::fmt::Display;
 
 use failure::{Backtrace, Context, Fail};
+use serde_json;
 
 use client::storiqa::ErrorKind as StoriqaClientErrorKind;
 use client::transactions::ErrorKind as TransactionsClientErrorKind;
