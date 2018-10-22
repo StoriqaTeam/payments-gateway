@@ -6,7 +6,7 @@ use models::*;
 #[serde(rename_all = "camelCase")]
 pub struct AccountResponse {
     pub id: AccountId,
-    pub user_id: UserId,
+    pub user_id: WorkspaceId,
     pub currency: Currency,
     pub address: AccountAddress,
     pub name: Option<String>,
@@ -18,7 +18,7 @@ impl Default for AccountResponse {
     fn default() -> Self {
         Self {
             id: AccountId::generate(),
-            user_id: UserId::generate(),
+            user_id: WorkspaceId::generate(),
             currency: Currency::Eth,
             address: AccountAddress::default(),
             name: Some("new acc".to_string()),
