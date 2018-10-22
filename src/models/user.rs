@@ -1,13 +1,14 @@
 use validator::Validate;
 
-use models::Password;
+use models::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
+    pub id: UserId,
     pub email: String,
-    pub first_name: String,
-    pub last_name: String,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
     pub phone: Option<String>,
 }
 

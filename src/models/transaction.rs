@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use validator::Validate;
 
 use models::*;
@@ -32,4 +34,7 @@ pub struct Transaction {
     pub to_currency: Currency,
     pub value: Amount,
     pub blockchain_tx_id: Option<BlockchainTransactionId>,
+    pub fee: Amount,
+    pub created_at: SystemTime,
+    pub updated_at: SystemTime,
 }

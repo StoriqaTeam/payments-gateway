@@ -8,7 +8,7 @@ pub struct Error {
 }
 
 #[allow(dead_code)]
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
+#[derive(Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
     #[fail(display = "storiqa client error - malformed input")]
     MalformedInput,
@@ -16,6 +16,8 @@ pub enum ErrorKind {
     Unauthorized,
     #[fail(display = "storiqa client error - internal error")]
     Internal,
+    #[fail(display = "storiqa client error - bad request")]
+    Validation(String),
 }
 
 #[allow(dead_code)]

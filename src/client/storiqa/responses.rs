@@ -68,8 +68,8 @@ pub struct GraphQLErrorData {
 #[derive(Debug, Deserialize, Clone)]
 pub struct GraphQLErrorDataDetails {
     status: String,
-    code: String,
-    description: String,
-    message: String,
-    payload: String,
+    code: Option<String>,
+    description: Option<String>,
+    message: Option<String>,
+    payload: Option<String>,
 }

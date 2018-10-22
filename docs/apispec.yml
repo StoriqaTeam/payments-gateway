@@ -458,9 +458,9 @@ components:
       type: string
       enum: [ios|android|web|other]
     UserId:
-      type: string
+      type: integer
       description: Id of a User in our system
-      example: jghkdfgdjfgkdf7gd
+      example: 1
     AccountId:
       type: string
       description: Id of Account in our system
@@ -596,6 +596,9 @@ components:
         - toAddress
         - currency
         - value
+        - fee
+        - created_at
+        - updated_at
       properties:
         id:
           $ref: '#/components/schemas/Id'
@@ -607,6 +610,12 @@ components:
           $ref: '#/components/schemas/Currency'
         value:
           $ref: '#/components/schemas/Value'
+        fee:
+          $ref: '#/components/schemas/Value'
+        creaeted_at:
+          $ref: '#/components/schemas/TimeStamp'
+        updated_at:
+          $ref: '#/components/schemas/TimeStamp'
     AccountAddress:
       type: string
       description: Either blockchain address or fiat account number (depending on currency)
@@ -672,20 +681,20 @@ components:
     Id:
       type: string
       example: jghkdfgdjfgkdf7gd
+    TimeStamp:
+      type: number
+      description: unix timestamp
     OauthProvider:
       type: string
       enum: [facebook|google]
     User:
       type: object
       required:
+        - id
         - email
-        - password
-        - phone
-        - firstName
-        - lastName
       properties:
         id:
-          $ref: '#/components/schemas/Id'
+          $ref: '#/components/schemas/UserId'
         email:
           type: string
           example: a.karasev@storiqa.com
@@ -741,7 +750,7 @@ components:
       description: ID of user
       required: true
       schema:
-        $ref: '#/components/schemas/Id'
+        $ref: '#/components/schemas/UserId'
     accountIdParam:
       name: accountId
       in: path

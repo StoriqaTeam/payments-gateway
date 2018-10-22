@@ -177,7 +177,7 @@ impl Service for ApiService {
                         Ok(Response::builder()
                             .status(422)
                             .header("Content-Type", "application/json")
-                            .body(Body::from(format!("{}", errors)))
+                            .body(Body::from(errors))
                             .unwrap())
                     }
                     ErrorKind::Internal => {

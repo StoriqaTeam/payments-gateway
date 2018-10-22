@@ -46,7 +46,7 @@ pub trait TransactionsService: Send + Sync + 'static {
         &self,
         token: AuthenticationToken,
         user_id: UserId,
-        offset: TransactionId,
+        offset: Option<TransactionId>,
         limit: i64,
     ) -> Box<Future<Item = Vec<Transaction>, Error = Error> + Send>;
     fn get_account_transactions(
@@ -83,8 +83,9 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                 }).and_then(move |_| {
                     input
                         .validate()
-                        .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(e) => input))
-                        .into_future()
+                        .map_err(
+                            |e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_string(&e).unwrap_or(e.to_string())) => input),
+                        ).into_future()
                         .and_then(move |_| {
                             transactions_client
                                 .create_transaction(input.clone())
@@ -99,7 +100,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
         &self,
         token: AuthenticationToken,
         user_id: UserId,
-        offset: TransactionId,
+        offset: Option<TransactionId>,
         limit: i64,
     ) -> Box<Future<Item = Vec<Transaction>, Error = Error> + Send> {
         let accounts_repo = self.accounts_repo.clone();
@@ -232,7 +233,7 @@ mod tests {
 
         core.run(acc_service.create_account(token.clone(), user_id, cr_account)).unwrap();
 
-        let transactions = core.run(trans_service.get_transactions_for_user(token, user_id, TransactionId::generate(), 10));
+        let transactions = core.run(trans_service.get_transactions_for_user(token, user_id, None, 10));
         assert!(transactions.is_ok());
         assert_eq!(transactions.unwrap().len(), 1);
     }
