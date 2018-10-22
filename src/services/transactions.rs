@@ -3,6 +3,7 @@ use std::sync::Arc;
 use futures::prelude::*;
 use futures::stream::iter_ok;
 use futures::IntoFuture;
+use serde_json;
 use validator::Validate;
 
 use super::auth::AuthService;
