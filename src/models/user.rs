@@ -5,6 +5,7 @@ use models::*;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
+    #[serde(rename(deserialize = "rawId"))]
     pub id: UserId,
     pub email: String,
     pub first_name: Option<String>,
