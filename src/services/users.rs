@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use validator::Validate;
 use serde_json;
+use validator::Validate;
 
 use super::auth::AuthService;
 use super::error::*;

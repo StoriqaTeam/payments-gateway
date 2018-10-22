@@ -24,7 +24,7 @@ impl From<(CreateAccount, WorkspaceId)> for CreateAccountRequest {
 #[serde(rename_all = "camelCase")]
 pub struct GetUsersAccountsParams {
     pub limit: i64,
-    pub offset: AccountId,
+    pub offset: i64,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -57,5 +57,5 @@ impl From<(CreateTransaction, WorkspaceId)> for CreateTransactionRequest {
 #[serde(rename_all = "camelCase")]
 pub struct GetUsersTransactionsParams {
     pub limit: i64,
-    pub offset: TransactionId,
+    pub offset: i64,
 }

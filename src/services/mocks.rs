@@ -34,4 +34,13 @@ impl AuthService for AuthServiceMock {
                 .into_future(),
         )
     }
+    fn get_exp(&self, token: AuthenticationToken) -> ServiceFuture<u64> {
+        Box::new(
+            self.auths
+                .get(&token)
+                .map(|_| 0)
+                .ok_or(ectx!(err ErrorContext::InvalidToken, ErrorKind::Unauthorized))
+                .into_future(),
+        )
+    }
 }

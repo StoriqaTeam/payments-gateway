@@ -10,8 +10,6 @@ use api::responses::*;
 use models::*;
 use serde_qs;
 
-pub const DEFAULT_LIMIT: i64 = 10;
-
 pub fn post_transactions(ctx: &Context) -> ControllerFuture {
     let transactions_service = ctx.transactions_service.clone();
     let maybe_token = ctx.get_auth_token();
@@ -56,9 +54,8 @@ pub fn get_users_transactions(ctx: &Context, user_id: UserId) -> ControllerFutur
                     .into_future()
                     .and_then(move |token| {
                         let input_clone = input.clone();
-                        let limit = input.limit.unwrap_or(DEFAULT_LIMIT);
                         transactions_service
-                            .get_transactions_for_user(token, user_id, input.offset, limit)
+                            .get_transactions_for_user(token, user_id, input.offset, input.limit)
                             .map_err(ectx!(convert => input_clone))
                     })
             }).and_then(|transactions| {

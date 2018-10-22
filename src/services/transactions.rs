@@ -47,7 +47,7 @@ pub trait TransactionsService: Send + Sync + 'static {
         &self,
         token: AuthenticationToken,
         user_id: UserId,
-        offset: Option<TransactionId>,
+        offset: i64,
         limit: i64,
     ) -> Box<Future<Item = Vec<Transaction>, Error = Error> + Send>;
     fn get_account_transactions(
@@ -101,7 +101,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
         &self,
         token: AuthenticationToken,
         user_id: UserId,
-        offset: Option<TransactionId>,
+        offset: i64,
         limit: i64,
     ) -> Box<Future<Item = Vec<Transaction>, Error = Error> + Send> {
         let accounts_repo = self.accounts_repo.clone();
@@ -234,7 +234,7 @@ mod tests {
 
         core.run(acc_service.create_account(token.clone(), user_id, cr_account)).unwrap();
 
-        let transactions = core.run(trans_service.get_transactions_for_user(token, user_id, None, 10));
+        let transactions = core.run(trans_service.get_transactions_for_user(token, user_id, 0, 10));
         assert!(transactions.is_ok());
         assert_eq!(transactions.unwrap().len(), 1);
     }

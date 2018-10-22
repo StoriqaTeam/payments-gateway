@@ -83,8 +83,8 @@ impl From<PutAccountsRequest> for UpdateAccount {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GetUsersAccountsParams {
-    pub limit: Option<i64>,
-    pub offset: Option<AccountId>,
+    pub limit: i64,
+    pub offset: i64,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -116,6 +116,6 @@ impl From<PostTransactionsRequest> for CreateTransaction {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GetUsersTransactionsParams {
-    pub limit: Option<i64>,
-    pub offset: Option<TransactionId>,
+    pub limit: i64,
+    pub offset: i64,
 }
