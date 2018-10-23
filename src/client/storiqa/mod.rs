@@ -141,7 +141,7 @@ impl StoriqaClient for StoriqaClientImpl {
         let query = format!(
             r#"
                 mutation M {{
-                    createUser(input: {{email: \"{}\", password: \"{}\", firstName: \"{}\", lastName: \"{}\", device: \"{}\", clientMutationId:\"\"}}) {{
+                    createUser(input: {{email: \"{}\", password: \"{}\", firstName: \"{}\", lastName: \"{}\", device: {}, clientMutationId:\"\"}}) {{
                         rawId
                         email
                         firstName
