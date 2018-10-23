@@ -1,4 +1,5 @@
 use std::error::Error as StdError;
+use std::fmt::{self, Display};
 use std::io::prelude::*;
 
 use diesel::deserialize::{self, FromSql};
@@ -58,6 +59,12 @@ impl FromSql<Numeric, Pg> for Amount {
     fn from_sql(numeric: Option<&[u8]>) -> deserialize::Result<Self> {
         let numeric = PgNumeric::from_sql(numeric)?;
         pg_decimal_to_u128(&numeric).map(Amount)
+    }
+}
+
+impl Display for Amount {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(&format!("{}", self.0,))
     }
 }
 

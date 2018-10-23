@@ -16,7 +16,7 @@ pub struct AccountsResponse {
     pub currency: Currency,
     pub account_address: AccountAddress,
     pub name: String,
-    pub balance: Amount,
+    pub balance: String,
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
 }
@@ -29,7 +29,7 @@ impl From<Account> for AccountsResponse {
             currency: account.currency,
             account_address: account.account_address,
             name: account.name,
-            balance: account.balance,
+            balance: account.balance.to_string(),
             created_at: account.created_at,
             updated_at: account.updated_at,
         }
@@ -42,7 +42,7 @@ pub struct TransactionsResponse {
     pub from: AccountId,
     pub to: AccountId,
     pub to_currency: Currency,
-    pub value: Amount,
+    pub value: String,
     pub blockchain_tx_id: Option<BlockchainTransactionId>,
 }
 
@@ -52,7 +52,7 @@ impl From<Transaction> for TransactionsResponse {
             from: transaction.from,
             to: transaction.to,
             to_currency: transaction.to_currency,
-            value: transaction.value,
+            value: transaction.value.to_string(),
             blockchain_tx_id: transaction.blockchain_tx_id,
         }
     }

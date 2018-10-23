@@ -550,8 +550,7 @@ components:
           type: string
           example: 1237987834798375349
     Value:
-      type: integer
-      format: uint256
+      type: string
       description: Monetary value - either fiat or blockchain
       example: 185000000000000000000
     TransactionCreateInput:
