@@ -31,21 +31,18 @@ pub struct GetJWTResponse {
     pub errors: Option<Vec<GraphQLError>>,
 }
 
-impl GetJWTResponse {
-    pub fn get_error_payload(self) -> Option<String> {
-        self.errors.and_then(|errors| {
-            let errors = errors.into_iter().fold(vec![], move |mut res, error| {
-                if let Some(e) = error.data {
-                    if let Some(payload) = e.details.payload {
-                        res.push(payload)
-                    }
+pub fn get_error_payload(errors: Option<Vec<GraphQLError>>) -> Option<serde_json::Value> {
+    errors.map(|errors| {
+        let errors = errors.into_iter().fold(vec![], move |mut res, error| {
+            if let Some(e) = error.data {
+                if let Some(payload) = e.details.payload {
+                    res.push(payload)
                 }
-                res
-            });
-            let serialized_errors = serde_json::to_string(&errors).unwrap_or_default();
-            Some(serialized_errors)
-        })
-    }
+            }
+            res
+        });
+        serde_json::Value::Array(errors)
+    })
 }
 
 #[derive(Debug, Deserialize, Clone)]

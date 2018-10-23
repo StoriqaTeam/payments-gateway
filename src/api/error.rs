@@ -1,7 +1,10 @@
-use failure::{Backtrace, Context, Fail};
-use services::ErrorKind as ServiceErrorKind;
 use std::fmt;
 use std::fmt::Display;
+
+use failure::{Backtrace, Context, Fail};
+use serde_json;
+
+use services::ErrorKind as ServiceErrorKind;
 
 #[derive(Debug)]
 pub struct Error {
@@ -58,7 +61,9 @@ impl From<ServiceErrorKind> for ErrorKind {
             ServiceErrorKind::Unauthorized => ErrorKind::Unauthorized,
             ServiceErrorKind::MalformedInput => ErrorKind::BadRequest,
             ServiceErrorKind::NotFound => ErrorKind::NotFound,
-            ServiceErrorKind::InvalidInput(validation_errors) => ErrorKind::UnprocessableEntity(validation_errors),
+            ServiceErrorKind::InvalidInput(validation_errors) => {
+                ErrorKind::UnprocessableEntity(serde_json::to_string(&validation_errors).unwrap_or_default())
+            }
         }
     }
 }

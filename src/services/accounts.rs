@@ -81,9 +81,8 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
                 Either::B(
                     input
                         .validate()
-                        .map_err(
-                            |e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_string(&e).unwrap_or(e.to_string())) => input),
-                        ).into_future()
+                        .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_value(&e).unwrap_or_default()) => input))
+                        .into_future()
                         .and_then({
                             let input = input.clone();
                             move |_| {
@@ -179,7 +178,7 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
         Box::new(
             payload
                 .validate()
-                .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_string(&e).unwrap_or(e.to_string())) => payload))
+                .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_value(&e).unwrap_or_default()) => payload))
                 .into_future()
                 .and_then(move |_| {
                     auth_service.authenticate(token).and_then(move |auth| {

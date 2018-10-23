@@ -84,9 +84,8 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                 }).and_then(move |_| {
                     input
                         .validate()
-                        .map_err(
-                            |e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_string(&e).unwrap_or(e.to_string())) => input),
-                        ).into_future()
+                        .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_value(&e).unwrap_or_default()) => input))
+                        .into_future()
                         .and_then(move |_| {
                             transactions_client
                                 .create_transaction(input.clone())

@@ -62,7 +62,7 @@ impl UsersService for UsersServiceImpl {
         Box::new(
             new_user
                 .validate()
-                .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_string(&e).unwrap_or(e.to_string())) => new_user))
+                .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_value(&e).unwrap_or_default()) => new_user))
                 .into_future()
                 .and_then(move |_| client.create_user(new_user).map_err(ectx!(convert))),
         )

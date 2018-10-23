@@ -21,7 +21,7 @@ pub enum ErrorKind {
     #[fail(display = "service error - malformed input")]
     MalformedInput,
     #[fail(display = "service error - invalid input, errors: {}", _0)]
-    InvalidInput(String),
+    InvalidInput(serde_json::Value),
     #[fail(display = "service error - internal error")]
     Internal,
     #[fail(display = "service error - not found")]
@@ -54,7 +54,7 @@ impl From<ReposErrorKind> for ErrorKind {
             ReposErrorKind::Internal => ErrorKind::Internal,
             ReposErrorKind::Unauthorized => ErrorKind::Unauthorized,
             ReposErrorKind::Constraints(validation_errors) => {
-                ErrorKind::InvalidInput(serde_json::to_string(&validation_errors).unwrap_or(validation_errors.to_string()))
+                ErrorKind::InvalidInput(serde_json::to_value(&validation_errors).unwrap_or_default())
             }
         }
     }

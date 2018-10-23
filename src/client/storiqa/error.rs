@@ -1,6 +1,8 @@
-use failure::{Backtrace, Context, Fail};
 use std::fmt;
 use std::fmt::Display;
+
+use failure::{Backtrace, Context, Fail};
+use serde_json;
 
 #[derive(Debug)]
 pub struct Error {
@@ -8,7 +10,7 @@ pub struct Error {
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Eq, PartialEq, Debug, Fail)]
+#[derive(Clone, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
     #[fail(display = "storiqa client error - malformed input")]
     MalformedInput,
@@ -17,7 +19,7 @@ pub enum ErrorKind {
     #[fail(display = "storiqa client error - internal error")]
     Internal,
     #[fail(display = "storiqa client error - bad request")]
-    Validation(String),
+    Validation(serde_json::Value),
 }
 
 #[allow(dead_code)]

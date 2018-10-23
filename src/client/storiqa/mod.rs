@@ -93,7 +93,7 @@ impl StoriqaClient for StoriqaClientImpl {
             self.exec_query::<GetJWTResponse>(&query, None)
                 .and_then(|resp| {
                     resp.data.clone().ok_or_else(|| {
-                        if let Some(payload) = resp.clone().get_error_payload() {
+                        if let Some(payload) = get_error_payload(resp.clone().errors) {
                             ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Validation(payload) => resp.clone())
                         } else {
                             ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp.clone())
@@ -119,9 +119,13 @@ impl StoriqaClient for StoriqaClientImpl {
         Box::new(
             self.exec_query::<GetJWTByProviderResponse>(&query, None)
                 .and_then(|resp| {
-                    resp.data
-                        .clone()
-                        .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
+                    resp.data.clone().ok_or_else(|| {
+                        if let Some(payload) = get_error_payload(resp.clone().errors) {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Validation(payload) => resp.clone())
+                        } else {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp.clone())
+                        }
+                    })
                 }).map(|resp_data| resp_data.get_jwt_by_provider.token),
         )
     }
@@ -152,9 +156,13 @@ impl StoriqaClient for StoriqaClientImpl {
         Box::new(
             self.exec_query::<CreateUserResponse>(&query, None)
                 .and_then(|resp| {
-                    resp.data
-                        .clone()
-                        .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
+                    resp.data.clone().ok_or_else(|| {
+                        if let Some(payload) = get_error_payload(resp.clone().errors) {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Validation(payload) => resp.clone())
+                        } else {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp.clone())
+                        }
+                    })
                 }).map(|resp_data| resp_data.create_user),
         )
     }
