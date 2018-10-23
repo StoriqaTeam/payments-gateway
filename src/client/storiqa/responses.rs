@@ -1,3 +1,5 @@
+use serde_json;
+
 use models::*;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -27,6 +29,23 @@ pub struct Me {
 pub struct GetJWTResponse {
     pub data: Option<GetJWTByEmail>,
     pub errors: Option<Vec<GraphQLError>>,
+}
+
+impl GetJWTResponse {
+    pub fn get_error_payload(self) -> Option<String> {
+        self.errors.and_then(|errors| {
+            let errors = errors.into_iter().fold(vec![], move |mut res, error| {
+                if let Some(e) = error.data {
+                    if let Some(payload) = e.details.payload {
+                        res.push(payload)
+                    }
+                }
+                res
+            });
+            let serialized_errors = serde_json::to_string(&errors).unwrap_or_default();
+            Some(serialized_errors)
+        })
+    }
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -71,5 +90,5 @@ pub struct GraphQLErrorDataDetails {
     code: Option<String>,
     description: Option<String>,
     message: Option<String>,
-    payload: Option<String>,
+    payload: Option<serde_json::Value>,
 }

@@ -92,9 +92,13 @@ impl StoriqaClient for StoriqaClientImpl {
         Box::new(
             self.exec_query::<GetJWTResponse>(&query, None)
                 .and_then(|resp| {
-                    resp.data
-                        .clone()
-                        .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
+                    resp.data.clone().ok_or_else(|| {
+                        if let Some(payload) = resp.clone().get_error_payload() {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Validation(payload) => resp.clone())
+                        } else {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp.clone())
+                        }
+                    })
                 }).map(|resp_data| resp_data.get_jwt_by_email.token),
         )
     }
