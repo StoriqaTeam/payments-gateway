@@ -155,8 +155,8 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
                             transactions_client
                                 .get_account_balance(account.id)
                                 .map_err(ectx!(convert => account_id))
-                                .map(|balance| {
-                                    account.balance = balance.balance;
+                                .map(|transactions_acc| {
+                                    account.balance = transactions_acc.balance;
                                     Some(account)
                                 }),
                         )
@@ -197,8 +197,8 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
                     transactions_client
                         .get_account_balance(account.id)
                         .map_err(ectx!(convert => account_id))
-                        .map(|balance| {
-                            account.balance = balance.balance;
+                        .map(|transactions_acc| {
+                            account.balance = transactions_acc.balance;
                             account
                         })
                 }),

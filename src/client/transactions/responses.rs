@@ -10,6 +10,7 @@ pub struct AccountResponse {
     pub currency: Currency,
     pub address: AccountAddress,
     pub name: Option<String>,
+    pub balance: Amount,
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
 }
@@ -22,39 +23,9 @@ impl Default for AccountResponse {
             currency: Currency::Eth,
             address: AccountAddress::default(),
             name: Some("new acc".to_string()),
+            balance: Amount::default(),
             created_at: SystemTime::now(),
             updated_at: SystemTime::now(),
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct BalanceResponse {
-    pub balance: Amount,
-    pub currency: Currency,
-}
-
-impl Default for BalanceResponse {
-    fn default() -> Self {
-        Self {
-            balance: Amount::default(),
-            currency: Currency::Eth,
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct BalancesResponse {
-    #[serde(flatten)]
-    pub data: Vec<BalanceResponse>,
-}
-
-impl Default for BalancesResponse {
-    fn default() -> Self {
-        Self {
-            data: vec![BalanceResponse::default()],
         }
     }
 }
