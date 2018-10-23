@@ -34,7 +34,7 @@ impl Default for AccountResponse {
 #[serde(rename_all = "camelCase")]
 pub struct TransactionResponse {
     pub id: TransactionId,
-    pub user_id: UserId,
+    pub user_id: WorkspaceId,
     pub dr_account_id: AccountId,
     pub cr_account_id: AccountId,
     pub currency: Currency,
@@ -51,7 +51,7 @@ impl Default for TransactionResponse {
     fn default() -> Self {
         Self {
             id: TransactionId::generate(),
-            user_id: UserId::generate(),
+            user_id: WorkspaceId::generate(),
             dr_account_id: AccountId::generate(),
             cr_account_id: AccountId::generate(),
             currency: Currency::Stq,
