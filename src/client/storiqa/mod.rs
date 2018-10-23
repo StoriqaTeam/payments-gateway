@@ -136,11 +136,12 @@ impl StoriqaClient for StoriqaClientImpl {
             password,
             first_name,
             last_name,
+            device_type,
         } = new_user;
         let query = format!(
             r#"
                 mutation M {{
-                    createUser(input: {{email: \"{}\", password: \"{}\", firstName: \"{}\", lastName: \"{}\", clientMutationId:\"\"}}) {{
+                    createUser(input: {{email: \"{}\", password: \"{}\", firstName: \"{}\", lastName: \"{}\", device: \"{}\", clientMutationId:\"\"}}) {{
                         rawId
                         email
                         firstName
@@ -152,6 +153,7 @@ impl StoriqaClient for StoriqaClientImpl {
             password.inner(),
             first_name,
             last_name,
+            device_type,
         );
         Box::new(
             self.exec_query::<CreateUserResponse>(&query, None)

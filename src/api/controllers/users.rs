@@ -46,9 +46,7 @@ pub fn post_users(ctx: &Context) -> ControllerFuture {
         parse_body::<PostUsersRequest>(ctx.body.clone())
             .and_then(move |input| {
                 let input_clone = input.clone();
-                users_service
-                    .create_user(input.email, input.password, input.first_name, input.last_name)
-                    .map_err(ectx!(convert => input_clone))
+                users_service.create_user(input.into()).map_err(ectx!(convert => input_clone))
             }).and_then(move |user| {
                 accounts_service
                     .create_default_accounts(user.id)

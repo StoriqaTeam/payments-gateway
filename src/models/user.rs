@@ -24,15 +24,5 @@ pub struct NewUser {
     pub last_name: String,
     #[validate]
     pub password: Password,
-}
-
-impl NewUser {
-    pub fn new(email: String, first_name: String, last_name: String, password: Password) -> Self {
-        Self {
-            email,
-            first_name,
-            last_name,
-            password,
-        }
-    }
+    pub device_type: DeviceType,
 }
