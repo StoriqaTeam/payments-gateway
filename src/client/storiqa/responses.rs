@@ -36,6 +36,7 @@ pub fn get_error_payload(errors: Option<Vec<GraphQLError>>) -> Option<serde_json
         let errors = errors.into_iter().fold(vec![], move |mut res, error| {
             if let Some(e) = error.data {
                 if let Some(payload) = e.details.payload {
+                    let payload = serde_json::from_str(&payload).unwrap_or_default();
                     res.push(payload)
                 }
             }
@@ -87,5 +88,5 @@ pub struct GraphQLErrorDataDetails {
     code: Option<String>,
     description: Option<String>,
     message: Option<String>,
-    payload: Option<serde_json::Value>,
+    payload: Option<String>,
 }

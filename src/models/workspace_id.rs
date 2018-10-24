@@ -32,6 +32,6 @@ impl FromStr for WorkspaceId {
 
 impl Display for WorkspaceId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(&format!("{}", self.0,))
+        f.write_str(&format!("{}",self.0.hyphenated()))
     }
 }
