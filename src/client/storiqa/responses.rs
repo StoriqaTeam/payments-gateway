@@ -33,7 +33,7 @@ pub struct GetJWTResponse {
 
 pub fn get_error_payload(errors: Option<Vec<GraphQLError>>) -> Option<serde_json::Value> {
     errors.map(|errors| {
-        let errors = errors.into_iter().fold(vec![], move |mut res, error| {
+        let mut errors = errors.into_iter().fold(vec![], move |mut res, error| {
             if let Some(e) = error.data {
                 if let Some(payload) = e.details.payload {
                     let payload = serde_json::from_str(&payload).unwrap_or_default();
@@ -42,7 +42,11 @@ pub fn get_error_payload(errors: Option<Vec<GraphQLError>>) -> Option<serde_json
             }
             res
         });
-        serde_json::Value::Array(errors)
+        match errors.len() {
+            0 => serde_json::Value::default(),
+            1 => errors.pop().unwrap_or_default(),
+            _ => serde_json::Value::Array(errors),
+        }
     })
 }
 

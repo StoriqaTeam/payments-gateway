@@ -33,7 +33,7 @@ impl Serialize for Password {
 pub fn validate_password_len(password: &Password) -> Result<(), ValidationError> {
     let password_len = password.0.len();
     if password_len < 8 || password_len > 30 {
-        Err (ValidationError {
+        Err(ValidationError {
             code: Cow::from("len"),
             message: Some(Cow::from("Password should be between 8 and 30 symbols")),
             params: HashMap::new(),
@@ -43,27 +43,26 @@ pub fn validate_password_len(password: &Password) -> Result<(), ValidationError>
     }
 }
 pub fn validate_password_lower_case(password: &Password) -> Result<(), ValidationError> {
-
-        if password.0 == password.0.to_lowercase() {
-            Err(ValidationError {
-                code: Cow::from("upper case"),
-                message: Some(Cow::from("Password should contain at least one upper case character")),
-                params: HashMap::new(),
-            })
-        } else {
+    if password.0 == password.0.to_lowercase() {
+        Err(ValidationError {
+            code: Cow::from("upper case"),
+            message: Some(Cow::from("Password should contain at least one upper case character")),
+            params: HashMap::new(),
+        })
+    } else {
         Ok(())
     }
 }
 pub fn validate_password_numbers(password: &Password) -> Result<(), ValidationError> {
-        if !REG_CONTAINS_NUMBERS.is_match(&password.0) {
-            Err(ValidationError {
-                code: Cow::from("numbers"),
-                message: Some(Cow::from("Password should contain at least one number")),
-                params: HashMap::new(),
-            })
-        } else {
-            Ok(())
-        }
+    if !REG_CONTAINS_NUMBERS.is_match(&password.0) {
+        Err(ValidationError {
+            code: Cow::from("numbers"),
+            message: Some(Cow::from("Password should contain at least one number")),
+            params: HashMap::new(),
+        })
+    } else {
+        Ok(())
+    }
 }
 
 impl Validate for Password {
@@ -77,7 +76,7 @@ impl Validate for Password {
                 params: HashMap::new(),
             };
             errors.add("password", error);
-        } 
+        }
         if self.0 == self.0.to_lowercase() {
             let error = ValidationError {
                 code: Cow::from("upper case"),
@@ -85,7 +84,7 @@ impl Validate for Password {
                 params: HashMap::new(),
             };
             errors.add("password", error);
-        } 
+        }
         if !REG_CONTAINS_NUMBERS.is_match(&self.0) {
             let error = ValidationError {
                 code: Cow::from("numbers"),

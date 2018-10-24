@@ -34,6 +34,6 @@ impl FromStr for TransactionId {
 
 impl Display for TransactionId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(&format!("{}",self.0.hyphenated()))
+        f.write_str(&format!("{}", self.0.hyphenated()))
     }
 }

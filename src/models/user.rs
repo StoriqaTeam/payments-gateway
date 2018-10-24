@@ -22,7 +22,11 @@ pub struct NewUser {
     pub first_name: String,
     #[validate(length(min = "1", message = "Last name must not be empty"))]
     pub last_name: String,
-    #[validate(custom = "validate_password_len", custom = "validate_password_lower_case", custom = "validate_password_numbers")]
+    #[validate(
+        custom = "validate_password_len",
+        custom = "validate_password_lower_case",
+        custom = "validate_password_numbers"
+    )]
     pub password: Password,
     pub device_type: DeviceType,
 }
