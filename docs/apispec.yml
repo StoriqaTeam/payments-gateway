@@ -587,31 +587,53 @@ components:
           $ref: '#/components/schemas/Currency'
         value:
           $ref: '#/components/schemas/Value'
+    TransactionAddress:
+      type: object
+      required:
+        - blockchain_address
+      properties:
+        account_id:
+          $ref: '#/components/schemas/Id'
+        owner_name:
+          description: >
+            Owner name with full first name and first letter of last name
+          example:
+            Vasya V.
+        blockchain_address:
+          $ref: '#/components/schemas/AccountAddress'
     Transaction:
       type: object
       required:
         - id
-        - fromAddress
-        - toAddress
+        - from
+        - to
         - currency
         - value
         - fee
+        - status
         - created_at
         - updated_at
       properties:
         id:
           $ref: '#/components/schemas/Id'
-        fromAddress:
-          $ref: '#/components/schemas/AccountAddress'
-        toAddress:
-          $ref: '#/components/schemas/AccountAddress'
+        from:
+          $ref: '#/components/schemas/TransactionAddress'
+        to:
+          $ref: '#/components/schemas/TransactionAddress'
         currency:
           $ref: '#/components/schemas/Currency'
         value:
           $ref: '#/components/schemas/Value'
         fee:
           $ref: '#/components/schemas/Value'
-        creaeted_at:
+        blockchain_tx_id:
+          $ref: '#/components/schemas/Id'
+        status:
+          description: >
+            Transaction status
+          example:
+            Done | Pending
+        created_at:
           $ref: '#/components/schemas/TimeStamp'
         updated_at:
           $ref: '#/components/schemas/TimeStamp'

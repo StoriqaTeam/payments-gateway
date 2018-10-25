@@ -37,6 +37,10 @@ pub enum ErrorContext {
     JsonWebToken,
     #[fail(display = "service error context - invalid auth token")]
     InvalidToken,
+    #[fail(display = "service error context - no account found")]
+    NoAccount,
+    #[fail(display = "service error context - no user found")]
+    NoUser,
 }
 
 derive_error_impls!();

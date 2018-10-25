@@ -16,7 +16,7 @@ use r2d2::Pool;
 use super::config::Config;
 use super::utils::{log_and_capture_error, log_error, log_warn};
 use client::{HttpClientImpl, StoriqaClient, StoriqaClientImpl, TransactionsClient, TransactionsClientImpl};
-use repos::{AccountsRepoImpl, DbExecutorImpl};
+use repos::{AccountsRepoImpl, DbExecutorImpl, UsersRepoImpl};
 use utils::read_body;
 
 mod controllers;
@@ -120,7 +120,12 @@ impl Service for ApiService {
                     };
 
                     let auth_service = Arc::new(AuthServiceImpl::new(storiqa_jwt_public_key, storiqa_jwt_valid_secs));
-                    let users_service = Arc::new(UsersServiceImpl::new(auth_service.clone(), storiqa_client));
+                    let users_service = Arc::new(UsersServiceImpl::new(
+                        auth_service.clone(),
+                        storiqa_client,
+                        Arc::new(UsersRepoImpl),
+                        db_executor.clone(),
+                    ));
                     let accounts_service = Arc::new(AccountsServiceImpl::new(
                         auth_service.clone(),
                         Arc::new(AccountsRepoImpl),
@@ -130,6 +135,7 @@ impl Service for ApiService {
                     let transactions_service = Arc::new(TransactionsServiceImpl::new(
                         auth_service.clone(),
                         Arc::new(AccountsRepoImpl),
+                        Arc::new(UsersRepoImpl),
                         db_executor.clone(),
                         transactions_client,
                     ));

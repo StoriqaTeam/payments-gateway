@@ -11,12 +11,13 @@ use super::error::*;
 use client::TransactionsClient;
 use models::*;
 use prelude::*;
-use repos::{AccountsRepo, DbExecutor};
+use repos::{AccountsRepo, DbExecutor, UsersRepo};
 
 #[derive(Clone)]
 pub struct TransactionsServiceImpl<E: DbExecutor> {
     auth_service: Arc<dyn AuthService>,
     accounts_repo: Arc<dyn AccountsRepo>,
+    users_repo: Arc<dyn UsersRepo>,
     db_executor: E,
     transactions_client: Arc<dyn TransactionsClient>,
 }
@@ -25,12 +26,14 @@ impl<E: DbExecutor> TransactionsServiceImpl<E> {
     pub fn new(
         auth_service: Arc<AuthService>,
         accounts_repo: Arc<dyn AccountsRepo>,
+        users_repo: Arc<dyn UsersRepo>,
         db_executor: E,
         transactions_client: Arc<dyn TransactionsClient>,
     ) -> Self {
         Self {
             auth_service,
             accounts_repo,
+            users_repo,
             db_executor,
             transactions_client,
         }
@@ -55,6 +58,7 @@ pub trait TransactionsService: Send + Sync + 'static {
         token: AuthenticationToken,
         account_id: AccountId,
     ) -> Box<Future<Item = Vec<Transaction>, Error = Error> + Send>;
+    fn add_user_to_transaction(&self, transaction: Transaction) -> Box<Future<Item = Transaction, Error = Error> + Send>;
 }
 
 impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
@@ -66,6 +70,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
         let db_executor = self.db_executor.clone();
         let accounts_repo = self.accounts_repo.clone();
         let transactions_client = self.transactions_client.clone();
+        let service = self.clone();
         Box::new(self.auth_service.authenticate(token.clone()).and_then(move |auth| {
             db_executor
                 .execute({
@@ -92,6 +97,13 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                                 .map_err(ectx!(convert => input))
                                 .map(|resp| resp.into_iter().map(From::from).collect())
                         })
+                }).and_then(move |transactions: Vec<Transaction>| {
+                    iter_ok::<_, Error>(transactions).fold(vec![], move |mut transactions, transaction| {
+                        service.add_user_to_transaction(transaction).and_then(|res| {
+                            transactions.push(res);
+                            Ok(transactions) as Result<Vec<Transaction>, Error>
+                        })
+                    })
                 })
         }))
     }
@@ -106,6 +118,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
         let accounts_repo = self.accounts_repo.clone();
         let db_executor = self.db_executor.clone();
         let transactions_client = self.transactions_client.clone();
+        let service = self.clone();
         Box::new(self.auth_service.authenticate(token).and_then(move |auth| {
             db_executor
                 .execute(move || {
@@ -126,6 +139,13 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                                 Ok(total_transactions) as Result<Vec<Transaction>, Error>
                             })
                     })
+                }).and_then(move |transactions: Vec<Transaction>| {
+                    iter_ok::<_, Error>(transactions).fold(vec![], move |mut transactions, transaction| {
+                        service.add_user_to_transaction(transaction).and_then(|res| {
+                            transactions.push(res);
+                            Ok(transactions) as Result<Vec<Transaction>, Error>
+                        })
+                    })
                 })
         }))
     }
@@ -137,6 +157,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
         let accounts_repo = self.accounts_repo.clone();
         let db_executor = self.db_executor.clone();
         let transactions_client = self.transactions_client.clone();
+        let service = self.clone();
         Box::new(self.auth_service.authenticate(token.clone()).and_then(move |auth| {
             db_executor
                 .execute({
@@ -158,7 +179,52 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                         .get_account_transactions(account_id)
                         .map_err(ectx!(convert => account_id))
                         .map(|resp| resp.into_iter().map(From::from).collect())
+                }).and_then(move |transactions: Vec<Transaction>| {
+                    iter_ok::<_, Error>(transactions).fold(vec![], move |mut transactions, transaction| {
+                        service.add_user_to_transaction(transaction).and_then(|res| {
+                            transactions.push(res);
+                            Ok(transactions) as Result<Vec<Transaction>, Error>
+                        })
+                    })
                 })
+        }))
+    }
+    fn add_user_to_transaction(&self, mut transaction: Transaction) -> Box<Future<Item = Transaction, Error = Error> + Send> {
+        let accounts_repo = self.accounts_repo.clone();
+        let users_repo = self.users_repo.clone();
+        let db_executor = self.db_executor.clone();
+        Box::new(db_executor.execute({
+            move || {
+                for from in &mut transaction.from {
+                    if let Some(account_id) = from.account_id {
+                        let account = accounts_repo
+                            .get(account_id)
+                            .map_err(ectx!(try ErrorKind::Internal => account_id))?;
+                        let account = account.ok_or_else(|| ectx!(try err ErrorContext::NoAccount, ErrorKind::NotFound => account_id))?;
+                        let user = users_repo
+                            .get(account.user_id)
+                            .map_err(ectx!(try ErrorKind::Internal => account_id))?;
+                        if let Some(user) = user {
+                            from.owner_name = Some(user.get_full_name());
+                        }
+                    }
+                }
+                for to in &mut transaction.to {
+                    if let Some(account_id) = to.account_id {
+                        let account = accounts_repo
+                            .get(account_id)
+                            .map_err(ectx!(try ErrorKind::Internal => account_id))?;
+                        let account = account.ok_or_else(|| ectx!(try err ErrorContext::NoAccount, ErrorKind::NotFound => account_id))?;
+                        let user = users_repo
+                            .get(account.user_id)
+                            .map_err(ectx!(try ErrorKind::Internal => account_id))?;
+                        if let Some(user) = user {
+                            to.owner_name = Some(user.get_full_name());
+                        }
+                    }
+                }
+                Ok(transaction)
+            }
         }))
     }
 }
@@ -177,6 +243,7 @@ mod tests {
     ) -> (AccountsServiceImpl<DbExecutorMock>, TransactionsServiceImpl<DbExecutorMock>) {
         let auth_service = Arc::new(AuthServiceMock::new(vec![(token, user_id)]));
         let accounts_repo = Arc::new(AccountsRepoMock::default());
+        let users_repo = Arc::new(UsersRepoMock::default());
         let transactions_client = Arc::new(TransactionsClientMock::default());
         let db_executor = DbExecutorMock::default();
         let acc_service = AccountsServiceImpl::new(
@@ -188,6 +255,7 @@ mod tests {
         let trans_service = TransactionsServiceImpl::new(
             auth_service.clone(),
             accounts_repo.clone(),
+            users_repo.clone(),
             db_executor.clone(),
             transactions_client.clone(),
         );

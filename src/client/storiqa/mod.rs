@@ -137,6 +137,7 @@ impl StoriqaClient for StoriqaClientImpl {
             first_name,
             last_name,
             device_type,
+            ..
         } = new_user;
         let query = format!(
             r#"

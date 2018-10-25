@@ -39,21 +39,31 @@ impl From<Account> for AccountsResponse {
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TransactionsResponse {
-    pub from: AccountId,
-    pub to: AccountId,
-    pub to_currency: Currency,
-    pub value: String,
+    pub id: TransactionId,
+    pub from: Vec<TransactionAddressInfo>,
+    pub to: Vec<TransactionAddressInfo>,
+    pub currency: Currency,
+    pub value: Amount,
+    pub fee: Amount,
+    pub status: TransactionStatus,
     pub blockchain_tx_id: Option<BlockchainTransactionId>,
+    pub created_at: SystemTime,
+    pub updated_at: SystemTime,
 }
 
 impl From<Transaction> for TransactionsResponse {
     fn from(transaction: Transaction) -> Self {
         Self {
+            id: transaction.id,
             from: transaction.from,
             to: transaction.to,
-            to_currency: transaction.to_currency,
-            value: transaction.value.to_string(),
+            currency: transaction.currency,
+            value: transaction.value,
+            fee: transaction.fee,
+            status: transaction.status,
             blockchain_tx_id: transaction.blockchain_tx_id,
+            created_at: transaction.created_at,
+            updated_at: transaction.updated_at,
         }
     }
 }
