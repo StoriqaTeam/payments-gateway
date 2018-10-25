@@ -29,12 +29,21 @@ impl Default for CreateTransaction {
 
 #[derive(Debug, Clone, Validate)]
 pub struct Transaction {
-    pub from: AccountId,
-    pub to: AccountId,
-    pub to_currency: Currency,
+    pub id: TransactionId,
+    pub from: Vec<TransactionAddressInfo>,
+    pub to: Vec<TransactionAddressInfo>,
+    pub currency: Currency,
     pub value: Amount,
-    pub blockchain_tx_id: Option<BlockchainTransactionId>,
     pub fee: Amount,
+    pub status: TransactionStatus,
+    pub blockchain_tx_id: Option<BlockchainTransactionId>,
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TransactionAddressInfo {
+    pub account_id: Option<AccountId>,
+    pub owner_name: Option<String>,
+    pub blockchain_address: AccountAddress,
 }

@@ -34,15 +34,13 @@ impl Default for AccountResponse {
 #[serde(rename_all = "camelCase")]
 pub struct TransactionResponse {
     pub id: TransactionId,
-    pub user_id: WorkspaceId,
-    pub dr_account_id: AccountId,
-    pub cr_account_id: AccountId,
+    pub from: Vec<TransactionAddressInfo>,
+    pub to: Vec<TransactionAddressInfo>,
     pub currency: Currency,
     pub value: Amount,
     pub fee: Amount,
     pub status: TransactionStatus,
     pub blockchain_tx_id: Option<BlockchainTransactionId>,
-    pub hold_until: Option<SystemTime>,
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
 }
@@ -51,15 +49,13 @@ impl Default for TransactionResponse {
     fn default() -> Self {
         Self {
             id: TransactionId::generate(),
-            user_id: WorkspaceId::generate(),
-            dr_account_id: AccountId::generate(),
-            cr_account_id: AccountId::generate(),
-            currency: Currency::Stq,
+            from: vec![],
+            to: vec![],
+            currency: Currency::Eth,
             value: Amount::default(),
             fee: Amount::default(),
-            status: TransactionStatus::Pending,
+            status: TransactionStatus::Done,
             blockchain_tx_id: None,
-            hold_until: None,
             created_at: SystemTime::now(),
             updated_at: SystemTime::now(),
         }
@@ -67,16 +63,18 @@ impl Default for TransactionResponse {
 }
 
 impl From<TransactionResponse> for Transaction {
-    fn from(resp: TransactionResponse) -> Self {
+    fn from(transaction: TransactionResponse) -> Self {
         Self {
-            from: resp.dr_account_id,
-            to: resp.cr_account_id,
-            to_currency: resp.currency,
-            value: resp.value,
-            blockchain_tx_id: resp.blockchain_tx_id,
-            fee: resp.fee,
-            created_at: resp.created_at,
-            updated_at: resp.updated_at,
+            id: transaction.id,
+            from: transaction.from,
+            to: transaction.to,
+            currency: transaction.currency,
+            value: transaction.value,
+            fee: transaction.fee,
+            status: transaction.status,
+            blockchain_tx_id: transaction.blockchain_tx_id,
+            created_at: transaction.created_at,
+            updated_at: transaction.updated_at,
         }
     }
 }

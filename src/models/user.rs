@@ -1,6 +1,9 @@
+use std::time::SystemTime;
+
 use validator::Validate;
 
 use models::*;
+use schema::users;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -29,4 +32,76 @@ pub struct NewUser {
     )]
     pub password: Password,
     pub device_type: DeviceType,
+    pub phone: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Clone)]
+pub struct UserDB {
+    pub id: UserId,
+    pub email: String,
+    pub phone: Option<String>,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub created_at: SystemTime,
+    pub updated_at: SystemTime,
+}
+
+impl Default for UserDB {
+    fn default() -> Self {
+        Self {
+            id: UserId::default(),
+            email: String::default(),
+            phone: None,
+            first_name: None,
+            last_name: None,
+            created_at: SystemTime::now(),
+            updated_at: SystemTime::now(),
+        }
+    }
+}
+
+impl UserDB {
+    pub fn get_full_name(&self) -> String {
+        let first_name = self.first_name.clone().unwrap_or("unknown".to_string());
+        let last_name = self
+            .last_name
+            .clone()
+            .unwrap_or("unknown".to_string())
+            .chars()
+            .next()
+            .unwrap_or_default();
+        format!("{} {}.", first_name, last_name)
+    }
+}
+
+#[derive(Debug, Insertable, Clone, Default)]
+#[table_name = "users"]
+pub struct NewUserDB {
+    pub email: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub phone: Option<String>,
+}
+
+impl From<NewUserDB> for UserDB {
+    fn from(new_user: NewUserDB) -> Self {
+        Self {
+            email: new_user.email,
+            first_name: Some(new_user.first_name),
+            last_name: Some(new_user.last_name),
+            phone: new_user.phone,
+            ..Default::default()
+        }
+    }
+}
+
+impl From<NewUser> for NewUserDB {
+    fn from(new_user: NewUser) -> Self {
+        Self {
+            email: new_user.email,
+            first_name: new_user.first_name,
+            last_name: new_user.last_name,
+            phone: new_user.phone,
+        }
+    }
 }

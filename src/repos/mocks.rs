@@ -4,6 +4,7 @@ use super::accounts::*;
 use super::error::*;
 use super::executor::DbExecutor;
 use super::types::RepoResult;
+use super::users::*;
 use models::*;
 use prelude::*;
 
@@ -49,6 +50,24 @@ impl AccountsRepo for AccountsRepoMock {
     fn get_by_user(&self, user_id_arg: UserId) -> RepoResult<Vec<Account>> {
         let data = self.data.lock().unwrap();
         Ok(data.clone().into_iter().filter(|x| x.user_id == user_id_arg).collect())
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct UsersRepoMock {
+    data: Arc<Mutex<Vec<UserDB>>>,
+}
+
+impl UsersRepo for UsersRepoMock {
+    fn create(&self, payload: NewUserDB) -> Result<UserDB, Error> {
+        let mut data = self.data.lock().unwrap();
+        let res: UserDB = payload.into();
+        data.push(res.clone());
+        Ok(res)
+    }
+    fn get(&self, user_id: UserId) -> RepoResult<Option<UserDB>> {
+        let data = self.data.lock().unwrap();
+        Ok(data.iter().filter(|x| x.id == user_id).nth(0).cloned())
     }
 }
 

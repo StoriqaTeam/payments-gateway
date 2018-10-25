@@ -32,6 +32,7 @@ pub struct PostUsersRequest {
     pub device_type: DeviceType,
     pub device_os: Option<String>,
     pub device_id: Option<String>,
+    pub phone: Option<String>,
 }
 
 impl From<PostUsersRequest> for NewUser {
@@ -42,6 +43,7 @@ impl From<PostUsersRequest> for NewUser {
             first_name: req.first_name,
             last_name: req.last_name,
             device_type: req.device_type,
+            phone: req.phone,
         }
     }
 }
