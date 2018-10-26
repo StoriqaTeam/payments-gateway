@@ -268,6 +268,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         500:
           $ref: '#/components/responses/Internal'
+  '/transactions':
     post:
       summary: Create a transactions for a user
       description: Only users with `userId` are allowed to create a transaction
@@ -308,8 +309,6 @@ paths:
       parameters:
         - $ref: '#/components/parameters/userIdParam'
         - $ref: '#/components/parameters/accountIdParam'
-        - $ref: '#/components/parameters/offsetParam'
-        - $ref: '#/components/parameters/limitParam'
       responses:
         200:
           description: Ok
@@ -559,16 +558,20 @@ components:
       type: object
       required:
         - id
+        - userId
         - from
         - to
         - toType
-        - currency
+        - toCurrency
         - value
+        - fee
       properties:
         id:
           $ref: '#/components/schemas/Id'
+        userId:
+          $ref: '#/components/schemas/UserId'
         from:
-          $ref: '#/components/schemas/AccountAddress'
+          $ref: '#/components/schemas/AccountId'
         to:
           description: >
             Generally you make a transaction using blockchain address.
@@ -585,9 +588,11 @@ components:
         toType:
           type: string
           enum: [account|address]
-        currency:
+        toCurrency:
           $ref: '#/components/schemas/Currency'
         value:
+          $ref: '#/components/schemas/Value'
+        fee:
           $ref: '#/components/schemas/Value'
     TransactionAddress:
       type: object
@@ -619,7 +624,9 @@ components:
         id:
           $ref: '#/components/schemas/Id'
         from:
-          $ref: '#/components/schemas/TransactionAddress'
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionAddress'
         to:
           $ref: '#/components/schemas/TransactionAddress'
         currency:
