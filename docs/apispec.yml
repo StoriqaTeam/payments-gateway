@@ -308,6 +308,8 @@ paths:
       parameters:
         - $ref: '#/components/parameters/userIdParam'
         - $ref: '#/components/parameters/accountIdParam'
+        - $ref: '#/components/parameters/offsetParam'
+        - $ref: '#/components/parameters/limitParam'
       responses:
         200:
           description: Ok
