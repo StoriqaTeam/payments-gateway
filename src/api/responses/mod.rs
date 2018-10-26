@@ -35,7 +35,7 @@ impl From<Account> for AccountsResponse {
             id: account.id,
             user_id: account.user_id,
             currency: account.currency,
-            account_address: account.account_address,
+            account_address: account.account_address.to_formatted(account.currency),
             name: account.name,
             balance: account.balance.to_string(),
             created_at,
@@ -60,7 +60,7 @@ pub struct TransactionsResponse {
 }
 
 impl From<Transaction> for TransactionsResponse {
-    fn from(transaction: Transaction) -> Self {
+    fn from(mut transaction: Transaction) -> Self {
         let created_at = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap_or_default()
@@ -69,6 +69,12 @@ impl From<Transaction> for TransactionsResponse {
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs();
+        let currency = transaction.currency;
+        transaction
+            .from
+            .iter_mut()
+            .for_each(|info| info.blockchain_address = info.blockchain_address.to_formatted(currency));
+        transaction.to.blockchain_address = transaction.to.blockchain_address.to_formatted(currency);
         Self {
             id: transaction.id,
             from: transaction.from,

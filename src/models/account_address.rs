@@ -41,6 +41,12 @@ impl AccountAddress {
     pub fn raw(&self) -> &str {
         &self.0
     }
+    pub fn to_formatted(&self, currency: Currency) -> Self {
+        match currency {
+            Currency::Eth | Currency::Stq => AccountAddress::new(format!("0x{}", &self.0)),
+            Currency::Btc => self.clone(),
+        }
+    }
 }
 
 impl Default for AccountAddress {
