@@ -58,16 +58,17 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
         let client = self.storiqa_client.clone();
         let users_repo = self.users_repo.clone();
         let db_executor = self.db_executor.clone();
+        let new_user_db: NewUserDB = new_user.clone().into();
         Box::new(
             new_user
                 .validate()
                 .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_value(&e).unwrap_or_default()) => new_user))
                 .into_future()
-                .and_then(move |_| {
-                    db_executor.execute_transaction(move || {
-                        let new_user_db: NewUserDB = new_user.clone().into();
+                .and_then(move |_| client.create_user(new_user).map_err(ectx!(convert)))
+                .and_then(move |user| {
+                    db_executor.execute(move || {
                         users_repo.create(new_user_db.clone()).map_err(ectx!(try convert => new_user_db))?;
-                        client.create_user(new_user).map_err(ectx!(convert)).wait()
+                        Ok(user)
                     })
                 }),
         )
