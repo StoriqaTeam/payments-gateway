@@ -35,7 +35,7 @@ impl Default for AccountResponse {
 pub struct TransactionResponse {
     pub id: TransactionId,
     pub from: Vec<TransactionAddressInfo>,
-    pub to: Vec<TransactionAddressInfo>,
+    pub to: TransactionAddressInfo,
     pub currency: Currency,
     pub value: Amount,
     pub fee: Amount,
@@ -50,7 +50,7 @@ impl Default for TransactionResponse {
         Self {
             id: TransactionId::generate(),
             from: vec![],
-            to: vec![],
+            to: TransactionAddressInfo::default(),
             currency: Currency::Eth,
             value: Amount::default(),
             fee: Amount::default(),

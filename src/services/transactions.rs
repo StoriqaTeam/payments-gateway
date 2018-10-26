@@ -209,18 +209,16 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                         }
                     }
                 }
-                for to in &mut transaction.to {
-                    if let Some(account_id) = to.account_id {
-                        let account = accounts_repo
-                            .get(account_id)
-                            .map_err(ectx!(try ErrorKind::Internal => account_id))?;
-                        let account = account.ok_or_else(|| ectx!(try err ErrorContext::NoAccount, ErrorKind::NotFound => account_id))?;
-                        let user = users_repo
-                            .get(account.user_id)
-                            .map_err(ectx!(try ErrorKind::Internal => account_id))?;
-                        if let Some(user) = user {
-                            to.owner_name = Some(user.get_full_name());
-                        }
+                if let Some(account_id) = transaction.to.account_id {
+                    let account = accounts_repo
+                        .get(account_id)
+                        .map_err(ectx!(try ErrorKind::Internal => account_id))?;
+                    let account = account.ok_or_else(|| ectx!(try err ErrorContext::NoAccount, ErrorKind::NotFound => account_id))?;
+                    let user = users_repo
+                        .get(account.user_id)
+                        .map_err(ectx!(try ErrorKind::Internal => account_id))?;
+                    if let Some(user) = user {
+                        transaction.to.owner_name = Some(user.get_full_name());
                     }
                 }
                 Ok(transaction)

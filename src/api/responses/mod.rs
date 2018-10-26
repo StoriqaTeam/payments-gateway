@@ -17,12 +17,20 @@ pub struct AccountsResponse {
     pub account_address: AccountAddress,
     pub name: String,
     pub balance: String,
-    pub created_at: SystemTime,
-    pub updated_at: SystemTime,
+    pub created_at: u64,
+    pub updated_at: u64,
 }
 
 impl From<Account> for AccountsResponse {
     fn from(account: Account) -> Self {
+        let created_at = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let updated_at = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
         Self {
             id: account.id,
             user_id: account.user_id,
@@ -30,8 +38,8 @@ impl From<Account> for AccountsResponse {
             account_address: account.account_address,
             name: account.name,
             balance: account.balance.to_string(),
-            created_at: account.created_at,
-            updated_at: account.updated_at,
+            created_at,
+            updated_at,
         }
     }
 }
@@ -41,18 +49,26 @@ impl From<Account> for AccountsResponse {
 pub struct TransactionsResponse {
     pub id: TransactionId,
     pub from: Vec<TransactionAddressInfo>,
-    pub to: Vec<TransactionAddressInfo>,
+    pub to: TransactionAddressInfo,
     pub currency: Currency,
     pub value: Amount,
     pub fee: Amount,
     pub status: TransactionStatus,
     pub blockchain_tx_id: Option<BlockchainTransactionId>,
-    pub created_at: SystemTime,
-    pub updated_at: SystemTime,
+    pub created_at: u64,
+    pub updated_at: u64,
 }
 
 impl From<Transaction> for TransactionsResponse {
     fn from(transaction: Transaction) -> Self {
+        let created_at = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let updated_at = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
         Self {
             id: transaction.id,
             from: transaction.from,
@@ -62,8 +78,8 @@ impl From<Transaction> for TransactionsResponse {
             fee: transaction.fee,
             status: transaction.status,
             blockchain_tx_id: transaction.blockchain_tx_id,
-            created_at: transaction.created_at,
-            updated_at: transaction.updated_at,
+            created_at,
+            updated_at,
         }
     }
 }

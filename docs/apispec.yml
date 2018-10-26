@@ -268,6 +268,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         500:
           $ref: '#/components/responses/Internal'
+  '/transactions':
     post:
       summary: Create a transactions for a user
       description: Only users with `userId` are allowed to create a transaction
@@ -557,14 +558,18 @@ components:
       type: object
       required:
         - id
+        - userId
         - from
         - to
         - toType
         - currency
         - value
+        - fee
       properties:
         id:
           $ref: '#/components/schemas/Id'
+        userId:
+          $ref: '#/components/schemas/UserId'
         from:
           $ref: '#/components/schemas/AccountAddress'
         to:
@@ -586,6 +591,8 @@ components:
         currency:
           $ref: '#/components/schemas/Currency'
         value:
+          $ref: '#/components/schemas/Value'
+        fee:
           $ref: '#/components/schemas/Value'
     TransactionAddress:
       type: object
@@ -617,7 +624,9 @@ components:
         id:
           $ref: '#/components/schemas/Id'
         from:
-          $ref: '#/components/schemas/TransactionAddress'
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionAddress'
         to:
           $ref: '#/components/schemas/TransactionAddress'
         currency:

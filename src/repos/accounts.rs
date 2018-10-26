@@ -64,7 +64,7 @@ impl<'a> AccountsRepo for AccountsRepoImpl {
     }
     fn list_for_user(&self, user_id_arg: UserId, offset: i64, limit: i64) -> RepoResult<Vec<Account>> {
         with_tls_connection(|conn| {
-            let query = accounts.filter(user_id.eq(user_id_arg)).order(id).offset(offset).limit(limit);
+            let query = accounts.filter(user_id.eq(user_id_arg)).order(created_at).offset(offset).limit(limit);
 
             query.get_results(conn).map_err(move |e| {
                 let error_kind = ErrorKind::from(&e);
