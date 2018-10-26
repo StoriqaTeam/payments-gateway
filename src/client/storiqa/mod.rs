@@ -204,12 +204,12 @@ impl StoriqaClient for StoriqaClientImpl {
             token,
         );
         Box::new(
-            self.exec_query::<GetJWTResponse>(&query, None)
+            self.exec_query::<GetEmailVerifyResponse>(&query, None)
                 .and_then(|resp| {
                     resp.data
                         .clone()
                         .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
-                }).map(|resp_data| resp_data.get_jwt_by_email.token),
+                }).map(|resp_data| resp_data.verify_email.token),
         )
     }
 }

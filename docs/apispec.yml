@@ -562,7 +562,7 @@ components:
         - from
         - to
         - toType
-        - currency
+        - toCurrency
         - value
         - fee
       properties:
@@ -571,7 +571,7 @@ components:
         userId:
           $ref: '#/components/schemas/UserId'
         from:
-          $ref: '#/components/schemas/AccountAddress'
+          $ref: '#/components/schemas/AccountId'
         to:
           description: >
             Generally you make a transaction using blockchain address.
@@ -588,7 +588,7 @@ components:
         toType:
           type: string
           enum: [account|address]
-        currency:
+        toCurrency:
           $ref: '#/components/schemas/Currency'
         value:
           $ref: '#/components/schemas/Value'

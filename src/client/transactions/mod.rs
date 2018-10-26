@@ -26,7 +26,12 @@ pub trait TransactionsClient: Send + Sync + 'static {
     fn delete_account(&self, account_id: AccountId) -> Box<Future<Item = AccountResponse, Error = Error> + Send>;
     fn get_account_balance(&self, account_id: AccountId) -> Box<Future<Item = AccountResponse, Error = Error> + Send>;
     fn create_transaction(&self, input: CreateTransaction) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send>;
-    fn get_account_transactions(&self, account_id: AccountId) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send>;
+    fn get_account_transactions(
+        &self,
+        account_id: AccountId,
+        offset: i64,
+        limit: i64,
+    ) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send>;
 }
 
 #[derive(Clone)]
@@ -121,9 +126,14 @@ impl TransactionsClient for TransactionsClientImpl {
                 .and_then(move |body| client.exec_query::<Vec<TransactionResponse>>(&url, Some(body), Method::POST)),
         )
     }
-    fn get_account_transactions(&self, account_id: AccountId) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send> {
+    fn get_account_transactions(
+        &self,
+        account_id: AccountId,
+        offset: i64,
+        limit: i64,
+    ) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send> {
         let client = self.clone();
-        let url = format!("/accounts/{}/transactions", account_id);
+        let url = format!("/accounts/{}/transactions?offset={}&limit={}", account_id, offset, limit);
         Box::new(client.exec_query::<Vec<TransactionResponse>>(&url, None, Method::GET))
     }
 }
@@ -147,7 +157,12 @@ impl TransactionsClient for TransactionsClientMock {
     fn create_transaction(&self, _input: CreateTransaction) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send> {
         Box::new(Ok(vec![TransactionResponse::default()]).into_future())
     }
-    fn get_account_transactions(&self, _account_id: AccountId) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send> {
+    fn get_account_transactions(
+        &self,
+        _account_id: AccountId,
+        _offset: i64,
+        _limit: i64,
+    ) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send> {
         Box::new(Ok(vec![TransactionResponse::default()]).into_future())
     }
 }

@@ -57,6 +57,8 @@ pub trait TransactionsService: Send + Sync + 'static {
         &self,
         token: AuthenticationToken,
         account_id: AccountId,
+        offset: i64,
+        limit: i64,
     ) -> Box<Future<Item = Vec<Transaction>, Error = Error> + Send>;
     fn add_user_to_transaction(&self, transaction: Transaction) -> Box<Future<Item = Transaction, Error = Error> + Send>;
 }
@@ -131,7 +133,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                 }).and_then(move |accounts| {
                     iter_ok::<_, Error>(accounts).fold(vec![], move |mut total_transactions, account| {
                         transactions_client
-                            .get_account_transactions(account.id)
+                            .get_account_transactions(account.id, offset, limit)
                             .map_err(ectx!(convert => account.id))
                             .map(|resp| resp.into_iter().map(From::from).collect())
                             .and_then(|mut transactions| {
@@ -153,6 +155,8 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
         &self,
         token: AuthenticationToken,
         account_id: AccountId,
+        offset: i64,
+        limit: i64,
     ) -> Box<Future<Item = Vec<Transaction>, Error = Error> + Send> {
         let accounts_repo = self.accounts_repo.clone();
         let db_executor = self.db_executor.clone();
@@ -176,7 +180,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                     }
                 }).and_then(move |_| {
                     transactions_client
-                        .get_account_transactions(account_id)
+                        .get_account_transactions(account_id, offset, limit)
                         .map_err(ectx!(convert => account_id))
                         .map(|resp| resp.into_iter().map(From::from).collect())
                 }).and_then(move |transactions: Vec<Transaction>| {
@@ -325,7 +329,7 @@ mod tests {
         new_transaction.from = dr_account.id;
 
         core.run(trans_service.create_transaction(token.clone(), new_transaction)).unwrap();
-        let transaction = core.run(trans_service.get_account_transactions(token, dr_account.id));
+        let transaction = core.run(trans_service.get_account_transactions(token, dr_account.id, 0, 10));
         assert!(transaction.is_ok());
     }
 }
