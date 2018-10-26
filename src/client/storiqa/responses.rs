@@ -57,6 +57,18 @@ pub struct GetJWTByEmail {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct GetEmailVerifyResponse {
+    pub data: Option<GetEmailVerify>,
+    pub errors: Option<Vec<GraphQLError>>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GetEmailVerify {
+    pub verify_email: Token,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct GetJWTByProviderResponse {
     pub data: Option<GetJWTByProvider>,
     pub errors: Option<Vec<GraphQLError>>,
