@@ -1,6 +1,8 @@
 use std::time::SystemTime;
 
+use super::{Error, ErrorContext, ErrorKind};
 use models::*;
+use prelude::*;
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -100,21 +102,27 @@ pub struct PostTransactionsRequest {
     pub to: Receipt,
     pub to_type: ReceiptType,
     pub to_currency: Currency,
-    pub value: Amount,
-    pub fee: Amount,
+    pub value: String,
+    pub fee: String,
     pub hold_until: Option<SystemTime>,
 }
 
-impl From<PostTransactionsRequest> for CreateTransaction {
-    fn from(req: PostTransactionsRequest) -> Self {
-        Self {
-            from: req.from,
-            to: req.to,
-            to_type: req.to_type,
-            to_currency: req.to_currency,
-            value: req.value,
-            fee: req.fee,
-        }
+impl PostTransactionsRequest {
+    pub fn to_create(self) -> Result<CreateTransaction, Error> {
+        let req_ = self.clone();
+        let value = u128::from_str_radix(&self.value, 10).map_err(ectx!(try ErrorContext::RequestJson, ErrorKind::BadRequest => req_))?;
+        let value = Amount::new(value);
+        let req_ = self.clone();
+        let fee = u128::from_str_radix(&self.fee, 10).map_err(ectx!(try ErrorContext::RequestJson, ErrorKind::BadRequest => req_))?;
+        let fee = Amount::new(fee);
+        Ok(CreateTransaction {
+            from: self.from,
+            to: self.to,
+            to_type: self.to_type,
+            to_currency: self.to_currency,
+            value,
+            fee,
+        })
     }
 }
 

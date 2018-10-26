@@ -19,16 +19,18 @@ pub fn post_transactions(ctx: &Context) -> ControllerFuture {
             .ok_or_else(|| ectx!(err ErrorContext::Token, ErrorKind::Unauthorized))
             .into_future()
             .and_then(move |token| {
-                parse_body::<PostTransactionsRequest>(body).and_then(move |input| {
-                    let input_clone = input.clone();
-                    transactions_service
-                        .create_transaction(token, input.into())
-                        .map_err(ectx!(convert => input_clone))
-                        .and_then(|transactions| {
-                            let transactions: Vec<TransactionsResponse> = transactions.into_iter().map(From::from).collect();
-                            response_with_model(&transactions)
-                        })
-                })
+                parse_body::<PostTransactionsRequest>(body)
+                    .and_then(move |input| input.to_create().into_future())
+                    .and_then(move |create| {
+                        let create_clone = create.clone();
+                        transactions_service
+                            .create_transaction(token, create)
+                            .map_err(ectx!(convert => create_clone))
+                            .and_then(|transactions| {
+                                let transactions: Vec<TransactionsResponse> = transactions.into_iter().map(From::from).collect();
+                                response_with_model(&transactions)
+                            })
+                    })
             }),
     )
 }

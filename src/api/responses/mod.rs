@@ -23,11 +23,13 @@ pub struct AccountsResponse {
 
 impl From<Account> for AccountsResponse {
     fn from(account: Account) -> Self {
-        let created_at = SystemTime::now()
+        let created_at = account
+            .created_at
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs();
-        let updated_at = SystemTime::now()
+        let updated_at = account
+            .updated_at
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs();
@@ -61,11 +63,13 @@ pub struct TransactionsResponse {
 
 impl From<Transaction> for TransactionsResponse {
     fn from(mut transaction: Transaction) -> Self {
-        let created_at = SystemTime::now()
+        let created_at = transaction
+            .created_at
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs();
-        let updated_at = SystemTime::now()
+        let updated_at = transaction
+            .updated_at
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs();
