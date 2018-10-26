@@ -31,7 +31,7 @@ impl Default for CreateTransaction {
 pub struct Transaction {
     pub id: TransactionId,
     pub from: Vec<TransactionAddressInfo>,
-    pub to: Vec<TransactionAddressInfo>,
+    pub to: TransactionAddressInfo,
     pub currency: Currency,
     pub value: Amount,
     pub fee: Amount,
@@ -41,7 +41,7 @@ pub struct Transaction {
     pub updated_at: SystemTime,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct TransactionAddressInfo {
     pub account_id: Option<AccountId>,
     pub owner_name: Option<String>,

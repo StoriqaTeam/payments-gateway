@@ -49,7 +49,7 @@ impl From<Account> for AccountsResponse {
 pub struct TransactionsResponse {
     pub id: TransactionId,
     pub from: Vec<TransactionAddressInfo>,
-    pub to: Vec<TransactionAddressInfo>,
+    pub to: TransactionAddressInfo,
     pub currency: Currency,
     pub value: String,
     pub fee: String,
