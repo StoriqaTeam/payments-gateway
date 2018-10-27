@@ -15,6 +15,8 @@ pub trait UsersService: Send + Sync + 'static {
     fn get_jwt_by_oauth(&self, oauth_token: OauthToken, oauth_provider: Provider) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn create_user(&self, new_user: NewUser) -> Box<Future<Item = User, Error = Error> + Send>;
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
+    fn reset_password(&self, reset: ResetPassword) -> Box<Future<Item = (), Error = Error> + Send>;
+    fn confirm_reset_password(&self, reset: ResetPasswordConfirm) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn me(&self, token: AuthenticationToken) -> Box<Future<Item = User, Error = Error> + Send>;
 }
 
@@ -85,5 +87,11 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                 .authenticate(token)
                 .and_then(move |auth| cli.me(auth.token).map_err(ectx!(convert))),
         )
+    }
+    fn reset_password(&self, reset: ResetPassword) -> Box<Future<Item = (), Error = Error> + Send> {
+        Box::new(self.storiqa_client.reset_password(reset).map_err(ectx!(convert)))
+    }
+    fn confirm_reset_password(&self, confirm: ResetPasswordConfirm) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
+        Box::new(self.storiqa_client.confirm_reset_password(confirm).map_err(ectx!(convert)))
     }
 }

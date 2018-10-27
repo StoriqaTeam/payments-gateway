@@ -68,6 +68,30 @@ pub fn post_users_confirm_email(ctx: &Context) -> ControllerFuture {
     )
 }
 
+pub fn post_users_reset_password(ctx: &Context) -> ControllerFuture {
+    let users_service = ctx.users_service.clone();
+    Box::new(
+        parse_body::<PostUsersResetPasswordRequest>(ctx.body.clone())
+            .and_then(move |input| {
+                let input_clone = input.clone();
+                users_service.reset_password(input.into()).map_err(ectx!(convert => input_clone))
+            }).and_then(|token| response_with_model(&token)),
+    )
+}
+
+pub fn post_users_confirm_reset_password(ctx: &Context) -> ControllerFuture {
+    let users_service = ctx.users_service.clone();
+    Box::new(
+        parse_body::<PostUsersConfirmResetPasswordRequest>(ctx.body.clone())
+            .and_then(move |input| {
+                let input_clone = input.clone();
+                users_service
+                    .confirm_reset_password(input.into())
+                    .map_err(ectx!(convert => input_clone))
+            }).and_then(|token| response_with_model(&token)),
+    )
+}
+
 pub fn get_users_me(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
     let maybe_token = ctx.get_auth_token();

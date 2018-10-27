@@ -120,7 +120,47 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UsersConfirmEmailInput'
-
+  /users/reset_password:
+    post:
+      summary: Resets password for email and device
+      tags:
+        - users
+      responses:
+        200:
+          description: Ok
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/Internal'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsersResetPasswordInput'
+  /users/confirm_reset_password:
+    post:
+      summary: Receives confirmation token and a new password and gives back jwt for login
+      tags:
+        - users
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    $ref: '#/components/schemas/JWT'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/Internal'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsersConfirmResetPasswordInput'
   /users/me:
     get:
       summary: Returns current user
@@ -508,6 +548,30 @@ components:
           type: string
           description: Confirmation token that is sent via email after registration
           example: lkg7713rlkf==
+    UsersResetPasswordInput:
+      type: object
+      required:
+        - email
+        - deviceType
+      properties:
+        email:
+          type: string
+          example: a.karasev@storiqa.com
+        deviceType:
+          $ref: '#/components/schemas/DeviceType'
+    UsersConfirmResetPasswordInput:
+      type: object
+      required:
+        - token
+        - password
+      properties:
+        token:
+          type: string
+          description: Reset token that is sent via email after reset applied
+          example: lkg7713rlkf==
+        password:
+          type: string
+          example: secret pass
     SessionCreateInput:
       type: object
       required:

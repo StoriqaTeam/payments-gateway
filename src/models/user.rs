@@ -105,3 +105,15 @@ impl From<NewUser> for NewUserDB {
         }
     }
 }
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ResetPassword {
+    pub email: String,
+    pub device: DeviceType,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ResetPasswordConfirm {
+    pub token: String,
+    pub password: String,
+}

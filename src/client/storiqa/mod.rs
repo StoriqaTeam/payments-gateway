@@ -21,6 +21,8 @@ pub trait StoriqaClient: Send + Sync + 'static {
     fn get_jwt_by_oauth(&self, oauth_token: OauthToken, oauth_provider: Provider) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn create_user(&self, new_user: NewUser) -> Box<Future<Item = User, Error = Error> + Send>;
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
+    fn reset_password(&self, reset: ResetPassword) -> Box<Future<Item = (), Error = Error> + Send>;
+    fn confirm_reset_password(&self, reset: ResetPasswordConfirm) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn me(&self, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send>;
 }
 
@@ -41,7 +43,7 @@ impl StoriqaClientImpl {
         &self,
         query: &str,
         token: Option<StoriqaJWT>,
-    ) -> impl Future<Item = T, Error = Error> + Send {
+    ) -> impl Future<Item = GraphQLResponse<T>, Error = Error> + Send {
         let query = query.to_string();
         let query1 = query.clone();
         let query2 = query.clone();
@@ -72,7 +74,9 @@ impl StoriqaClientImpl {
             .and_then(|bytes| {
                 let bytes_clone = bytes.clone();
                 String::from_utf8(bytes).map_err(ectx!(ErrorSource::Utf8, ErrorKind::Internal => bytes_clone))
-            }).and_then(|string| serde_json::from_str::<T>(&string).map_err(ectx!(ErrorSource::Json, ErrorKind::Internal => string)))
+            }).and_then(|string| {
+                serde_json::from_str::<GraphQLResponse<T>>(&string).map_err(ectx!(ErrorSource::Json, ErrorKind::Internal => string))
+            })
     }
 }
 
@@ -90,7 +94,7 @@ impl StoriqaClient for StoriqaClientImpl {
             password.inner()
         );
         Box::new(
-            self.exec_query::<GetJWTResponse>(&query, None)
+            self.exec_query::<GetJWTByEmail>(&query, None)
                 .and_then(|resp| {
                     resp.data.clone().ok_or_else(|| {
                         if let Some(payload) = get_error_payload(resp.clone().errors) {
@@ -117,7 +121,7 @@ impl StoriqaClient for StoriqaClientImpl {
         );
         info!("{}", query);
         Box::new(
-            self.exec_query::<GetJWTByProviderResponse>(&query, None)
+            self.exec_query::<GetJWTByProvider>(&query, None)
                 .and_then(|resp| {
                     resp.data.clone().ok_or_else(|| {
                         if let Some(payload) = get_error_payload(resp.clone().errors) {
@@ -157,7 +161,7 @@ impl StoriqaClient for StoriqaClientImpl {
             device_type,
         );
         Box::new(
-            self.exec_query::<CreateUserResponse>(&query, None)
+            self.exec_query::<CreateUser>(&query, None)
                 .and_then(|resp| {
                     resp.data.clone().ok_or_else(|| {
                         if let Some(payload) = get_error_payload(resp.clone().errors) {
@@ -183,7 +187,7 @@ impl StoriqaClient for StoriqaClientImpl {
                 }
             "#;
         Box::new(
-            self.exec_query::<MeResponse>(&query, Some(token))
+            self.exec_query::<Me>(&query, Some(token))
                 .and_then(|resp| {
                     resp.data
                         .clone()
@@ -204,12 +208,53 @@ impl StoriqaClient for StoriqaClientImpl {
             token,
         );
         Box::new(
-            self.exec_query::<GetEmailVerifyResponse>(&query, None)
+            self.exec_query::<GetEmailVerify>(&query, None)
                 .and_then(|resp| {
                     resp.data
                         .clone()
                         .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
                 }).map(|resp_data| resp_data.verify_email.token),
+        )
+    }
+    fn reset_password(&self, reset: ResetPassword) -> Box<Future<Item = (), Error = Error> + Send> {
+        let query = format!(
+            r#"
+                mutation M {{
+                    requestPasswordReset(input: {{email: \"{}\", device: {}, clientMutationId:\"\"}}) {{
+                        success
+                    }}
+                }}
+            "#,
+            reset.email, reset.device,
+        );
+        Box::new(
+            self.exec_query::<Reset>(&query, None)
+                .and_then(|resp| {
+                    resp.data
+                        .clone()
+                        .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
+                }).map(|_| ()),
+        )
+    }
+    fn confirm_reset_password(&self, reset: ResetPasswordConfirm) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
+        let query = format!(
+            r#"
+                mutation M {{
+                    applyPasswordReset(input: {{token: \"{}\", password: \"{}\", clientMutationId:\"\"}}) {{
+                        success
+                        token
+                    }}
+                }}
+            "#,
+            reset.token, reset.password,
+        );
+        Box::new(
+            self.exec_query::<ResetApply>(&query, None)
+                .and_then(|resp| {
+                    resp.data
+                        .clone()
+                        .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
+                }).map(|resp_data| resp_data.token),
         )
     }
 }

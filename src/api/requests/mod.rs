@@ -16,6 +16,38 @@ pub struct PostSessionsRequest {
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct PostUsersResetPasswordRequest {
+    pub email: String,
+    pub device_type: DeviceType,
+}
+
+impl From<PostUsersResetPasswordRequest> for ResetPassword {
+    fn from(req: PostUsersResetPasswordRequest) -> Self {
+        Self {
+            email: req.email,
+            device: req.device_type,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PostUsersConfirmResetPasswordRequest {
+    pub token: String,
+    pub password: String,
+}
+
+impl From<PostUsersConfirmResetPasswordRequest> for ResetPasswordConfirm {
+    fn from(req: PostUsersConfirmResetPasswordRequest) -> Self {
+        Self {
+            token: req.token,
+            password: req.password,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct PostSessionsOauthRequest {
     pub oauth_token: OauthToken,
     pub oauth_provider: Provider,
