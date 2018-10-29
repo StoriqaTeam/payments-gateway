@@ -79,6 +79,18 @@ pub struct GetJWTByProvider {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct GetResetPassword {
+    #[serde(rename = "requestPasswordReset")]
+    pub request_password_reset: Reset,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct GetResetPasswordApply {
+    #[serde(rename = "applyPasswordReset")]
+    pub apply_password_reset: ResetApply,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct Token {
     pub token: StoriqaJWT,
 }

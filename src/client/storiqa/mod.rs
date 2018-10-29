@@ -228,7 +228,7 @@ impl StoriqaClient for StoriqaClientImpl {
             reset.email, reset.device,
         );
         Box::new(
-            self.exec_query::<Reset>(&query, None)
+            self.exec_query::<GetResetPassword>(&query, None)
                 .and_then(|resp| {
                     resp.data
                         .clone()
@@ -249,12 +249,12 @@ impl StoriqaClient for StoriqaClientImpl {
             reset.token, reset.password,
         );
         Box::new(
-            self.exec_query::<ResetApply>(&query, None)
+            self.exec_query::<GetResetPasswordApply>(&query, None)
                 .and_then(|resp| {
                     resp.data
                         .clone()
                         .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
-                }).map(|resp_data| resp_data.token),
+                }).map(|resp_data| resp_data.apply_password_reset.token),
         )
     }
 }
