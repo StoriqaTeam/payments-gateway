@@ -34,7 +34,7 @@ impl From<PostUsersResetPasswordRequest> for ResetPassword {
 #[serde(rename_all = "camelCase")]
 pub struct PostUsersConfirmResetPasswordRequest {
     pub token: String,
-    pub password: String,
+    pub password: Password,
 }
 
 impl From<PostUsersConfirmResetPasswordRequest> for ResetPasswordConfirm {

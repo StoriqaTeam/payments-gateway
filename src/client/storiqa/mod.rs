@@ -246,7 +246,8 @@ impl StoriqaClient for StoriqaClientImpl {
                     }}
                 }}
             "#,
-            reset.token, reset.password,
+            reset.token,
+            reset.password.inner(),
         );
         Box::new(
             self.exec_query::<GetResetPasswordApply>(&query, None)

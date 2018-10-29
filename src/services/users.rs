@@ -92,6 +92,13 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
         Box::new(self.storiqa_client.reset_password(reset).map_err(ectx!(convert)))
     }
     fn confirm_reset_password(&self, confirm: ResetPasswordConfirm) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
-        Box::new(self.storiqa_client.confirm_reset_password(confirm).map_err(ectx!(convert)))
+        let cli = self.storiqa_client.clone();
+        Box::new(
+            confirm
+                .validate()
+                .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_value(&e).unwrap_or_default()) => confirm))
+                .into_future()
+                .and_then(move |_| cli.confirm_reset_password(confirm).map_err(ectx!(convert))),
+        )
     }
 }

@@ -112,8 +112,13 @@ pub struct ResetPassword {
     pub device: DeviceType,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, Validate)]
 pub struct ResetPasswordConfirm {
     pub token: String,
-    pub password: String,
+    #[validate(
+        custom = "validate_password_len",
+        custom = "validate_password_lower_case",
+        custom = "validate_password_numbers"
+    )]
+    pub password: Password,
 }
