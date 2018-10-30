@@ -60,7 +60,6 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
         let client = self.storiqa_client.clone();
         let users_repo = self.users_repo.clone();
         let db_executor = self.db_executor.clone();
-        let new_user_db: NewUserDB = new_user.clone().into();
         Box::new(
             new_user
                 .validate()
@@ -69,7 +68,8 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                 .and_then(move |_| client.create_user(new_user).map_err(ectx!(convert)))
                 .and_then(move |user| {
                     db_executor.execute(move || {
-                        users_repo.create(new_user_db.clone()).map_err(ectx!(try convert => new_user_db))?;
+                        let user_db: NewUserDB = user.clone().into();
+                        users_repo.create(user_db.clone()).map_err(ectx!(try convert => user_db))?;
                         Ok(user)
                     })
                 }),

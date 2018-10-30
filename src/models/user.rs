@@ -77,6 +77,7 @@ impl UserDB {
 #[derive(Debug, Insertable, Clone, Default)]
 #[table_name = "users"]
 pub struct NewUserDB {
+    pub id: UserId,
     pub email: String,
     pub first_name: String,
     pub last_name: String,
@@ -86,6 +87,7 @@ pub struct NewUserDB {
 impl From<NewUserDB> for UserDB {
     fn from(new_user: NewUserDB) -> Self {
         Self {
+            id: new_user.id,
             email: new_user.email,
             first_name: Some(new_user.first_name),
             last_name: Some(new_user.last_name),
@@ -95,13 +97,14 @@ impl From<NewUserDB> for UserDB {
     }
 }
 
-impl From<NewUser> for NewUserDB {
-    fn from(new_user: NewUser) -> Self {
+impl From<User> for NewUserDB {
+    fn from(user: User) -> Self {
         Self {
-            email: new_user.email,
-            first_name: new_user.first_name,
-            last_name: new_user.last_name,
-            phone: new_user.phone,
+            id: user.id,
+            email: user.email,
+            first_name: user.first_name.unwrap_or_default(),
+            last_name: user.last_name.unwrap_or_default(),
+            phone: user.phone,
         }
     }
 }
