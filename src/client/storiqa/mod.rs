@@ -23,6 +23,7 @@ pub trait StoriqaClient: Send + Sync + 'static {
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn reset_password(&self, reset: ResetPassword) -> Box<Future<Item = (), Error = Error> + Send>;
     fn confirm_reset_password(&self, reset: ResetPasswordConfirm) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
+    fn change_password(&self, change: ChangePassword, token: StoriqaJWT) -> Box<Future<Item = (), Error = Error> + Send>;
     fn me(&self, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send>;
 }
 
@@ -256,6 +257,31 @@ impl StoriqaClient for StoriqaClientImpl {
                         .clone()
                         .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
                 }).map(|resp_data| resp_data.apply_password_reset.token),
+        )
+    }
+    fn change_password(&self, change: ChangePassword, token: StoriqaJWT) -> Box<Future<Item = (), Error = Error> + Send> {
+        let query = format!(
+            r#"
+                mutation M {{
+                    changePassword(input: {{newPassword: \"{}\", oldPassword: \"{}\", clientMutationId:\"\"}}) {{
+                        success
+                    }}
+                }}
+            "#,
+            change.new_password.inner(),
+            change.old_password.inner(),
+        );
+        Box::new(
+            self.exec_query::<GetChangePassword>(&query, Some(token))
+                .and_then(|resp| {
+                    resp.data.clone().ok_or_else(|| {
+                        if let Some(payload) = get_error_payload(resp.clone().errors) {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Validation(payload) => resp.clone())
+                        } else {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp.clone())
+                        }
+                    })
+                }).map(|_| ()),
         )
     }
 }

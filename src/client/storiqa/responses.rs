@@ -91,6 +91,12 @@ pub struct GetResetPasswordApply {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct GetChangePassword {
+    #[serde(rename = "changePassword")]
+    pub request_password_change: Reset,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct Token {
     pub token: StoriqaJWT,
 }

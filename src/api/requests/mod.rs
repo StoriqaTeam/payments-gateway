@@ -32,6 +32,22 @@ impl From<PostUsersResetPasswordRequest> for ResetPassword {
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct PostUsersChangePasswordRequest {
+    pub new_password: Password,
+    pub old_password: Password,
+}
+
+impl From<PostUsersChangePasswordRequest> for ChangePassword {
+    fn from(req: PostUsersChangePasswordRequest) -> Self {
+        Self {
+            new_password: req.new_password,
+            old_password: req.old_password,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct PostUsersConfirmResetPasswordRequest {
     pub token: String,
     pub password: Password,

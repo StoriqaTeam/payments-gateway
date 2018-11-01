@@ -30,6 +30,7 @@ pub struct GetUsersAccountsParams {
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateTransactionRequest {
+    pub id: TransactionId,
     pub user_id: WorkspaceId,
     pub from: AccountId,
     pub to: Receipt,
@@ -42,6 +43,7 @@ pub struct CreateTransactionRequest {
 impl From<(CreateTransaction, WorkspaceId)> for CreateTransactionRequest {
     fn from(req: (CreateTransaction, WorkspaceId)) -> Self {
         Self {
+            id: TransactionId::generate(),
             user_id: req.1,
             from: req.0.from,
             to: req.0.to,

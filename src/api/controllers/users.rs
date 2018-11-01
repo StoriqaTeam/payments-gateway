@@ -79,6 +79,27 @@ pub fn post_users_reset_password(ctx: &Context) -> ControllerFuture {
     )
 }
 
+pub fn post_users_change_password(ctx: &Context) -> ControllerFuture {
+    let users_service = ctx.users_service.clone();
+    let maybe_token = ctx.get_auth_token();
+    let body = ctx.body.clone();
+
+    Box::new(
+        maybe_token
+            .ok_or_else(|| ectx!(err ErrorContext::Token, ErrorKind::Unauthorized))
+            .into_future()
+            .and_then(move |token| {
+                parse_body::<PostUsersChangePasswordRequest>(body)
+                    .and_then(move |input| {
+                        let input_clone = input.clone();
+                        users_service
+                            .change_password(input.into(), token)
+                            .map_err(ectx!(convert => input_clone))
+                    }).and_then(|token| response_with_model(&token))
+            }),
+    )
+}
+
 pub fn post_users_confirm_reset_password(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
     Box::new(

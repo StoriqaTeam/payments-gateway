@@ -137,6 +137,23 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UsersResetPasswordInput'
+  /users/change_password:
+    post:
+      summary: Change password with old_password and new_password
+      tags:
+        - users
+      responses:
+        200:
+          description: Ok
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/Internal'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsersChangePasswordInput'
   /users/confirm_reset_password:
     post:
       summary: Receives confirmation token and a new password and gives back jwt for login
@@ -559,6 +576,18 @@ components:
           example: a.karasev@storiqa.com
         deviceType:
           $ref: '#/components/schemas/DeviceType'
+    UsersChangePasswordInput:
+      type: object
+      required:
+        - newPassword
+        - oldPassword
+      properties:
+        new_password:
+          type: string
+          example: secret pass
+        old_password:
+          type: string
+          example: secret pass
     UsersConfirmResetPasswordInput:
       type: object
       required:

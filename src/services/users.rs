@@ -16,6 +16,7 @@ pub trait UsersService: Send + Sync + 'static {
     fn create_user(&self, new_user: NewUser) -> Box<Future<Item = User, Error = Error> + Send>;
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn reset_password(&self, reset: ResetPassword) -> Box<Future<Item = (), Error = Error> + Send>;
+    fn change_password(&self, change_password: ChangePassword, token: AuthenticationToken) -> Box<Future<Item = (), Error = Error> + Send>;
     fn confirm_reset_password(&self, reset: ResetPasswordConfirm) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn me(&self, token: AuthenticationToken) -> Box<Future<Item = User, Error = Error> + Send>;
 }
@@ -90,6 +91,14 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
     }
     fn reset_password(&self, reset: ResetPassword) -> Box<Future<Item = (), Error = Error> + Send> {
         Box::new(self.storiqa_client.reset_password(reset).map_err(ectx!(convert)))
+    }
+    fn change_password(&self, change_password: ChangePassword, token: AuthenticationToken) -> Box<Future<Item = (), Error = Error> + Send> {
+        let cli = self.storiqa_client.clone();
+        Box::new(
+            self.auth_service
+                .authenticate(token)
+                .and_then(move |auth| cli.change_password(change_password, auth.token).map_err(ectx!(convert))),
+        )
     }
     fn confirm_reset_password(&self, confirm: ResetPasswordConfirm) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
         let cli = self.storiqa_client.clone();

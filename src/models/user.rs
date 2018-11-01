@@ -125,3 +125,10 @@ pub struct ResetPasswordConfirm {
     )]
     pub password: Password,
 }
+
+#[derive(Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ChangePassword {
+    pub old_password: Password,
+    pub new_password: Password,
+}
