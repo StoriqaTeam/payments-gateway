@@ -299,6 +299,75 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         500:
           $ref: '#/components/responses/Internal'
+  /accounts/{accountId}:
+    get:
+      summary: Returns account.
+      description: You need to be an admin or a user with `userId` to get this.
+      security:
+        - Bearer: []
+      tags:
+        - accounts
+      parameters:
+        - $ref: '#/components/parameters/accountIdParam'
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/Internal'
+
+    put:
+      summary: Update account for a user
+      description: Only users with `userId` are allowed to update an account
+      security:
+        - Bearer: []
+      tags:
+        - accounts
+      parameters:
+        - $ref: '#/components/parameters/accountIdParam'
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/Internal'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountUpdateInput'
+    delete:
+      summary: Delete an account
+      description: Account will be deactivated, rather than deleted. Only users with `userId` are allowed to delete an account
+      security:
+        - Bearer: []
+      tags:
+        - accounts
+      parameters:
+        - $ref: '#/components/parameters/accountIdParam'
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/Internal'
 
   '/users/{userId}/transactions':
     get:
