@@ -145,6 +145,7 @@ pub struct GetUsersAccountsParams {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PostTransactionsRequest {
+    pub id: TransactionId,
     pub user_id: UserId,
     pub from: AccountId,
     pub to: Receipt,
@@ -164,6 +165,7 @@ impl PostTransactionsRequest {
         let fee = u128::from_str_radix(&self.fee, 10).map_err(ectx!(try ErrorContext::RequestJson, ErrorKind::BadRequest => req_))?;
         let fee = Amount::new(fee);
         Ok(CreateTransaction {
+            id: self.id,
             from: self.from,
             to: self.to,
             to_type: self.to_type,

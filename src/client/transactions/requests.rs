@@ -43,7 +43,7 @@ pub struct CreateTransactionRequest {
 impl From<(CreateTransaction, WorkspaceId)> for CreateTransactionRequest {
     fn from(req: (CreateTransaction, WorkspaceId)) -> Self {
         Self {
-            id: TransactionId::generate(),
+            id: req.0.id,
             user_id: req.1,
             from: req.0.from,
             to: req.0.to,

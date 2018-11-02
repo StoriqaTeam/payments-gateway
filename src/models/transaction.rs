@@ -6,6 +6,7 @@ use models::*;
 
 #[derive(Debug, Clone, Validate)]
 pub struct CreateTransaction {
+    pub id: TransactionId,
     pub from: AccountId,
     pub to: Receipt,
     pub to_type: ReceiptType,
@@ -17,6 +18,7 @@ pub struct CreateTransaction {
 impl Default for CreateTransaction {
     fn default() -> Self {
         Self {
+            id: TransactionId::generate(),
             from: AccountId::generate(),
             to: Receipt::default(),
             to_type: ReceiptType::Account,
