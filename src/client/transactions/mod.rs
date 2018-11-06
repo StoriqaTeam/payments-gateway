@@ -32,6 +32,7 @@ pub trait TransactionsClient: Send + Sync + 'static {
         offset: i64,
         limit: i64,
     ) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send>;
+    fn get_rate(&self, input: GetRate) -> Box<Future<Item = Rate, Error = Error> + Send>;
 }
 
 #[derive(Clone)]
@@ -136,6 +137,16 @@ impl TransactionsClient for TransactionsClientImpl {
         let url = format!("/accounts/{}/transactions?offset={}&limit={}", account_id, offset, limit);
         Box::new(client.exec_query::<Vec<TransactionResponse>>(&url, None, Method::GET))
     }
+    fn get_rate(&self, input: GetRate) -> Box<Future<Item = Rate, Error = Error> + Send> {
+        let client = self.clone();
+        let url = format!("/rate");
+        Box::new(
+            serde_json::to_string(&input)
+                .map_err(ectx!(ErrorSource::Json, ErrorKind::Internal => input))
+                .into_future()
+                .and_then(move |body| client.exec_query::<Rate>(&url, Some(body), Method::POST)),
+        )
+    }
 }
 
 #[derive(Default)]
@@ -164,5 +175,8 @@ impl TransactionsClient for TransactionsClientMock {
         _limit: i64,
     ) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send> {
         Box::new(Ok(vec![TransactionResponse::default()]).into_future())
+    }
+    fn get_rate(&self, input: GetRate) -> Box<Future<Item = Rate, Error = Error> + Send> {
+        Box::new(Ok(Rate::default()).into_future())
     }
 }

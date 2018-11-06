@@ -119,6 +119,7 @@ impl Service for ApiService {
                         GET /v1/accounts/{account_id: AccountId}/transactions => get_accounts_transactions,
                         GET /v1/users/{user_id: UserId}/transactions => get_users_transactions,
                         POST /v1/transactions => post_transactions,
+                        POST /v1/rate => post_rate,
                         _ => not_found,
                     };
 

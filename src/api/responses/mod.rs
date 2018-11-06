@@ -93,3 +93,34 @@ impl From<Transaction> for TransactionsResponse {
         }
     }
 }
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RateResponse {
+    pub id: ExchangeId,
+    pub from: Currency,
+    pub to: Currency,
+    pub amount: Amount,
+    pub expiration: u64,
+    pub rate: f64,
+    pub created_at: u64,
+    pub updated_at: u64,
+}
+
+impl From<Rate> for RateResponse {
+    fn from(rate: Rate) -> Self {
+        let expiration = rate.expiration.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_secs();
+        let created_at = rate.created_at.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_secs();
+        let updated_at = rate.updated_at.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_secs();
+        Self {
+            id: rate.id,
+            from: rate.from,
+            to: rate.to,
+            amount: rate.amount,
+            expiration,
+            rate: rate.rate,
+            created_at,
+            updated_at,
+        }
+    }
+}

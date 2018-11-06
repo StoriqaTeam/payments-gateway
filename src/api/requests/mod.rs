@@ -182,3 +182,25 @@ pub struct GetUsersTransactionsParams {
     pub limit: i64,
     pub offset: i64,
 }
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PostRateRequest {
+    pub id: ExchangeId,
+    pub from: Currency,
+    pub to: Currency,
+    pub amount: Amount,
+    pub amount_currency: Currency,
+}
+
+impl From<PostRateRequest> for GetRate {
+    fn from(req: PostRateRequest) -> Self {
+        Self {
+            id: req.id,
+            from: req.from,
+            to: req.to,
+            amount: req.amount,
+            amount_currency: req.amount_currency,
+        }
+    }
+}
