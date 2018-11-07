@@ -54,6 +54,7 @@ impl Config {
         // Merge development.toml if RUN_MODE variable is not set
         let env = env::var("RUN_MODE").unwrap_or_else(|_| "development".into());
         s.merge(File::with_name(&format!("config/{}", env)).required(false))?;
+        s.merge(File::with_name("config/secret.toml").required(false))?;
 
         s.merge(Environment::with_prefix("STQ_PAYMENTS"))?;
         s.try_into()
