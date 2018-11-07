@@ -1,4 +1,4 @@
-use std::time::SystemTime;
+use chrono::NaiveDateTime;
 
 use models::*;
 
@@ -11,8 +11,8 @@ pub struct AccountResponse {
     pub address: AccountAddress,
     pub name: Option<String>,
     pub balance: Amount,
-    pub created_at: SystemTime,
-    pub updated_at: SystemTime,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 impl Default for AccountResponse {
@@ -24,8 +24,8 @@ impl Default for AccountResponse {
             address: AccountAddress::default(),
             name: Some("new acc".to_string()),
             balance: Amount::default(),
-            created_at: SystemTime::now(),
-            updated_at: SystemTime::now(),
+            created_at: ::chrono::Utc::now().naive_utc(),
+            updated_at: ::chrono::Utc::now().naive_utc(),
         }
     }
 }
@@ -41,8 +41,8 @@ pub struct TransactionResponse {
     pub fee: Amount,
     pub status: TransactionStatus,
     pub blockchain_tx_id: Option<BlockchainTransactionId>,
-    pub created_at: SystemTime,
-    pub updated_at: SystemTime,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 impl Default for TransactionResponse {
@@ -56,8 +56,8 @@ impl Default for TransactionResponse {
             fee: Amount::default(),
             status: TransactionStatus::Done,
             blockchain_tx_id: None,
-            created_at: SystemTime::now(),
-            updated_at: SystemTime::now(),
+            created_at: ::chrono::Utc::now().naive_utc(),
+            updated_at: ::chrono::Utc::now().naive_utc(),
         }
     }
 }

@@ -1,4 +1,4 @@
-use std::time::SystemTime;
+use chrono::NaiveDateTime;
 
 use validator::Validate;
 
@@ -13,6 +13,8 @@ pub struct CreateTransaction {
     pub to_currency: Currency,
     pub value: Amount,
     pub fee: Amount,
+    pub exchange_id: Option<ExchangeId>,
+    pub exchange_rate: Option<f64>,
 }
 
 impl Default for CreateTransaction {
@@ -25,6 +27,8 @@ impl Default for CreateTransaction {
             to_currency: Currency::Eth,
             value: Amount::default(),
             fee: Amount::default(),
+            exchange_id: None,
+            exchange_rate: None,
         }
     }
 }
@@ -39,8 +43,8 @@ pub struct Transaction {
     pub fee: Amount,
     pub status: TransactionStatus,
     pub blockchain_tx_id: Option<BlockchainTransactionId>,
-    pub created_at: SystemTime,
-    pub updated_at: SystemTime,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

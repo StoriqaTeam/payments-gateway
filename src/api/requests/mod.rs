@@ -1,4 +1,4 @@
-use std::time::SystemTime;
+use chrono::NaiveDateTime;
 
 use super::{Error, ErrorContext, ErrorKind};
 use models::*;
@@ -153,7 +153,9 @@ pub struct PostTransactionsRequest {
     pub to_currency: Currency,
     pub value: String,
     pub fee: String,
-    pub hold_until: Option<SystemTime>,
+    pub hold_until: Option<NaiveDateTime>,
+    pub exchange_id: Option<ExchangeId>,
+    pub exchange_rate: Option<f64>,
 }
 
 impl PostTransactionsRequest {
@@ -172,6 +174,8 @@ impl PostTransactionsRequest {
             to_currency: self.to_currency,
             value,
             fee,
+            exchange_id: self.exchange_id,
+            exchange_rate: self.exchange_rate,
         })
     }
 }

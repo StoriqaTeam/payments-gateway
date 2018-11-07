@@ -819,6 +819,10 @@ components:
           $ref: '#/components/schemas/Value'
         fee:
           $ref: '#/components/schemas/Value'
+        exchangeId:
+          $ref: '#/components/schemas/Uuid'
+        exchangeRate:
+          $ref: '#/components/schemas/Rate'
     TransactionAddress:
       type: object
       required:

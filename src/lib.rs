@@ -1,5 +1,6 @@
 #![allow(proc_macro_derive_resolution_fallback)]
 
+extern crate chrono;
 extern crate futures;
 #[macro_use]
 extern crate failure;

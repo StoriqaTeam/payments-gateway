@@ -1,4 +1,4 @@
-use std::time::SystemTime;
+use chrono::NaiveDateTime;
 
 use models::*;
 
@@ -17,22 +17,12 @@ pub struct AccountsResponse {
     pub account_address: AccountAddress,
     pub name: String,
     pub balance: String,
-    pub created_at: u64,
-    pub updated_at: u64,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 impl From<Account> for AccountsResponse {
     fn from(account: Account) -> Self {
-        let created_at = account
-            .created_at
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
-        let updated_at = account
-            .updated_at
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
         Self {
             id: account.id,
             user_id: account.user_id,
@@ -40,8 +30,8 @@ impl From<Account> for AccountsResponse {
             account_address: account.account_address.to_formatted(account.currency),
             name: account.name,
             balance: account.balance.to_string(),
-            created_at,
-            updated_at,
+            created_at: account.created_at,
+            updated_at: account.updated_at,
         }
     }
 }
@@ -57,22 +47,12 @@ pub struct TransactionsResponse {
     pub fee: String,
     pub status: TransactionStatus,
     pub blockchain_tx_id: Option<BlockchainTransactionId>,
-    pub created_at: u64,
-    pub updated_at: u64,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 impl From<Transaction> for TransactionsResponse {
     fn from(mut transaction: Transaction) -> Self {
-        let created_at = transaction
-            .created_at
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
-        let updated_at = transaction
-            .updated_at
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
         let currency = transaction.currency;
         transaction
             .from
@@ -88,8 +68,8 @@ impl From<Transaction> for TransactionsResponse {
             fee: transaction.fee.to_string(),
             status: transaction.status,
             blockchain_tx_id: transaction.blockchain_tx_id,
-            created_at,
-            updated_at,
+            created_at: transaction.created_at,
+            updated_at: transaction.updated_at,
         }
     }
 }
@@ -101,26 +81,23 @@ pub struct RateResponse {
     pub from: Currency,
     pub to: Currency,
     pub amount: Amount,
-    pub expiration: u64,
+    pub expiration: NaiveDateTime,
     pub rate: f64,
-    pub created_at: u64,
-    pub updated_at: u64,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 impl From<Rate> for RateResponse {
     fn from(rate: Rate) -> Self {
-        let expiration = rate.expiration.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_secs();
-        let created_at = rate.created_at.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_secs();
-        let updated_at = rate.updated_at.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_secs();
         Self {
             id: rate.id,
             from: rate.from,
             to: rate.to,
             amount: rate.amount,
-            expiration,
+            expiration: rate.expiration,
             rate: rate.rate,
-            created_at,
-            updated_at,
+            created_at: rate.created_at,
+            updated_at: rate.updated_at,
         }
     }
 }

@@ -1,4 +1,4 @@
-use std::time::SystemTime;
+use chrono::NaiveDateTime;
 
 use validator::Validate;
 
@@ -42,8 +42,8 @@ pub struct UserDB {
     pub phone: Option<String>,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
-    pub created_at: SystemTime,
-    pub updated_at: SystemTime,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 impl Default for UserDB {
@@ -54,8 +54,8 @@ impl Default for UserDB {
             phone: None,
             first_name: None,
             last_name: None,
-            created_at: SystemTime::now(),
-            updated_at: SystemTime::now(),
+            created_at: ::chrono::Utc::now().naive_utc(),
+            updated_at: ::chrono::Utc::now().naive_utc(),
         }
     }
 }
