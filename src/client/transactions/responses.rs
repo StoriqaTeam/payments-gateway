@@ -32,6 +32,22 @@ impl Default for AccountResponse {
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct BalanceResponse {
+    pub account: AccountResponse,
+    pub balance: Amount,
+}
+
+impl Default for BalanceResponse {
+    fn default() -> Self {
+        Self {
+            account: AccountResponse::default(),
+            balance: Amount::default(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct TransactionResponse {
     pub id: TransactionId,
     pub from: Vec<TransactionAddressInfo>,
