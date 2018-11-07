@@ -1,6 +1,7 @@
 use chrono::prelude::*;
 use env_logger::Builder as EnvLogBuilder;
-use log::{LevelFilter as LogLevelFilter, Log, Metadata, Record};
+use gelf;
+use log::{self, LevelFilter as LogLevelFilter, Log, Metadata, Record};
 use std::env;
 use std::io::Write;
 use std::sync::Arc;
