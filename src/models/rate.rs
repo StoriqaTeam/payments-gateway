@@ -3,6 +3,7 @@ use chrono::NaiveDateTime;
 use models::*;
 
 #[derive(Debug, Queryable, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Rate {
     pub id: ExchangeId,
     pub from: Currency,
@@ -32,6 +33,7 @@ impl Default for Rate {
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GetRate {
     pub id: ExchangeId,
     pub from: Currency,
