@@ -1,7 +1,7 @@
 use std::env;
 
 use config_crate::{Config as RawConfig, ConfigError, Environment, File};
-use logger::GrayLogConfig;
+use logger::{FileLogConfig, GrayLogConfig};
 use models::*;
 use sentry_integration::SentryConfig;
 
@@ -14,6 +14,7 @@ pub struct Config {
     pub cpu_pool: CpuPool,
     pub sentry: Option<SentryConfig>,
     pub graylog: Option<GrayLogConfig>,
+    pub filelog: Option<FileLogConfig>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

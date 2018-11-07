@@ -36,6 +36,9 @@ pub struct CreateTransactionRequest {
     pub to: Receipt,
     pub to_type: ReceiptType,
     pub to_currency: Currency,
+    pub value_currency: Currency,
+    pub exchange_id: Option<ExchangeId>,
+    pub exchange_rate: Option<f64>,
     pub value: Amount,
     pub fee: Amount,
 }
@@ -49,6 +52,9 @@ impl From<(CreateTransaction, WorkspaceId)> for CreateTransactionRequest {
             to: req.0.to,
             to_type: req.0.to_type,
             to_currency: req.0.to_currency,
+            value_currency: req.0.value_currency,
+            exchange_id: req.0.exchange_id,
+            exchange_rate: req.0.exchange_rate,
             value: req.0.value,
             fee: req.0.fee,
         }

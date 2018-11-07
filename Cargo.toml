@@ -32,6 +32,7 @@ serde = "1"
 serde_derive = "1"
 serde_json = {version = "1", features = ["arbitrary_precision"]}
 serde_qs = "0.4"
+simplelog = "0.5.3"
 tokio-core = "0.1.17"
 uuid = { version = "0.6", features = ["use_std", "v4", "serde"] }
 validator = "0.8"

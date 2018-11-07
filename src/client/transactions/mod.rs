@@ -176,7 +176,7 @@ impl TransactionsClient for TransactionsClientMock {
     ) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send> {
         Box::new(Ok(vec![TransactionResponse::default()]).into_future())
     }
-    fn get_rate(&self, input: GetRate) -> Box<Future<Item = Rate, Error = Error> + Send> {
+    fn get_rate(&self, _input: GetRate) -> Box<Future<Item = Rate, Error = Error> + Send> {
         Box::new(Ok(Rate::default()).into_future())
     }
 }

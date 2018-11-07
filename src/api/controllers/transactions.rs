@@ -43,7 +43,7 @@ pub fn post_rate(ctx: &Context) -> ControllerFuture {
         maybe_token
             .ok_or_else(|| ectx!(err ErrorContext::Token, ErrorKind::Unauthorized))
             .into_future()
-            .and_then(move |token| {
+            .and_then(move |_token| {
                 parse_body::<PostRateRequest>(body).and_then(move |rate| {
                     let rate_clone = rate.clone();
                     transactions_service

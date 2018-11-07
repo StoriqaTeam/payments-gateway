@@ -13,6 +13,7 @@ pub struct CreateTransaction {
     pub to_currency: Currency,
     pub value: Amount,
     pub fee: Amount,
+    pub value_currency: Currency,
     pub exchange_id: Option<ExchangeId>,
     pub exchange_rate: Option<f64>,
 }
@@ -25,6 +26,7 @@ impl Default for CreateTransaction {
             to: Receipt::default(),
             to_type: ReceiptType::Account,
             to_currency: Currency::Eth,
+            value_currency: Currency::Eth,
             value: Amount::default(),
             fee: Amount::default(),
             exchange_id: None,

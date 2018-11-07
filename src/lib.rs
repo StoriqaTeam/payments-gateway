@@ -33,6 +33,7 @@ extern crate validator;
 #[macro_use]
 extern crate sentry;
 extern crate gelf;
+extern crate simplelog;
 extern crate tokio_core;
 extern crate uuid;
 
@@ -65,7 +66,7 @@ pub fn start_server() {
     // Prepare sentry integration
     let _sentry = sentry_integration::init(config.sentry.as_ref());
     // Prepare logger
-    logger::init(config.graylog.as_ref());
+    logger::init(&config);
 
     api::start_server(config);
 }
