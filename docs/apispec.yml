@@ -846,8 +846,10 @@ components:
         - id
         - from
         - to
-        - currency
-        - value
+        - fromValue
+        - fromCurrency
+        - toValue
+        - toCurrency
         - fee
         - status
         - created_at
@@ -861,10 +863,14 @@ components:
             $ref: '#/components/schemas/TransactionAddress'
         to:
           $ref: '#/components/schemas/TransactionAddress'
-        currency:
-          $ref: '#/components/schemas/Currency'
-        value:
+        fromValue:
           $ref: '#/components/schemas/Value'
+        fromCurrency:
+          $ref: '#/components/schemas/Currency'
+        toValue:
+          $ref: '#/components/schemas/Value'
+        toCurrency:
+          $ref: '#/components/schemas/Currency'
         fee:
           $ref: '#/components/schemas/Value'
         blockchain_tx_id:
@@ -873,7 +879,7 @@ components:
           description: >
             Transaction status
           example:
-            Done | Pending
+            done | pending
         created_at:
           $ref: '#/components/schemas/TimeStamp'
         updated_at:

@@ -42,8 +42,10 @@ pub struct TransactionsResponse {
     pub id: TransactionId,
     pub from: Vec<TransactionAddressInfo>,
     pub to: TransactionAddressInfo,
-    pub currency: Currency,
-    pub value: String,
+    pub from_value: String,
+    pub from_currency: Currency,
+    pub to_value: String,
+    pub to_currency: Currency,
     pub fee: String,
     pub status: TransactionStatus,
     pub blockchain_tx_id: Option<BlockchainTransactionId>,
@@ -53,18 +55,21 @@ pub struct TransactionsResponse {
 
 impl From<Transaction> for TransactionsResponse {
     fn from(mut transaction: Transaction) -> Self {
-        let currency = transaction.currency;
+        let from_currency = transaction.from_currency;
         transaction
             .from
             .iter_mut()
-            .for_each(|info| info.blockchain_address = info.blockchain_address.to_formatted(currency));
-        transaction.to.blockchain_address = transaction.to.blockchain_address.to_formatted(currency);
+            .for_each(|info| info.blockchain_address = info.blockchain_address.to_formatted(from_currency));
+        let to_currency = transaction.to_currency;
+        transaction.to.blockchain_address = transaction.to.blockchain_address.to_formatted(to_currency);
         Self {
             id: transaction.id,
             from: transaction.from,
             to: transaction.to,
-            currency: transaction.currency,
-            value: transaction.value.to_string(),
+            from_currency: transaction.from_currency,
+            from_value: transaction.from_value.to_string(),
+            to_currency: transaction.to_currency,
+            to_value: transaction.to_value.to_string(),
             fee: transaction.fee.to_string(),
             status: transaction.status,
             blockchain_tx_id: transaction.blockchain_tx_id,
