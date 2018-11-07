@@ -10,7 +10,6 @@ pub struct AccountResponse {
     pub currency: Currency,
     pub address: AccountAddress,
     pub name: Option<String>,
-    pub balance: Amount,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -23,7 +22,6 @@ impl Default for AccountResponse {
             currency: Currency::Eth,
             address: AccountAddress::default(),
             name: Some("new acc".to_string()),
-            balance: Amount::default(),
             created_at: ::chrono::Utc::now().naive_utc(),
             updated_at: ::chrono::Utc::now().naive_utc(),
         }
