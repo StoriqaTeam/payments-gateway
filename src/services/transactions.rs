@@ -198,12 +198,16 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                         let account = accounts_repo
                             .get(account_id)
                             .map_err(ectx!(try ErrorKind::Internal => account_id))?;
-                        let account = account.ok_or_else(|| ectx!(try err ErrorContext::NoAccount, ErrorKind::NotFound => account_id))?;
-                        let user = users_repo
-                            .get(account.user_id)
-                            .map_err(ectx!(try ErrorKind::Internal => account_id))?;
-                        if let Some(user) = user {
-                            from.owner_name = Some(user.get_full_name());
+                        if let Some(account) = account {
+                            let user = users_repo
+                                .get(account.user_id)
+                                .map_err(ectx!(try ErrorKind::Internal => account_id))?;
+                            if let Some(user) = user {
+                                from.owner_name = Some(user.get_full_name());
+                            }
+                        } else {
+                            // if account, for example, was deleted
+                            from.account_id = None;
                         }
                     }
                 }
