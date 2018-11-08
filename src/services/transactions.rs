@@ -45,7 +45,7 @@ pub trait TransactionsService: Send + Sync + 'static {
         &self,
         token: AuthenticationToken,
         input: CreateTransaction,
-    ) -> Box<Future<Item = Vec<Transaction>, Error = Error> + Send>;
+    ) -> Box<Future<Item = Transaction, Error = Error> + Send>;
     fn get_transactions_for_user(
         &self,
         token: AuthenticationToken,
@@ -69,7 +69,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
         &self,
         token: AuthenticationToken,
         input: CreateTransaction,
-    ) -> Box<Future<Item = Vec<Transaction>, Error = Error> + Send> {
+    ) -> Box<Future<Item = Transaction, Error = Error> + Send> {
         let db_executor = self.db_executor.clone();
         let accounts_repo = self.accounts_repo.clone();
         let transactions_client = self.transactions_client.clone();
@@ -98,16 +98,9 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                             transactions_client
                                 .create_transaction(input.clone())
                                 .map_err(ectx!(convert => input))
-                                .map(|resp| resp.into_iter().map(From::from).collect())
+                                .map(From::from)
                         })
-                }).and_then(move |transactions: Vec<Transaction>| {
-                    iter_ok::<_, Error>(transactions).fold(vec![], move |mut transactions, transaction| {
-                        service.add_user_to_transaction(transaction).and_then(|res| {
-                            transactions.push(res);
-                            Ok(transactions) as Result<Vec<Transaction>, Error>
-                        })
-                    })
-                })
+                }).and_then(move |transaction: Transaction| service.add_user_to_transaction(transaction))
         }))
     }
 

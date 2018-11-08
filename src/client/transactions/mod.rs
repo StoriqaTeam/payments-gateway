@@ -25,7 +25,7 @@ pub trait TransactionsClient: Send + Sync + 'static {
     fn update_account(&self, account_id: AccountId, payload: UpdateAccount) -> Box<Future<Item = AccountResponse, Error = Error> + Send>;
     fn delete_account(&self, account_id: AccountId) -> Box<Future<Item = AccountResponse, Error = Error> + Send>;
     fn get_account_balance(&self, account_id: AccountId) -> Box<Future<Item = BalanceResponse, Error = Error> + Send>;
-    fn create_transaction(&self, input: CreateTransaction) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send>;
+    fn create_transaction(&self, input: CreateTransaction) -> Box<Future<Item = TransactionResponse, Error = Error> + Send>;
     fn get_account_transactions(
         &self,
         account_id: AccountId,
@@ -115,7 +115,7 @@ impl TransactionsClient for TransactionsClientImpl {
         let url = format!("/accounts/{}/balances", account_id);
         Box::new(client.exec_query::<BalanceResponse>(&url, None, Method::GET))
     }
-    fn create_transaction(&self, input: CreateTransaction) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send> {
+    fn create_transaction(&self, input: CreateTransaction) -> Box<Future<Item = TransactionResponse, Error = Error> + Send> {
         let client = self.clone();
         let workspace_id = self.workspace_id;
         let create: CreateTransactionRequest = (input, workspace_id).into();
@@ -124,7 +124,7 @@ impl TransactionsClient for TransactionsClientImpl {
             serde_json::to_string(&create)
                 .map_err(ectx!(ErrorSource::Json, ErrorKind::Internal => create))
                 .into_future()
-                .and_then(move |body| client.exec_query::<Vec<TransactionResponse>>(&url, Some(body), Method::POST)),
+                .and_then(move |body| client.exec_query::<TransactionResponse>(&url, Some(body), Method::POST)),
         )
     }
     fn get_account_transactions(
@@ -165,8 +165,8 @@ impl TransactionsClient for TransactionsClientMock {
     fn get_account_balance(&self, _account_id: AccountId) -> Box<Future<Item = BalanceResponse, Error = Error> + Send> {
         Box::new(Ok(BalanceResponse::default()).into_future())
     }
-    fn create_transaction(&self, _input: CreateTransaction) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send> {
-        Box::new(Ok(vec![TransactionResponse::default()]).into_future())
+    fn create_transaction(&self, _input: CreateTransaction) -> Box<Future<Item = TransactionResponse, Error = Error> + Send> {
+        Box::new(Ok(TransactionResponse::default()).into_future())
     }
     fn get_account_transactions(
         &self,
