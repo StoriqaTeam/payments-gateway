@@ -19,7 +19,7 @@ impl Default for Fees {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Fee {
-    pub value: Currency,
+    pub value: Amount,
     pub estimated_time: u64,
 }
 
