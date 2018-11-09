@@ -106,3 +106,19 @@ impl From<Rate> for RateResponse {
         }
     }
 }
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FeesResponse {
+    pub currency: Currency,
+    pub fees: Vec<Fee>,
+}
+
+impl From<Fees> for FeesResponse {
+    fn from(rate: Fees) -> Self {
+        Self {
+            currency: rate.currency,
+            fees: rate.fees,
+        }
+    }
+}

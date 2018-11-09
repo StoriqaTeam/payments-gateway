@@ -39,6 +39,27 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RateInput'
+  /fees:
+    post:
+      summary: Calculates fee for transaction
+      security:
+        - Bearer: []
+      tags:
+        - fees
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeeResponse'
+        500:
+          $ref: '#/components/responses/Internal'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeeInput'
   /sessions:
     post:
       summary: Login by user and password
@@ -756,6 +777,17 @@ components:
           $ref: '#/components/schemas/TimeStamp'
         updatedAt:
           $ref: '#/components/schemas/TimeStamp'
+    FeeResponse:
+      type: object
+      description: >
+        Current fee.
+      properties:
+        currency:
+          $ref: '#/components/schemas/Currency'
+        fees:
+          type: array
+          items:
+            $ref: '#/components/schemas/Fee'
     RateInput:
       type: object
       required:
@@ -775,6 +807,17 @@ components:
           $ref: '#/components/schemas/Currency'
         amount:
           $ref: '#/components/schemas/Value'
+    FeeInput:
+      type: object
+      required:
+        - fromCurrency
+        - toCurrency
+      properties:
+        fromCurrency:
+          $ref: '#/components/schemas/Currency'
+        toCurrency:
+          $ref: '#/components/schemas/Currency'
+          
     Value:
       type: string
       description: Monetary value - either fiat or blockchain
@@ -840,6 +883,18 @@ components:
             Vasya V.
         blockchain_address:
           $ref: '#/components/schemas/AccountAddress'
+    Fee:
+      type: object
+      required:
+        - value
+        - estimatedTime
+      properties:
+        value:
+          $ref: '#/components/schemas/Value'
+        estimatedTime:
+          type: number
+          description: seconds
+          
     Transaction:
       type: object
       required:

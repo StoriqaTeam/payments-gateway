@@ -210,3 +210,19 @@ impl From<PostRateRequest> for GetRate {
         }
     }
 }
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PostFeesRequest {
+    pub from_currency: Currency,
+    pub to_currency: Currency,
+}
+
+impl From<PostFeesRequest> for GetFees {
+    fn from(req: PostFeesRequest) -> Self {
+        Self {
+            from_currency: req.from_currency,
+            to_currency: req.to_currency,
+        }
+    }
+}

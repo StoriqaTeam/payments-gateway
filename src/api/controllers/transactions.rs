@@ -52,6 +52,26 @@ pub fn post_rate(ctx: &Context) -> ControllerFuture {
     )
 }
 
+pub fn post_fees(ctx: &Context) -> ControllerFuture {
+    let transactions_service = ctx.transactions_service.clone();
+    let maybe_token = ctx.get_auth_token();
+    let body = ctx.body.clone();
+    Box::new(
+        maybe_token
+            .ok_or_else(|| ectx!(err ErrorContext::Token, ErrorKind::Unauthorized))
+            .into_future()
+            .and_then(move |_token| {
+                parse_body::<PostFeesRequest>(body).and_then(move |fees| {
+                    let fees_clone = fees.clone();
+                    transactions_service
+                        .get_fees(fees.into())
+                        .map_err(ectx!(convert => fees_clone))
+                        .and_then(|fees| response_with_model(&FeesResponse::from(fees)))
+                })
+            }),
+    )
+}
+
 pub fn get_users_transactions(ctx: &Context, user_id: UserId) -> ControllerFuture {
     let transactions_service = ctx.transactions_service.clone();
     let maybe_token = ctx.get_auth_token();

@@ -120,6 +120,7 @@ impl Service for ApiService {
                         GET /v1/users/{user_id: UserId}/transactions => get_users_transactions,
                         POST /v1/transactions => post_transactions,
                         POST /v1/rate => post_rate,
+                        POST /v1/fees => post_fees,
                         _ => not_found,
                     };
 
@@ -157,6 +158,19 @@ impl Service for ApiService {
                     debug!("Received request {}", ctx);
 
                     router(ctx, parts.method.into(), parts.uri.path())
+                }).and_then(|resp| {
+                    let (parts, body) = resp.into_parts();
+                    read_body(body)
+                        .map_err(ectx!(ErrorSource::Hyper, ErrorKind::Internal))
+                        .map(|body| (parts, body))
+                }).map(|(parts, body)| {
+                    debug!(
+                        "Sent response with status {}, headers: {:#?}, body: {:?}",
+                        parts.status.as_u16(),
+                        parts.headers,
+                        String::from_utf8(body.clone()).ok()
+                    );
+                    Response::from_parts(parts, body.into())
                 }).or_else(|e| match e.kind() {
                     ErrorKind::BadRequest => {
                         log_error(&e);
