@@ -17,6 +17,8 @@ extern crate serde_qs;
 extern crate serde_derive;
 #[macro_use]
 extern crate lazy_static;
+extern crate lapin_async;
+extern crate lapin_futures;
 #[macro_use]
 extern crate log;
 extern crate config as config_crate;
@@ -34,6 +36,7 @@ extern crate validator;
 extern crate sentry;
 extern crate gelf;
 extern crate simplelog;
+extern crate tokio;
 extern crate tokio_core;
 extern crate uuid;
 
@@ -45,6 +48,7 @@ mod config;
 mod logger;
 mod models;
 mod prelude;
+mod rabbit;
 mod repos;
 mod schema;
 mod sentry_integration;
