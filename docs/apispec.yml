@@ -986,6 +986,10 @@ components:
           type: string
           description: Short name for the account
           example: My main account
+        callbackUrl:
+          type: string
+          description: Callback url is called when transaction to this account occured
+          example: http://billing.com/callback
     AccountUpdateInput:
       type: object
       required:

@@ -15,6 +15,7 @@ pub struct Account {
     pub balance: Amount,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+    pub callback_url: Option<String>,
 }
 
 impl Default for Account {
@@ -28,6 +29,7 @@ impl Default for Account {
             balance: Amount::default(),
             created_at: ::chrono::Utc::now().naive_utc(),
             updated_at: ::chrono::Utc::now().naive_utc(),
+            callback_url: None,
         }
     }
 }
@@ -55,6 +57,7 @@ pub struct NewAccount {
     pub account_address: AccountAddress,
     #[validate(length(min = "1", max = "40", message = "Name must not be empty "))]
     pub name: String,
+    pub callback_url: Option<String>,
 }
 
 impl Default for NewAccount {
@@ -65,6 +68,7 @@ impl Default for NewAccount {
             user_id: UserId::generate(),
             currency: Currency::Eth,
             account_address: AccountAddress::default(),
+            callback_url: None,
         }
     }
 }
@@ -98,6 +102,7 @@ pub struct CreateAccount {
     pub currency: Currency,
     #[validate(length(min = "1", max = "40", message = "Name must not be empty "))]
     pub name: String,
+    pub callback_url: Option<String>,
 }
 
 impl Default for CreateAccount {
@@ -107,6 +112,7 @@ impl Default for CreateAccount {
             user_id: UserId::generate(),
             currency: Currency::Eth,
             name: String::default(),
+            callback_url: None,
         }
     }
 }
@@ -119,6 +125,7 @@ impl From<(CreateAccount, AccountAddress)> for NewAccount {
             currency: acc.0.currency,
             account_address: acc.1,
             name: acc.0.name,
+            callback_url: acc.0.callback_url,
         }
     }
 }
