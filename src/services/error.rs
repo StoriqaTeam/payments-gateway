@@ -41,6 +41,12 @@ pub enum ErrorContext {
     NoAccount,
     #[fail(display = "service error context - no user found")]
     NoUser,
+    #[fail(display = "service error context - invalid utf8 bytes")]
+    UTF8,
+    #[fail(display = "service error context - failed to parse string to json")]
+    Json,
+    #[fail(display = "service error context - rabbit lapin lib")]
+    Lapin,
 }
 
 derive_error_impls!();

@@ -22,7 +22,7 @@ use utils::read_body;
 mod controllers;
 mod error;
 mod requests;
-mod responses;
+pub mod responses;
 mod utils;
 
 use self::controllers::*;

@@ -1,4 +1,3 @@
-use futures::future;
 use futures_cpupool::CpuPool;
 use lapin_futures::channel::BasicConsumeOptions;
 use lapin_futures::channel::Channel;

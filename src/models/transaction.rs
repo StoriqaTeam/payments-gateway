@@ -35,7 +35,7 @@ impl Default for CreateTransaction {
     }
 }
 
-#[derive(Debug, Clone, Validate)]
+#[derive(Debug, Clone, Validate, Deserialize)]
 pub struct Transaction {
     pub id: TransactionId,
     pub from: Vec<TransactionAddressInfo>,

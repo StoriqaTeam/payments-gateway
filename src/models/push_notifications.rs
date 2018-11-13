@@ -1,11 +1,14 @@
-#[derive(Debug, Clone, Deserialize, Serialize)]
+use api::responses::*;
+
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PushNotifications {
     pub device_id: String,
+    pub transaction: TransactionsResponse,
 }
 
-impl Default for PushNotifications {
-    fn default() -> Self {
-        Self { device_id: String::default() }
+impl PushNotifications {
+    pub fn new(device_id: String, transaction: TransactionsResponse) -> Self {
+        Self { device_id, transaction }
     }
 }

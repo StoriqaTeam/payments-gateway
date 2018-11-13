@@ -78,20 +78,10 @@ impl TransactionPublisherImpl {
                     Default::default(),
                 ).map(|_| ()),
         );
-        let f4: Box<Future<Item = (), Error = StdIoError>> = Box::new(channel.queue_bind(
-            "pushes",
-            "notifications",
-            "pushes",
-            Default::default(),
-            Default::default(),
-        ));
-        let f5: Box<Future<Item = (), Error = StdIoError>> = Box::new(channel.queue_bind(
-            "callbacks",
-            "notifications",
-            "callbacks",
-            Default::default(),
-            Default::default(),
-        ));
+        let f4: Box<Future<Item = (), Error = StdIoError>> =
+            Box::new(channel.queue_bind("pushes", "notifications", "pushes", Default::default(), Default::default()));
+        let f5: Box<Future<Item = (), Error = StdIoError>> =
+            Box::new(channel.queue_bind("callbacks", "notifications", "callbacks", Default::default(), Default::default()));
         future::join_all(vec![f1, f2, f3, f4, f5])
             .map(|_| ())
             .map_err(ectx!(ErrorSource::Lapin, ErrorKind::Internal))
@@ -104,29 +94,21 @@ impl TransactionPublisher for TransactionPublisherImpl {
             self.get_channel()
                 .and_then(move |channel| {
                     let payload = serde_json::to_string(&push).unwrap().into_bytes();
-                        channel.clone().basic_publish(
-                            "notifications",
-                            "pushes",
-                            payload,
-                            Default::default(),
-                            Default::default(),
-                        )
+                    channel
+                        .clone()
+                        .basic_publish("notifications", "pushes", payload, Default::default(), Default::default())
                         .map_err(ectx!(ErrorSource::Lapin, ErrorKind::Internal))
                 }).map(|_| ()),
         )
     }
-    fn callback(&self, callback: Callback) -> Box<Future<Item = (), Error = Error> + Send>{
+    fn callback(&self, callback: Callback) -> Box<Future<Item = (), Error = Error> + Send> {
         Box::new(
             self.get_channel()
                 .and_then(move |channel| {
                     let payload = serde_json::to_string(&callback).unwrap().into_bytes();
-                        channel.clone().basic_publish(
-                            "notifications",
-                            "callbacks",
-                            payload,
-                            Default::default(),
-                            Default::default(),
-                        )
+                    channel
+                        .clone()
+                        .basic_publish("notifications", "callbacks", payload, Default::default(), Default::default())
                         .map_err(ectx!(ErrorSource::Lapin, ErrorKind::Internal))
                 }).map(|_| ()),
         )
