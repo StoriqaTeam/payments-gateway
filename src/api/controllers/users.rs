@@ -55,6 +55,26 @@ pub fn post_users(ctx: &Context) -> ControllerFuture {
     )
 }
 
+pub fn put_users(ctx: &Context) -> ControllerFuture {
+    let users_service = ctx.users_service.clone();
+    let maybe_token = ctx.get_auth_token();
+    let body = ctx.body.clone();
+
+    Box::new(
+        maybe_token
+            .ok_or_else(|| ectx!(err ErrorContext::Token, ErrorKind::Unauthorized))
+            .into_future()
+            .and_then(move |token| {
+                parse_body::<PutUsersRequest>(body).and_then(move |input| {
+                    let input_clone = input.clone();
+                    users_service
+                        .update_user(input.into(), token)
+                        .map_err(ectx!(convert => input_clone))
+                })
+            }).and_then(move |user| response_with_model(&user)),
+    )
+}
+
 pub fn post_users_confirm_email(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
     Box::new(

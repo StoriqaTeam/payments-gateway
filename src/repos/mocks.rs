@@ -65,6 +65,10 @@ impl UsersRepo for UsersRepoMock {
         data.push(res.clone());
         Ok(res)
     }
+    fn update(&self, user_id: UserId, _payload: UpdateUser) -> RepoResult<UserDB> {
+        let data = self.data.lock().unwrap();
+        Ok(data.iter().filter(|x| x.id == user_id).nth(0).cloned().unwrap())
+    }
     fn get(&self, user_id: UserId) -> RepoResult<Option<UserDB>> {
         let data = self.data.lock().unwrap();
         Ok(data.iter().filter(|x| x.id == user_id).nth(0).cloned())

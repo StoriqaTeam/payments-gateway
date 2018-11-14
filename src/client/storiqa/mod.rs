@@ -2,24 +2,29 @@ mod error;
 mod responses;
 
 pub use self::error::*;
-use self::responses::*;
-use super::HttpClient;
-use config::Config;
+
+use std::sync::Arc;
+
+use base64;
 use failure::Fail;
 use futures::prelude::*;
 use hyper::Method;
 use hyper::{Body, Request};
-use models::StoriqaJWT;
-use models::*;
 use serde::Deserialize;
 use serde_json;
-use std::sync::Arc;
+
+use self::responses::*;
+use super::HttpClient;
+use config::Config;
+use models::StoriqaJWT;
+use models::*;
 use utils::read_body;
 
 pub trait StoriqaClient: Send + Sync + 'static {
     fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn get_jwt_by_oauth(&self, oauth_token: OauthToken, oauth_provider: Provider) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn create_user(&self, new_user: NewUser) -> Box<Future<Item = User, Error = Error> + Send>;
+    fn update_user(&self, update_user: UpdateUser, user_id: UserId) -> Box<Future<Item = User, Error = Error> + Send>;
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn reset_password(&self, reset: ResetPassword) -> Box<Future<Item = (), Error = Error> + Send>;
     fn confirm_reset_password(&self, reset: ResetPasswordConfirm) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
@@ -172,6 +177,56 @@ impl StoriqaClient for StoriqaClientImpl {
                         }
                     })
                 }).map(|resp_data| resp_data.create_user),
+        )
+    }
+
+    fn update_user(&self, update_user: UpdateUser, user_id: UserId) -> Box<Future<Item = User, Error = Error> + Send> {
+        let UpdateUser {
+            first_name,
+            last_name,
+            phone,
+        } = update_user;
+        let first_name = if let Some(text) = first_name {
+            format!("\"{}\"", text)
+        } else {
+            "null".to_string()
+        };
+        let last_name = if let Some(text) = last_name {
+            format!("\"{}\"", text)
+        } else {
+            "null".to_string()
+        };
+        let phone = if let Some(text) = phone {
+            format!("\"{}\"", text)
+        } else {
+            "null".to_string()
+        };
+        let graphql_id = base64::encode(&format!("users|user|{}", user_id));
+        let query = format!(
+            r#"
+                mutation M {{
+                    updateUser(input: {{id: \"{}\", firstName: {}, lastName: {}, phone: {}, clientMutationId:\"\"}}) {{
+                        rawId
+                        email
+                        firstName
+                        lastName
+                        phone
+                    }}
+                }}
+            "#,
+            graphql_id, first_name, last_name, phone,
+        );
+        Box::new(
+            self.exec_query::<Me>(&query, None)
+                .and_then(|resp| {
+                    resp.data.clone().ok_or_else(|| {
+                        if let Some(payload) = get_error_payload(resp.clone().errors) {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Validation(payload) => resp.clone())
+                        } else {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp.clone())
+                        }
+                    })
+                }).map(|resp_data| resp_data.me),
         )
     }
 

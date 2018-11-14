@@ -9,6 +9,7 @@ use schema::users::dsl::*;
 
 pub trait UsersRepo: Send + Sync + 'static {
     fn create(&self, payload: NewUserDB) -> RepoResult<UserDB>;
+    fn update(&self, user_id: UserId, payload: UpdateUser) -> RepoResult<UserDB>;
     fn get(&self, user_id: UserId) -> RepoResult<Option<UserDB>>;
 }
 
@@ -25,6 +26,16 @@ impl<'a> UsersRepo for UsersRepoImpl {
                     let error_kind = ErrorKind::from(&e);
                     ectx!(err e, error_kind => payload)
                 })
+        })
+    }
+    fn update(&self, user_id: UserId, payload: UpdateUser) -> RepoResult<UserDB> {
+        with_tls_connection(|conn| {
+            let filter = users.filter(id.eq(user_id));
+            let query = diesel::update(filter).set(&payload);
+            query.get_result(conn).map_err(move |e| {
+                let error_kind = ErrorKind::from(&e);
+                ectx!(err e, error_kind => user_id)
+            })
         })
     }
     fn get(&self, user_id_arg: UserId) -> RepoResult<Option<UserDB>> {
