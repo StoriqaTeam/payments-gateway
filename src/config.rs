@@ -12,6 +12,7 @@ pub struct Config {
     pub client: Client,
     pub auth: Auth,
     pub cpu_pool: CpuPool,
+    pub rabbit: Rabbit,
     pub sentry: Option<SentryConfig>,
     pub graylog: Option<GrayLogConfig>,
     pub filelog: Option<FileLogConfig>,
@@ -46,6 +47,15 @@ pub struct Database {
 #[derive(Debug, Deserialize, Clone)]
 pub struct CpuPool {
     pub size: usize,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Rabbit {
+    pub url: String,
+    pub thread_pool_size: usize,
+    pub connection_timeout_secs: usize,
+    pub connection_pool_size: usize,
+    pub restart_subscription_secs: usize,
 }
 
 impl Config {

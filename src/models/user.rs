@@ -14,6 +14,8 @@ pub struct User {
     pub first_name: Option<String>,
     pub last_name: Option<String>,
     pub phone: Option<String>,
+    pub device_id: Option<String>,
+    pub device_os: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
@@ -33,6 +35,8 @@ pub struct NewUser {
     pub password: Password,
     pub device_type: DeviceType,
     pub phone: Option<String>,
+    pub device_id: Option<String>,
+    pub device_os: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Insertable, Validate, AsChangeset, Clone, Debug, Default)]
@@ -55,6 +59,8 @@ pub struct UserDB {
     pub last_name: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+    pub device_id: Option<String>,
+    pub device_os: Option<String>,
 }
 
 impl Default for UserDB {
@@ -67,6 +73,8 @@ impl Default for UserDB {
             last_name: None,
             created_at: ::chrono::Utc::now().naive_utc(),
             updated_at: ::chrono::Utc::now().naive_utc(),
+            device_id: None,
+            device_os: None,
         }
     }
 }
@@ -93,6 +101,8 @@ pub struct NewUserDB {
     pub first_name: String,
     pub last_name: String,
     pub phone: Option<String>,
+    pub device_id: Option<String>,
+    pub device_os: Option<String>,
 }
 
 impl From<NewUserDB> for UserDB {
@@ -116,6 +126,8 @@ impl From<User> for NewUserDB {
             first_name: user.first_name.unwrap_or_default(),
             last_name: user.last_name.unwrap_or_default(),
             phone: user.phone,
+            device_id: user.device_id,
+            device_os: user.device_os,
         }
     }
 }

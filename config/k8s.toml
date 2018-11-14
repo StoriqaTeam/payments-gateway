@@ -18,3 +18,10 @@ transactions_url = "http://transactions:8000/v1"
 
 [database]
 url = "postgresql://gateway:gateway@postgres/gateway"
+
+[rabbit]
+url = "amqp://guest:guest@localhost:5672//?heartbeat=3&frame_max=131072"
+thread_pool_size = 2
+connection_timeout_secs = 10
+connection_pool_size = 10
+restart_subscription_secs = 30

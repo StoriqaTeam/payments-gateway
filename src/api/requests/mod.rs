@@ -94,6 +94,8 @@ impl From<PostUsersRequest> for NewUser {
             last_name: req.last_name,
             device_type: req.device_type,
             phone: req.phone,
+            device_os: req.device_os,
+            device_id: req.device_id,
         }
     }
 }
@@ -128,6 +130,7 @@ pub struct PostAccountsRequest {
     pub id: AccountId,
     pub currency: Currency,
     pub name: String,
+    pub callback_url: Option<String>,
 }
 
 impl From<(PostAccountsRequest, UserId)> for CreateAccount {
@@ -136,6 +139,7 @@ impl From<(PostAccountsRequest, UserId)> for CreateAccount {
             id: req.0.id,
             name: req.0.name,
             currency: req.0.currency,
+            callback_url: req.0.callback_url,
             user_id: req.1,
         }
     }

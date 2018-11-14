@@ -108,10 +108,10 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
 
         let f = iter_ok::<_, Error>(vec![Currency::Stq, Currency::Btc, Currency::Eth]).fold((), move |_res, currency| {
             let input = CreateAccount {
-                id: AccountId::generate(),
                 user_id,
                 currency,
                 name: currency.to_string(),
+                ..Default::default()
             };
             let input_clone = input.clone();
             let accounts_repo = accounts_repo.clone();

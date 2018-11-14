@@ -8,6 +8,7 @@ table! {
         balance -> Numeric,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        callback_url -> Nullable<Varchar>,
     }
 }
 
@@ -20,6 +21,8 @@ table! {
         last_name -> Nullable<Varchar>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        device_id -> Nullable<Varchar>,
+        device_os -> Nullable<Varchar>,
     }
 }
 
