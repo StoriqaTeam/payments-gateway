@@ -14,6 +14,7 @@ pub trait UsersService: Send + Sync + 'static {
     fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn get_jwt_by_oauth(&self, oauth_token: OauthToken, oauth_provider: Provider) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn create_user(&self, new_user: NewUser) -> Box<Future<Item = User, Error = Error> + Send>;
+    fn update_user(&self, update_user: UpdateUser, token: AuthenticationToken) -> Box<Future<Item = User, Error = Error> + Send>;
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn reset_password(&self, reset: ResetPassword) -> Box<Future<Item = (), Error = Error> + Send>;
     fn change_password(&self, change_password: ChangePassword, token: AuthenticationToken) -> Box<Future<Item = (), Error = Error> + Send>;
@@ -71,6 +72,32 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                     db_executor.execute(move || {
                         let user_db: NewUserDB = user.clone().into();
                         users_repo.create(user_db.clone()).map_err(ectx!(try convert => user_db))?;
+                        Ok(user)
+                    })
+                }),
+        )
+    }
+
+    fn update_user(&self, update_user: UpdateUser, token: AuthenticationToken) -> Box<Future<Item = User, Error = Error> + Send> {
+        let client = self.storiqa_client.clone();
+        let users_repo = self.users_repo.clone();
+        let auth_service = self.auth_service.clone();
+        let db_executor = self.db_executor.clone();
+        let update_user_clone = update_user.clone();
+        let update_user_clone2 = update_user.clone();
+        Box::new(
+            update_user
+                .validate()
+                .map_err(
+                    |e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_value(&e).unwrap_or_default()) => update_user_clone2),
+                ).into_future()
+                .and_then(move |_| auth_service.authenticate(token))
+                .and_then(move |auth| client.update_user(update_user, auth.user_id).map_err(ectx!(convert)))
+                .and_then(move |user| {
+                    db_executor.execute(move || {
+                        users_repo
+                            .update(user.id, update_user_clone.clone())
+                            .map_err(ectx!(try convert => update_user_clone))?;
                         Ok(user)
                     })
                 }),

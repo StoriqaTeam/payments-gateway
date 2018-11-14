@@ -35,6 +35,17 @@ pub struct NewUser {
     pub phone: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Insertable, Validate, AsChangeset, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+#[table_name = "users"]
+pub struct UpdateUser {
+    #[validate(length(min = "1", message = "First name must not be empty"))]
+    pub first_name: Option<String>,
+    #[validate(length(min = "1", message = "Last name must not be empty"))]
+    pub last_name: Option<String>,
+    pub phone: Option<String>,
+}
+
 #[derive(Debug, Serialize, Deserialize, Queryable, Clone)]
 pub struct UserDB {
     pub id: UserId,

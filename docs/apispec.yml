@@ -140,6 +140,34 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UserCreateInput'
+    put:
+      summary: Updates user info
+      security:
+        - Bearer: []
+      tags:
+        - users
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        400:
+          $ref: '#/components/responses/BadRequest'
+        422:
+          description: Json object matched schema, but didn't pass validations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrors'
+        500:
+          $ref: '#/components/responses/Internal'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateInput'
   /users/confirm_email:
     post:
       summary: Receives confirmation token, confirms email and gives back jwt for login
@@ -1069,6 +1097,18 @@ components:
           description: IMEI. Requied for mobile only.
           type: string
           example: 1237987834798375349
+    UserUpdateInput:
+      type: object
+      properties:
+        firstName:
+          type: string
+          example: Alexey
+        lastName:
+          type: string
+          example: Karasev
+        phone:
+          type: string
+          example: '79034442211'
   securitySchemes:
     Bearer:
       type: apiKey

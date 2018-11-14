@@ -100,6 +100,24 @@ impl From<PostUsersRequest> for NewUser {
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct PutUsersRequest {
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub phone: Option<String>,
+}
+
+impl From<PutUsersRequest> for UpdateUser {
+    fn from(req: PutUsersRequest) -> Self {
+        Self {
+            first_name: req.first_name,
+            last_name: req.last_name,
+            phone: req.phone,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct PostUsersConfirmEmailRequest {
     pub email_confirm_token: EmailConfirmToken,
 }

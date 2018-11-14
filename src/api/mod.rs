@@ -106,6 +106,7 @@ impl Service for ApiService {
                         POST /v1/sessions => post_sessions,
                         POST /v1/sessions/oauth => post_sessions_oauth,
                         POST /v1/users => post_users,
+                        PUT /v1/users => put_users,
                         POST /v1/users/confirm_email => post_users_confirm_email,
                         POST /v1/users/reset_password => post_users_reset_password,
                         POST /v1/users/change_password => post_users_change_password,
