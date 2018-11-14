@@ -13,6 +13,7 @@ pub struct Config {
     pub auth: Auth,
     pub cpu_pool: CpuPool,
     pub rabbit: Rabbit,
+    pub notifications: Notifications,
     pub sentry: Option<SentryConfig>,
     pub graylog: Option<GrayLogConfig>,
     pub filelog: Option<FileLogConfig>,
@@ -56,6 +57,11 @@ pub struct Rabbit {
     pub connection_timeout_secs: usize,
     pub connection_pool_size: usize,
     pub restart_subscription_secs: usize,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Notifications {
+    pub device_confirm_url: String,
 }
 
 impl Config {

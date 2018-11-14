@@ -1,3 +1,9 @@
+mod controllers;
+mod error;
+mod requests;
+pub mod responses;
+mod utils;
+
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -13,23 +19,17 @@ use hyper::Server;
 use hyper::{service::Service, Body, Request, Response};
 use r2d2::Pool;
 
+use self::controllers::*;
+use self::error::*;
 use super::config::Config;
 use super::utils::{log_and_capture_error, log_error, log_warn};
 use client::{HttpClientImpl, StoriqaClient, StoriqaClientImpl, TransactionsClient, TransactionsClientImpl};
-use repos::{AccountsRepoImpl, DbExecutorImpl, UsersRepoImpl};
-use utils::read_body;
-
-mod controllers;
-mod error;
-mod requests;
-pub mod responses;
-mod utils;
-
-use self::controllers::*;
-use self::error::*;
 use models::*;
 use r2d2;
+use rabbit::TransactionPublisher;
+use repos::{AccountsRepoImpl, DbExecutorImpl, DeviceTokensRepoImpl, DevicesRepoImpl, UsersRepoImpl};
 use services::{AccountsServiceImpl, AuthServiceImpl, TransactionsServiceImpl, UsersServiceImpl};
+use utils::read_body;
 
 #[derive(Clone)]
 pub struct ApiService {
@@ -40,10 +40,11 @@ pub struct ApiService {
     db_pool: Pool<ConnectionManager<PgConnection>>,
     cpu_pool: CpuPool,
     transactions_client: Arc<dyn TransactionsClient>,
+    publisher: Arc<dyn TransactionPublisher>,
 }
 
 impl ApiService {
-    fn from_config(config: &Config) -> Result<Self, Error> {
+    fn from_config(config: &Config, publisher: Arc<dyn TransactionPublisher>) -> Result<Self, Error> {
         let client = HttpClientImpl::new(config);
         let storiqa_client = StoriqaClientImpl::new(&config, client);
         let storiqa_jwt_public_key_base64 = config.auth.storiqa_jwt_public_key_base64.clone();
@@ -78,6 +79,7 @@ impl ApiService {
             db_pool,
             cpu_pool,
             transactions_client: Arc::new(transactions_client),
+            publisher,
         })
     }
 }
@@ -93,10 +95,12 @@ impl Service for ApiService {
         let storiqa_client = self.storiqa_client.clone();
         let storiqa_jwt_public_key = self.storiqa_jwt_public_key.clone();
         let storiqa_jwt_valid_secs = self.config.auth.storiqa_jwt_valid_secs.clone();
+        let device_confirm_url = self.config.notifications.device_confirm_url.clone();
         let db_pool = self.db_pool.clone();
         let cpu_pool = self.cpu_pool.clone();
         let db_executor = DbExecutorImpl::new(db_pool.clone(), cpu_pool.clone());
         let transactions_client = self.transactions_client.clone();
+        let publisher = self.publisher.clone();
 
         Box::new(
             read_body(http_body)
@@ -107,6 +111,8 @@ impl Service for ApiService {
                         POST /v1/sessions/oauth => post_sessions_oauth,
                         POST /v1/users => post_users,
                         PUT /v1/users => put_users,
+                        POST /v1/users/add_device => post_users_add_device,
+                        POST /v1/users/confirm_add_device => post_users_confirm_add_device,
                         POST /v1/users/confirm_email => post_users_confirm_email,
                         POST /v1/users/reset_password => post_users_reset_password,
                         POST /v1/users/change_password => post_users_change_password,
@@ -130,7 +136,11 @@ impl Service for ApiService {
                         auth_service.clone(),
                         storiqa_client,
                         Arc::new(UsersRepoImpl),
+                        Arc::new(DevicesRepoImpl),
+                        Arc::new(DeviceTokensRepoImpl),
                         db_executor.clone(),
+                        publisher,
+                        device_confirm_url,
                     ));
                     let accounts_service = Arc::new(AccountsServiceImpl::new(
                         auth_service.clone(),
@@ -218,9 +228,9 @@ impl Service for ApiService {
     }
 }
 
-pub fn start_server(config: Config) {
+pub fn start_server(config: Config, publisher: Arc<dyn TransactionPublisher>) {
     hyper::rt::run(future::lazy(move || {
-        ApiService::from_config(&config)
+        ApiService::from_config(&config, publisher)
             .into_future()
             .and_then(move |api| {
                 let api_clone = api.clone();

@@ -47,6 +47,8 @@ pub enum ErrorContext {
     Json,
     #[fail(display = "service error context - rabbit lapin lib")]
     Lapin,
+    #[fail(display = "service error context - device already added to user")]
+    DeviceAlreadyExists,
 }
 
 derive_error_impls!();

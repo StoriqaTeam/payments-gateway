@@ -11,7 +11,7 @@ pub struct PostSessionsRequest {
     pub password: Password,
     pub device_type: DeviceType,
     pub device_os: Option<String>,
-    pub device_id: Option<String>,
+    pub device_id: Option<DeviceId>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -69,7 +69,7 @@ pub struct PostSessionsOauthRequest {
     pub oauth_provider: Provider,
     pub device_type: DeviceType,
     pub device_os: Option<String>,
-    pub device_id: Option<String>,
+    pub device_id: Option<DeviceId>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -80,8 +80,9 @@ pub struct PostUsersRequest {
     pub first_name: String,
     pub last_name: String,
     pub device_type: DeviceType,
-    pub device_os: Option<String>,
-    pub device_id: Option<String>,
+    pub device_os: String,
+    pub device_id: DeviceId,
+    pub public_key: DevicePublicKey,
     pub phone: Option<String>,
 }
 
@@ -96,6 +97,7 @@ impl From<PostUsersRequest> for NewUser {
             phone: req.phone,
             device_os: req.device_os,
             device_id: req.device_id,
+            public_key: req.public_key,
         }
     }
 }
@@ -122,6 +124,23 @@ impl From<PutUsersRequest> for UpdateUser {
 #[serde(rename_all = "camelCase")]
 pub struct PostUsersConfirmEmailRequest {
     pub email_confirm_token: EmailConfirmToken,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PostUsersConfirmAddDeviceRequest {
+    pub token: DeviceConfirmToken,
+    pub public_key: DevicePublicKey,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PostUsersAddDeviceRequest {
+    pub device_id: DeviceId,
+    pub device_os: String,
+    pub public_key: DevicePublicKey,
+    pub email: String,
+    pub password: Password,
 }
 
 #[derive(Debug, Deserialize, Clone)]
