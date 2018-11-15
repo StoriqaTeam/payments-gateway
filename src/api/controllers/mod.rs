@@ -6,6 +6,7 @@ use hyper::{header::HeaderValue, header::AUTHORIZATION, Body, HeaderMap, Method,
 
 use super::error::*;
 use models::*;
+use prelude::*;
 use services::{AccountsService, TransactionsService, UsersService};
 
 mod accounts;
@@ -32,18 +33,48 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn get_auth_token(&self) -> Option<AuthenticationToken> {
+    pub fn get_auth_token(&self) -> Option<StoriqaJWT> {
         self.headers
             .get(AUTHORIZATION)
             .and_then(|header| header.to_str().ok())
             .and_then(|header| {
-                let len = "Bearer ".len();
-                if (header.len() > len) && header.starts_with("Bearer ") {
-                    Some(header[len..].to_string())
-                } else {
-                    None
+                let segments = header.split(' ').collect::<Vec<_>>();
+                match segments.as_slice() {
+                    ["Bearer", t] => Some(StoriqaJWT::new(t.to_string())),
+                    _ => None,
                 }
-            }).map(AuthenticationToken::new)
+            })
+    }
+    pub fn get_auth_info(&self) -> Result<AuthInfo, Error> {
+        let timestamp_header = self
+            .headers
+            .get("Timestamp")
+            .ok_or(ectx!(try err ErrorContext::Timestamp, ErrorKind::Unauthorized))?;
+        let timestamp_str = timestamp_header
+            .to_str()
+            .map_err(|_| ectx!(try err ErrorContext::Timestamp, ErrorKind::Unauthorized))?;
+        let timestamp = timestamp_str
+            .parse::<i64>()
+            .map_err(|_| ectx!(try err ErrorContext::Timestamp, ErrorKind::Unauthorized))?;
+
+        let device_id_header = self
+            .headers
+            .get("Device-id")
+            .ok_or(ectx!(try err ErrorContext::DeviceId, ErrorKind::Unauthorized))?;
+        let device_id_str = device_id_header
+            .to_str()
+            .map_err(|_| ectx!(try err ErrorContext::DeviceId, ErrorKind::Unauthorized))?;
+        let device_id = DeviceId::new(device_id_str.to_string());
+
+        let sign_header = self
+            .headers
+            .get("Sign")
+            .ok_or(ectx!(try err ErrorContext::Sign, ErrorKind::Unauthorized))?;
+        let sign_str = sign_header
+            .to_str()
+            .map_err(|_| ectx!(try err ErrorContext::Sign, ErrorKind::Unauthorized))?;
+
+        Ok(AuthInfo::new(timestamp, device_id, sign_str.to_string()))
     }
 }
 

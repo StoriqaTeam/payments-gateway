@@ -7,11 +7,11 @@ use models::*;
 use prelude::*;
 
 pub struct AuthServiceMock {
-    auths: HashMap<AuthenticationToken, Auth>,
+    auths: HashMap<StoriqaJWT, Auth>,
 }
 
 impl AuthServiceMock {
-    pub fn new(allowed_tokens: Vec<(AuthenticationToken, UserId)>) -> Self {
+    pub fn new(allowed_tokens: Vec<(StoriqaJWT, UserId)>) -> Self {
         let mut auths = HashMap::new();
         for (token, user_id) in allowed_tokens {
             let auth = Auth {
@@ -25,7 +25,7 @@ impl AuthServiceMock {
 }
 
 impl AuthService for AuthServiceMock {
-    fn authenticate(&self, token: AuthenticationToken) -> ServiceFuture<Auth> {
+    fn authenticate(&self, token: StoriqaJWT) -> ServiceFuture<Auth> {
         Box::new(
             self.auths
                 .get(&token)
@@ -34,7 +34,7 @@ impl AuthService for AuthServiceMock {
                 .into_future(),
         )
     }
-    fn get_exp(&self, token: AuthenticationToken) -> ServiceFuture<u64> {
+    fn get_exp(&self, token: StoriqaJWT) -> ServiceFuture<u64> {
         Box::new(
             self.auths
                 .get(&token)

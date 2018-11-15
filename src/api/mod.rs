@@ -131,7 +131,12 @@ impl Service for ApiService {
                         _ => not_found,
                     };
 
-                    let auth_service = Arc::new(AuthServiceImpl::new(storiqa_jwt_public_key, storiqa_jwt_valid_secs));
+                    let auth_service = Arc::new(AuthServiceImpl::new(
+                        storiqa_jwt_public_key,
+                        storiqa_jwt_valid_secs,
+                        Arc::new(DevicesRepoImpl),
+                        db_executor.clone(),
+                    ));
                     let users_service = Arc::new(UsersServiceImpl::new(
                         auth_service.clone(),
                         storiqa_client,

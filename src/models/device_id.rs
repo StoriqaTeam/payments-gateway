@@ -19,4 +19,7 @@ impl DeviceId {
     pub fn generate() -> Self {
         DeviceId(Uuid::new_v4().to_string())
     }
+    pub fn new(id: String) -> Self {
+        DeviceId(id)
+    }
 }

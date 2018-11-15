@@ -49,6 +49,8 @@ pub enum ErrorContext {
     Lapin,
     #[fail(display = "service error context - device already added to user")]
     DeviceAlreadyExists,
+    #[fail(display = "service error context - device not added to user")]
+    DeviceNotExists,
 }
 
 derive_error_impls!();

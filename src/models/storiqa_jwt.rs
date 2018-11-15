@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct StoriqaJWT(String);
 
 impl StoriqaJWT {

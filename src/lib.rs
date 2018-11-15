@@ -34,7 +34,9 @@ extern crate num;
 extern crate validator;
 #[macro_use]
 extern crate sentry;
+extern crate crypto;
 extern crate gelf;
+extern crate secp256k1;
 extern crate simplelog;
 extern crate tokio;
 extern crate tokio_core;

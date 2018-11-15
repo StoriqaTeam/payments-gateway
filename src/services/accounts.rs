@@ -38,24 +38,20 @@ impl<E: DbExecutor> AccountsServiceImpl<E> {
 }
 
 pub trait AccountsService: Send + Sync + 'static {
-    fn create_account(
-        &self,
-        token: AuthenticationToken,
-        user_id: UserId,
-        input: CreateAccount,
-    ) -> Box<Future<Item = Account, Error = Error> + Send>;
+    fn create_account(&self, token: StoriqaJWT, user_id: UserId, input: CreateAccount)
+        -> Box<Future<Item = Account, Error = Error> + Send>;
     fn create_default_accounts(&self, user_id: UserId) -> Box<Future<Item = (), Error = Error> + Send>;
-    fn get_account(&self, token: AuthenticationToken, account_id: AccountId) -> Box<Future<Item = Option<Account>, Error = Error> + Send>;
+    fn get_account(&self, token: StoriqaJWT, account_id: AccountId) -> Box<Future<Item = Option<Account>, Error = Error> + Send>;
     fn update_account(
         &self,
-        token: AuthenticationToken,
+        token: StoriqaJWT,
         account_id: AccountId,
         payload: UpdateAccount,
     ) -> Box<Future<Item = Account, Error = Error> + Send>;
-    fn delete_account(&self, token: AuthenticationToken, account_id: AccountId) -> Box<Future<Item = Account, Error = Error> + Send>;
+    fn delete_account(&self, token: StoriqaJWT, account_id: AccountId) -> Box<Future<Item = Account, Error = Error> + Send>;
     fn get_accounts_for_user(
         &self,
-        token: AuthenticationToken,
+        token: StoriqaJWT,
         user_id: UserId,
         offset: i64,
         limit: i64,
@@ -65,7 +61,7 @@ pub trait AccountsService: Send + Sync + 'static {
 impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
     fn create_account(
         &self,
-        token: AuthenticationToken,
+        token: StoriqaJWT,
         user_id: UserId,
         input: CreateAccount,
     ) -> Box<Future<Item = Account, Error = Error> + Send> {
@@ -132,7 +128,7 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
         });
         Box::new(f)
     }
-    fn get_account(&self, token: AuthenticationToken, account_id: AccountId) -> Box<Future<Item = Option<Account>, Error = Error> + Send> {
+    fn get_account(&self, token: StoriqaJWT, account_id: AccountId) -> Box<Future<Item = Option<Account>, Error = Error> + Send> {
         let accounts_repo = self.accounts_repo.clone();
         let db_executor = self.db_executor.clone();
         let transactions_client = self.transactions_client.clone();
@@ -167,7 +163,7 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
     }
     fn update_account(
         &self,
-        token: AuthenticationToken,
+        token: StoriqaJWT,
         account_id: AccountId,
         payload: UpdateAccount,
     ) -> Box<Future<Item = Account, Error = Error> + Send> {
@@ -203,7 +199,7 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
                 }),
         )
     }
-    fn delete_account(&self, token: AuthenticationToken, account_id: AccountId) -> Box<Future<Item = Account, Error = Error> + Send> {
+    fn delete_account(&self, token: StoriqaJWT, account_id: AccountId) -> Box<Future<Item = Account, Error = Error> + Send> {
         let accounts_repo = self.accounts_repo.clone();
         let db_executor = self.db_executor.clone();
         Box::new(self.auth_service.authenticate(token).and_then(move |auth| {
@@ -220,7 +216,7 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
     }
     fn get_accounts_for_user(
         &self,
-        token: AuthenticationToken,
+        token: StoriqaJWT,
         user_id: UserId,
         offset: i64,
         limit: i64,
@@ -262,7 +258,7 @@ mod tests {
     use services::*;
     use tokio_core::reactor::Core;
 
-    fn create_account_service(token: AuthenticationToken, user_id: UserId) -> AccountsServiceImpl<DbExecutorMock> {
+    fn create_account_service(token: StoriqaJWT, user_id: UserId) -> AccountsServiceImpl<DbExecutorMock> {
         let auth_service = Arc::new(AuthServiceMock::new(vec![(token, user_id)]));
         let accounts_repo = Arc::new(AccountsRepoMock::default());
         let transactions_client = Arc::new(TransactionsClientMock::default());
@@ -273,7 +269,7 @@ mod tests {
     #[test]
     fn test_account_create() {
         let mut core = Core::new().unwrap();
-        let token = AuthenticationToken::default();
+        let token = StoriqaJWT::default();
         let user_id = UserId::generate();
         let service = create_account_service(token.clone(), user_id);
 
@@ -287,7 +283,7 @@ mod tests {
     #[test]
     fn test_account_get() {
         let mut core = Core::new().unwrap();
-        let token = AuthenticationToken::default();
+        let token = StoriqaJWT::default();
         let user_id = UserId::generate();
         let service = create_account_service(token.clone(), user_id);
 
@@ -301,7 +297,7 @@ mod tests {
     #[test]
     fn test_account_update() {
         let mut core = Core::new().unwrap();
-        let token = AuthenticationToken::default();
+        let token = StoriqaJWT::default();
         let user_id = UserId::generate();
         let service = create_account_service(token.clone(), user_id);
 
@@ -320,7 +316,7 @@ mod tests {
     #[test]
     fn test_account_delete() {
         let mut core = Core::new().unwrap();
-        let token = AuthenticationToken::default();
+        let token = StoriqaJWT::default();
         let user_id = UserId::generate();
         let service = create_account_service(token.clone(), user_id);
 
@@ -336,7 +332,7 @@ mod tests {
     #[test]
     fn test_account_get_for_users() {
         let mut core = Core::new().unwrap();
-        let token = AuthenticationToken::default();
+        let token = StoriqaJWT::default();
         let user_id = UserId::generate();
         let service = create_account_service(token.clone(), user_id);
 

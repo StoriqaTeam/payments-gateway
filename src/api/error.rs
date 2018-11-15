@@ -50,6 +50,12 @@ pub enum ErrorContext {
     RequestMissingQuery,
     #[fail(display = "controller context - failed to extract query params")]
     RequestQueryParams,
+    #[fail(display = "controller context - error with device id header")]
+    DeviceId,
+    #[fail(display = "controller context - error with timestamp header")]
+    Timestamp,
+    #[fail(display = "controller context - error with sign header")]
+    Sign,
 }
 
 derive_error_impls!();

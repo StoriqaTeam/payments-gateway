@@ -41,21 +41,17 @@ impl<E: DbExecutor> TransactionsServiceImpl<E> {
 }
 
 pub trait TransactionsService: Send + Sync + 'static {
-    fn create_transaction(
-        &self,
-        token: AuthenticationToken,
-        input: CreateTransaction,
-    ) -> Box<Future<Item = Transaction, Error = Error> + Send>;
+    fn create_transaction(&self, token: StoriqaJWT, input: CreateTransaction) -> Box<Future<Item = Transaction, Error = Error> + Send>;
     fn get_transactions_for_user(
         &self,
-        token: AuthenticationToken,
+        token: StoriqaJWT,
         user_id: UserId,
         offset: i64,
         limit: i64,
     ) -> Box<Future<Item = Vec<Transaction>, Error = Error> + Send>;
     fn get_account_transactions(
         &self,
-        token: AuthenticationToken,
+        token: StoriqaJWT,
         account_id: AccountId,
         offset: i64,
         limit: i64,
@@ -66,11 +62,7 @@ pub trait TransactionsService: Send + Sync + 'static {
 }
 
 impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
-    fn create_transaction(
-        &self,
-        token: AuthenticationToken,
-        input: CreateTransaction,
-    ) -> Box<Future<Item = Transaction, Error = Error> + Send> {
+    fn create_transaction(&self, token: StoriqaJWT, input: CreateTransaction) -> Box<Future<Item = Transaction, Error = Error> + Send> {
         let db_executor = self.db_executor.clone();
         let accounts_repo = self.accounts_repo.clone();
         let transactions_client = self.transactions_client.clone();
@@ -107,7 +99,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
 
     fn get_transactions_for_user(
         &self,
-        token: AuthenticationToken,
+        token: StoriqaJWT,
         user_id: UserId,
         offset: i64,
         limit: i64,
@@ -148,7 +140,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
     }
     fn get_account_transactions(
         &self,
-        token: AuthenticationToken,
+        token: StoriqaJWT,
         account_id: AccountId,
         offset: i64,
         limit: i64,
@@ -253,7 +245,7 @@ mod tests {
     use tokio_core::reactor::Core;
 
     fn create_services(
-        token: AuthenticationToken,
+        token: StoriqaJWT,
         user_id: UserId,
     ) -> (AccountsServiceImpl<DbExecutorMock>, TransactionsServiceImpl<DbExecutorMock>) {
         let auth_service = Arc::new(AuthServiceMock::new(vec![(token, user_id)]));
@@ -280,7 +272,7 @@ mod tests {
     #[test]
     fn test_transaction_create() {
         let mut core = Core::new().unwrap();
-        let token = AuthenticationToken::default();
+        let token = StoriqaJWT::default();
         let user_id = UserId::generate();
         let (acc_service, trans_service) = create_services(token.clone(), user_id);
 
@@ -306,7 +298,7 @@ mod tests {
     #[test]
     fn test_transaction_get_for_users() {
         let mut core = Core::new().unwrap();
-        let token = AuthenticationToken::default();
+        let token = StoriqaJWT::default();
         let user_id = UserId::generate();
         let (acc_service, trans_service) = create_services(token.clone(), user_id);
 
@@ -323,7 +315,7 @@ mod tests {
     #[test]
     fn test_transaction_get_for_account() {
         let mut core = Core::new().unwrap();
-        let token = AuthenticationToken::default();
+        let token = StoriqaJWT::default();
         let user_id = UserId::generate();
         let (acc_service, trans_service) = create_services(token.clone(), user_id);
 
