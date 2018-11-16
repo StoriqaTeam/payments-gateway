@@ -12,6 +12,7 @@ use super::ServiceFuture;
 use models::*;
 use prelude::*;
 use repos::{DbExecutor, DevicesRepo};
+use utils::parse_hex;
 
 pub trait AuthService: Send + Sync + 'static {
     fn get_jwt_auth(&self, token: StoriqaJWT) -> Result<Auth, Error>;
@@ -82,9 +83,9 @@ impl<E: DbExecutor> AuthService for AuthServiceImpl<E> {
                     let message = Message::from_slice(&bytes)
                         .map_err(ectx!(try ErrorContext::WrongMessage, ErrorKind::Unauthorized))?;
                     let secp = Secp256k1::new();
-                    let public_key = PublicKey::from_slice(&secp, device.public_key.inner().as_bytes())
+                    let public_key = PublicKey::from_slice(&secp, &parse_hex(&device.public_key.inner()))
                         .map_err(ectx!(try ErrorContext::PublicKey, ErrorKind::Unauthorized))?;
-                    let sig = Signature::from_der(&secp, &info.sign.as_bytes())
+                    let sig = Signature::from_compact(&secp, &parse_hex(&info.sign))
                         .map_err(ectx!(try ErrorContext::Sign, ErrorKind::Unauthorized))?;
                     secp.verify(&message, &sig, &public_key)
                         .map_err(ectx!(try ErrorContext::VerifySign, ErrorKind::Unauthorized))?;
