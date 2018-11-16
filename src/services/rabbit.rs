@@ -8,12 +8,13 @@ use super::error::*;
 use models::*;
 use prelude::*;
 use rabbit::TransactionPublisher;
-use repos::{AccountsRepo, DbExecutor, UsersRepo};
+use repos::{AccountsRepo, DbExecutor, DevicesRepo, UsersRepo};
 
 #[derive(Clone)]
 pub struct Notificator<E: DbExecutor> {
     accounts_repo: Arc<dyn AccountsRepo>,
     users_repo: Arc<dyn UsersRepo>,
+    devices_repo: Arc<dyn DevicesRepo>,
     db_executor: E,
     publisher: Arc<dyn TransactionPublisher>,
 }
@@ -22,12 +23,14 @@ impl<E: DbExecutor> Notificator<E> {
     pub fn new(
         accounts_repo: Arc<dyn AccountsRepo>,
         users_repo: Arc<dyn UsersRepo>,
+        devices_repo: Arc<dyn DevicesRepo>,
         db_executor: E,
         publisher: Arc<dyn TransactionPublisher>,
     ) -> Self {
         Self {
             accounts_repo,
             users_repo,
+            devices_repo,
             db_executor,
             publisher,
         }
@@ -39,12 +42,12 @@ impl<E: DbExecutor> Notificator<E> {
         parse::<Transaction>(data)
             .into_future()
             .and_then(move |transaction| service.get_transaction_info(transaction))
-            .and_then(move |(transaction, device_id, callback)| {
+            .and_then(move |(transaction, devices, callback)| {
                 let mut futs = vec![];
-                if let Some(device_id) = device_id {
-                    let push = PushNotifications::new(device_id, transaction.clone().into());
-                    futs.push(publisher.push(push))
-                };
+                for device in devices {
+                    let push = PushNotifications::new(device.device_id, device.device_os, transaction.clone().into());
+                    futs.push(publisher.push(push));
+                }
                 if let Some((callback_url, account_id)) = callback {
                     let callback = Callback::new(
                         callback_url,
@@ -64,13 +67,14 @@ impl<E: DbExecutor> Notificator<E> {
     fn get_transaction_info(
         &self,
         mut transaction: Transaction,
-    ) -> Box<Future<Item = (Transaction, Option<String>, Option<(String, AccountId)>), Error = Error> + Send> {
+    ) -> Box<Future<Item = (Transaction, Vec<Device>, Option<(String, AccountId)>), Error = Error> + Send> {
         let accounts_repo = self.accounts_repo.clone();
+        let devices_repo = self.devices_repo.clone();
         let users_repo = self.users_repo.clone();
         let db_executor = self.db_executor.clone();
         Box::new(db_executor.execute({
             move || {
-                let mut device_id = None;
+                let mut devices = vec![];
                 let mut callback = None;
                 for from in &mut transaction.from {
                     if let Some(account_id) = from.account_id {
@@ -101,14 +105,18 @@ impl<E: DbExecutor> Notificator<E> {
                             .map_err(ectx!(try ErrorKind::Internal => account_id))?;
                         if let Some(user) = user {
                             transaction.to.owner_name = Some(user.get_full_name());
-                            device_id = user.device_id;
+
+                            let mut user_devices = devices_repo
+                                .get_by_user_id(user.id)
+                                .map_err(ectx!(try ErrorKind::Internal => user))?;
+                            devices.append(&mut user_devices);
                         }
                     } else {
                         // if account, for example, was deleted
                         transaction.to.account_id = None;
                     }
                 }
-                Ok((transaction, device_id, callback))
+                Ok((transaction, devices, callback))
             }
         }))
     }

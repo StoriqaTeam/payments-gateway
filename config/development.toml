@@ -25,3 +25,6 @@ thread_pool_size = 2
 connection_timeout_secs = 10
 connection_pool_size = 10
 restart_subscription_secs = 30
+
+[notifications]
+device_confirm_url = "https://pay-nightly.stq.cloud/v1/users/confirm_add_device"

@@ -14,7 +14,7 @@ pub struct User {
     pub first_name: Option<String>,
     pub last_name: Option<String>,
     pub phone: Option<String>,
-    pub device_id: Option<String>,
+    pub device_id: Option<DeviceId>,
     pub device_os: Option<String>,
 }
 
@@ -35,8 +35,9 @@ pub struct NewUser {
     pub password: Password,
     pub device_type: DeviceType,
     pub phone: Option<String>,
-    pub device_id: Option<String>,
-    pub device_os: Option<String>,
+    pub device_id: DeviceId,
+    pub device_os: String,
+    pub public_key: DevicePublicKey,
 }
 
 #[derive(Serialize, Deserialize, Insertable, Validate, AsChangeset, Clone, Debug, Default)]
@@ -59,7 +60,7 @@ pub struct UserDB {
     pub last_name: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
-    pub device_id: Option<String>,
+    pub device_id: Option<DeviceId>,
     pub device_os: Option<String>,
 }
 
@@ -101,7 +102,7 @@ pub struct NewUserDB {
     pub first_name: String,
     pub last_name: String,
     pub phone: Option<String>,
-    pub device_id: Option<String>,
+    pub device_id: Option<DeviceId>,
     pub device_os: Option<String>,
 }
 

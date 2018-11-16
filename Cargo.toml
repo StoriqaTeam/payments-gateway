@@ -22,13 +22,15 @@ http_router = "0.1"
 hyper = "0.12"
 hyper-tls = "0.3"
 jsonwebtoken = "5"
-lazy_static = "1.1.0"
 lapin-async = {version = "0.13.4", git = "https://github.com/StoriqaTeam/lapin", branch = "0.13.4" }
 lapin-futures = {version = "0.13.4", git = "https://github.com/StoriqaTeam/lapin", branch = "0.13.4" }
+lazy_static = "1.1.0"
 log = { version = "0.4", features = ["std", "serde"] }
 num = { version = "0.2", features = ["i128"] }
 r2d2 = "0.8.1"
 regex = "1"
+rust-crypto = "0.2.36"
+secp256k1 = "0.11.5"
 sentry = "0.12"
 serde = "1"
 serde_derive = "1"

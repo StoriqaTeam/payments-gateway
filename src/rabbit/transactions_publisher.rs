@@ -15,6 +15,7 @@ use tokio::net::tcp::TcpStream;
 pub trait TransactionPublisher: Send + Sync + 'static {
     fn push(&self, push: PushNotifications) -> Box<Future<Item = (), Error = Error> + Send>;
     fn callback(&self, callback: Callback) -> Box<Future<Item = (), Error = Error> + Send>;
+    fn send_email(&self, email: Email) -> Box<Future<Item = (), Error = Error> + Send>;
 }
 
 #[derive(Clone)]
@@ -78,11 +79,24 @@ impl TransactionPublisherImpl {
                     Default::default(),
                 ).map(|_| ()),
         );
-        let f4: Box<Future<Item = (), Error = StdIoError>> =
-            Box::new(channel.queue_bind("pushes", "notifications", "pushes", Default::default(), Default::default()));
+        let f4: Box<Future<Item = (), Error = StdIoError>> = Box::new(
+            channel
+                .queue_declare(
+                    "emails",
+                    QueueDeclareOptions {
+                        durable: true,
+                        ..Default::default()
+                    },
+                    Default::default(),
+                ).map(|_| ()),
+        );
         let f5: Box<Future<Item = (), Error = StdIoError>> =
+            Box::new(channel.queue_bind("pushes", "notifications", "pushes", Default::default(), Default::default()));
+        let f6: Box<Future<Item = (), Error = StdIoError>> =
             Box::new(channel.queue_bind("callbacks", "notifications", "callbacks", Default::default(), Default::default()));
-        future::join_all(vec![f1, f2, f3, f4, f5])
+        let f7: Box<Future<Item = (), Error = StdIoError>> =
+            Box::new(channel.queue_bind("emails", "notifications", "emails", Default::default(), Default::default()));
+        future::join_all(vec![f1, f2, f3, f4, f5, f6, f7])
             .map(|_| ())
             .map_err(ectx!(ErrorSource::Lapin, ErrorKind::Internal))
     }
@@ -109,6 +123,18 @@ impl TransactionPublisher for TransactionPublisherImpl {
                     channel
                         .clone()
                         .basic_publish("notifications", "callbacks", payload, Default::default(), Default::default())
+                        .map_err(ectx!(ErrorSource::Lapin, ErrorKind::Internal))
+                }).map(|_| ()),
+        )
+    }
+    fn send_email(&self, email: Email) -> Box<Future<Item = (), Error = Error> + Send> {
+        Box::new(
+            self.get_channel()
+                .and_then(move |channel| {
+                    let payload = serde_json::to_string(&email).unwrap().into_bytes();
+                    channel
+                        .clone()
+                        .basic_publish("notifications", "emails", payload, Default::default(), Default::default())
                         .map_err(ectx!(ErrorSource::Lapin, ErrorKind::Internal))
                 }).map(|_| ()),
         )

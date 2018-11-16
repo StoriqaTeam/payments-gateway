@@ -34,7 +34,9 @@ extern crate num;
 extern crate validator;
 #[macro_use]
 extern crate sentry;
+extern crate crypto;
 extern crate gelf;
+extern crate secp256k1;
 extern crate simplelog;
 extern crate tokio;
 extern crate tokio_core;
@@ -74,7 +76,7 @@ use self::models::*;
 use config::Config;
 use rabbit::{ConnectionHooks, RabbitConnectionManager, TransactionConsumerImpl, TransactionPublisherImpl};
 use rabbit::{ErrorKind, ErrorSource};
-use repos::{AccountsRepoImpl, DbExecutorImpl, UsersRepoImpl};
+use repos::{AccountsRepoImpl, DbExecutorImpl, DevicesRepoImpl, UsersRepoImpl};
 use services::Notificator;
 use utils::log_error;
 
@@ -102,28 +104,41 @@ pub fn start_server() {
     let db_executor = DbExecutorImpl::new(db_pool.clone(), cpu_pool.clone());
     let config_clone = config.clone();
 
+    let mut core = tokio_core::reactor::Core::new().unwrap();
+    debug!("Started creating rabbit connection pool");
+
+    let rabbit_thread_pool = futures_cpupool::CpuPool::new(config_clone.rabbit.thread_pool_size);
+    let rabbit_connection_manager = core
+        .run(RabbitConnectionManager::create(&config_clone))
+        .map_err(|e| {
+            log_error(&e);
+        }).unwrap();
+    let rabbit_connection_pool = r2d2::Pool::builder()
+        .max_size(config_clone.rabbit.connection_pool_size as u32)
+        .connection_customizer(Box::new(ConnectionHooks))
+        .build(rabbit_connection_manager)
+        .expect("Cannot build rabbit connection pool");
+    debug!("Finished creating rabbit connection pool");
+    let consumer = TransactionConsumerImpl::new(
+        rabbit_connection_pool.clone(),
+        rabbit_thread_pool.clone(),
+        config_clone.auth.storiqa_transactions_user_id,
+    );
+    let publisher = Arc::new(TransactionPublisherImpl::new(rabbit_connection_pool, rabbit_thread_pool));
+    core.run(publisher.init())
+        .map_err(|e| {
+            log_error(&e);
+        }).unwrap();
+    let publisher_clone = publisher.clone();
+    let fetcher = Notificator::new(
+        Arc::new(AccountsRepoImpl),
+        Arc::new(UsersRepoImpl),
+        Arc::new(DevicesRepoImpl),
+        db_executor.clone(),
+        publisher_clone,
+    );
     thread::spawn(move || {
         let mut core = tokio_core::reactor::Core::new().unwrap();
-        debug!("Started creating rabbit connection pool");
-
-        let rabbit_thread_pool = futures_cpupool::CpuPool::new(config_clone.rabbit.thread_pool_size);
-        let rabbit_connection_manager = core
-            .run(RabbitConnectionManager::create(&config_clone))
-            .map_err(|e| {
-                log_error(&e);
-            }).unwrap();
-        let rabbit_connection_pool = r2d2::Pool::builder()
-            .max_size(config_clone.rabbit.connection_pool_size as u32)
-            .connection_customizer(Box::new(ConnectionHooks))
-            .build(rabbit_connection_manager)
-            .expect("Cannot build rabbit connection pool");
-        debug!("Finished creating rabbit connection pool");
-        let consumer = TransactionConsumerImpl::new(
-            rabbit_connection_pool.clone(),
-            rabbit_thread_pool.clone(),
-            config_clone.auth.storiqa_transactions_user_id,
-        );
-        let publisher = TransactionPublisherImpl::new(rabbit_connection_pool, rabbit_thread_pool);
 
         loop {
             info!("Subscribing to rabbit");
@@ -132,20 +147,11 @@ pub fn start_server() {
             let consumers_to_close_clone = consumers_to_close.clone();
             let resubscribe_duration = Duration::from_secs(config_clone.rabbit.restart_subscription_secs as u64);
             let counters_clone = counters.clone();
-            let publisher_clone = publisher.clone();
-            let db_executor_clone = db_executor.clone();
-            let subscription = publisher
-                .init()
-                .and_then(|_| consumer.subscribe())
+            let fetcher_clone = fetcher.clone();
+            let subscription = consumer
+                .subscribe()
                 .and_then(move |(stream, channel)| {
-                    let fetcher = Notificator::new(
-                        Arc::new(AccountsRepoImpl),
-                        Arc::new(UsersRepoImpl),
-                        db_executor_clone,
-                        Arc::new(publisher_clone),
-                    );
                     let counters_clone = counters.clone();
-                    let fetcher_clone = fetcher.clone();
                     let consumers_to_close = consumers_to_close.clone();
                     let mut consumers_to_close_lock = consumers_to_close.lock().unwrap();
                     consumers_to_close_lock.push((channel.clone(), stream.consumer_tag.clone()));
@@ -224,7 +230,7 @@ pub fn start_server() {
         }
     });
 
-    api::start_server(config);
+    api::start_server(config, publisher.clone());
 }
 
 fn get_config() -> Config {

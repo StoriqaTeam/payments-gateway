@@ -13,6 +13,30 @@ table! {
 }
 
 table! {
+    devices (device_id, user_id) {
+        device_id -> Varchar,
+        device_os -> Varchar,
+        user_id -> Int4,
+        public_key -> Varchar,
+        last_timestamp -> Int8,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+table! {
+    devices_tokens (id) {
+        id -> Uuid,
+        device_id -> Varchar,
+        device_os -> Varchar,
+        user_id -> Int4,
+        public_key -> Varchar,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+table! {
     users (id) {
         id -> Int4,
         email -> Varchar,
@@ -26,4 +50,7 @@ table! {
     }
 }
 
-allow_tables_to_appear_in_same_query!(accounts, users,);
+joinable!(devices -> users (user_id));
+joinable!(devices_tokens -> users (user_id));
+
+allow_tables_to_appear_in_same_query!(accounts, devices, devices_tokens, users,);
