@@ -130,7 +130,6 @@ pub struct PostUsersConfirmEmailRequest {
 #[serde(rename_all = "camelCase")]
 pub struct PostUsersConfirmAddDeviceRequest {
     pub token: DeviceConfirmToken,
-    pub public_key: DevicePublicKey,
 }
 
 #[derive(Debug, Deserialize, Clone)]

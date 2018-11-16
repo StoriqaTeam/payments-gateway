@@ -294,6 +294,74 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UsersConfirmEmailInput'
+  /users/add_device:
+    parameters:
+      - in: header
+        name: Timestamp
+        schema:
+          type: string
+          format: integer
+        required: true
+      - in: header
+        name: Device-id
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: Sign
+        schema:
+          type: string
+        required: true
+    post:
+      summary: Adding device to user via sending email
+      tags:
+        - users
+      responses:
+        200:
+          description: Ok
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/Internal'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsersAddDeviceInput'
+  /users/confirm_add_device:
+    parameters:
+      - in: header
+        name: Timestamp
+        schema:
+          type: string
+          format: integer
+        required: true
+      - in: header
+        name: Device-id
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: Sign
+        schema:
+          type: string
+        required: true
+    post:
+      summary: Receives confirmation token, confirms device for user
+      tags:
+        - users
+      responses:
+        200:
+          description: Ok
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/Internal'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsersConfirmAddDeviceInput'
   /users/reset_password:
     post:
       summary: Resets password for email and device
@@ -927,6 +995,41 @@ components:
           type: string
           description: Confirmation token that is sent via email after registration
           example: lkg7713rlkf==
+    UsersConfirmAddDeviceInput:
+      type: object
+      required:
+        - deviceConfirmToken
+      properties:
+        deviceConfirmToken:
+          type: string
+          description: Confirmation token that is sent via email after adding device request
+          example: lkg7713rlkf==
+    UsersAddDeviceInput:
+      type: object
+      required:
+        - email
+        - password
+        - publicKey
+        - deviceId
+        - deviceOs
+      properties:
+        email:
+          type: string
+          example: a.karasev@storiqa.com
+        password:
+          type: string
+          example: secret password
+        deviceOs:
+          type: string
+          description: Android SDK / iOS version. Requied for mobile only.
+        deviceId:
+          description: IMEI. Requied for mobile only.
+          type: string
+          example: 1237987834798375349
+        publicKey:
+          description: Public key for sign verification.
+          type: string
+          example: 1237987834798375349
     UsersResetPasswordInput:
       type: object
       required:
@@ -1299,10 +1402,16 @@ components:
         - firstName
         - lastName
         - deviceType
+        - publicKey
+        - deviceId
+        - deviceOs
       properties:
         email:
           type: string
           example: a.karasev@storiqa.com
+        phone:
+          type: string
+          example: 893483943343
         password:
           type: string
           example: secret password
@@ -1320,6 +1429,10 @@ components:
           description: Android SDK / iOS version. Requied for mobile only.
         deviceId:
           description: IMEI. Requied for mobile only.
+          type: string
+          example: 1237987834798375349
+        publicKey:
+          description: Public key for sign verification.
           type: string
           example: 1237987834798375349
     UserUpdateInput:
