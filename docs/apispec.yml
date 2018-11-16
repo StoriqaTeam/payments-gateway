@@ -17,6 +17,23 @@ tags:
     description: Managements of transactions
 paths:
   /rate:
+    parameters:
+      - in: header
+        name: Timestamp
+        schema:
+          type: string
+          format: integer
+        required: true
+      - in: header
+        name: Device-id
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: Sign
+        schema:
+          type: string
+        required: true
     post:
       summary: Reserves exchange rate for a period of time
       security:
@@ -40,6 +57,23 @@ paths:
             schema:
               $ref: '#/components/schemas/RateInput'
   /fees:
+    parameters:
+      - in: header
+        name: Timestamp
+        schema:
+          type: string
+          format: integer
+        required: true
+      - in: header
+        name: Device-id
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: Sign
+        schema:
+          type: string
+        required: true
     post:
       summary: Calculates fee for transaction
       security:
@@ -61,6 +95,23 @@ paths:
             schema:
               $ref: '#/components/schemas/FeeInput'
   /sessions:
+    parameters:
+      - in: header
+        name: Timestamp
+        schema:
+          type: string
+          format: integer
+        required: true
+      - in: header
+        name: Device-id
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: Sign
+        schema:
+          type: string
+        required: true
     post:
       summary: Login by user and password
       tags:
@@ -88,6 +139,23 @@ paths:
             schema:
               $ref: '#/components/schemas/SessionCreateInput'
   /sessions/oauth:
+    parameters:
+      - in: header
+        name: Timestamp
+        schema:
+          type: string
+          format: integer
+        required: true
+      - in: header
+        name: Device-id
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: Sign
+        schema:
+          type: string
+        required: true  
     post:
       summary: Login by oauth provider
       tags:
@@ -114,6 +182,23 @@ paths:
             schema:
               $ref: '#/components/schemas/SessionOauthCreateInput'
   /users:
+    parameters:
+      - in: header
+        name: Timestamp
+        schema:
+          type: string
+          format: integer
+        required: true
+      - in: header
+        name: Device-id
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: Sign
+        schema:
+          type: string
+        required: true
     post:
       summary: Registers a new user
       tags:
@@ -169,6 +254,23 @@ paths:
             schema:
               $ref: '#/components/schemas/UserUpdateInput'
   /users/confirm_email:
+    parameters:
+      - in: header
+        name: Timestamp
+        schema:
+          type: string
+          format: integer
+        required: true
+      - in: header
+        name: Device-id
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: Sign
+        schema:
+          type: string
+        required: true
     post:
       summary: Receives confirmation token, confirms email and gives back jwt for login
       tags:
@@ -210,6 +312,23 @@ paths:
             schema:
               $ref: '#/components/schemas/UsersResetPasswordInput'
   /users/change_password:
+    parameters:
+      - in: header
+        name: Timestamp
+        schema:
+          type: string
+          format: integer
+        required: true
+      - in: header
+        name: Device-id
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: Sign
+        schema:
+          type: string
+        required: true
     post:
       summary: Change password with old_password and new_password
       tags:
@@ -251,6 +370,23 @@ paths:
             schema:
               $ref: '#/components/schemas/UsersConfirmResetPasswordInput'
   /users/me:
+    parameters:
+      - in: header
+        name: Timestamp
+        schema:
+          type: string
+          format: integer
+        required: true
+      - in: header
+        name: Device-id
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: Sign
+        schema:
+          type: string
+        required: true
     get:
       summary: Returns current user
       security:
@@ -270,6 +406,23 @@ paths:
           $ref: '#/components/responses/Internal'
 
   /users/{userId}/accounts:
+    parameters:
+      - in: header
+        name: Timestamp
+        schema:
+          type: string
+          format: integer
+        required: true
+      - in: header
+        name: Device-id
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: Sign
+        schema:
+          type: string
+        required: true
     get:
       summary: Returns list of accounts for a user.
       description: You need to be an admin or a user with `userId` to get this list.
@@ -372,6 +525,23 @@ paths:
         500:
           $ref: '#/components/responses/Internal'
   /accounts/{accountId}:
+    parameters:
+      - in: header
+        name: Timestamp
+        schema:
+          type: string
+          format: integer
+        required: true
+      - in: header
+        name: Device-id
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: Sign
+        schema:
+          type: string
+        required: true
     get:
       summary: Returns account.
       description: You need to be an admin or a user with `userId` to get this.
@@ -442,6 +612,23 @@ paths:
           $ref: '#/components/responses/Internal'
 
   '/users/{userId}/transactions':
+    parameters:
+      - in: header
+        name: Timestamp
+        schema:
+          type: string
+          format: integer
+        required: true
+      - in: header
+        name: Device-id
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: Sign
+        schema:
+          type: string
+        required: true
     get:
       summary: Lists all transactions of a user
       description: You need to be an admin or a user with `userId` to get this list.
@@ -467,6 +654,23 @@ paths:
         500:
           $ref: '#/components/responses/Internal'
   '/transactions':
+    parameters:
+      - in: header
+        name: Timestamp
+        schema:
+          type: string
+          format: integer
+        required: true
+      - in: header
+        name: Device-id
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: Sign
+        schema:
+          type: string
+        required: true
     post:
       summary: Create a transactions for a user
       description: Only users with `userId` are allowed to create a transaction
@@ -497,6 +701,23 @@ paths:
             schema:
               $ref: '#/components/schemas/TransactionCreateInput'
   '/users/{userId}/accounts/{accountId}/transactions':
+    parameters:
+      - in: header
+        name: Timestamp
+        schema:
+          type: string
+          format: integer
+        required: true
+      - in: header
+        name: Device-id
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: Sign
+        schema:
+          type: string
+        required: true
     get:
       summary: Lists all transactions of a user's account
       description: You need to be an admin or a user with `userId` to get this list.
