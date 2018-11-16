@@ -138,7 +138,6 @@ impl Service for ApiService {
                         db_executor.clone(),
                     ));
                     let users_service = Arc::new(UsersServiceImpl::new(
-                        auth_service.clone(),
                         storiqa_client,
                         Arc::new(UsersRepoImpl),
                         Arc::new(DevicesRepoImpl),
@@ -148,13 +147,11 @@ impl Service for ApiService {
                         device_confirm_url,
                     ));
                     let accounts_service = Arc::new(AccountsServiceImpl::new(
-                        auth_service.clone(),
                         Arc::new(AccountsRepoImpl),
                         db_executor.clone(),
                         transactions_client.clone(),
                     ));
                     let transactions_service = Arc::new(TransactionsServiceImpl::new(
-                        auth_service.clone(),
                         Arc::new(AccountsRepoImpl),
                         Arc::new(UsersRepoImpl),
                         db_executor.clone(),
@@ -169,6 +166,7 @@ impl Service for ApiService {
                         users_service,
                         accounts_service,
                         transactions_service,
+                        auth_service,
                     };
 
                     debug!("Received request {}", ctx);

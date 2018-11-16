@@ -51,6 +51,16 @@ pub enum ErrorContext {
     DeviceAlreadyExists,
     #[fail(display = "service error context - device not added to user")]
     DeviceNotExists,
+    #[fail(display = "service error context - received timestamp is less or equal to timestamp in db")]
+    WrongTimestamp,
+    #[fail(display = "service error context - public key has wrong format")]
+    PublicKey,
+    #[fail(display = "service error context - can not form message to verify sign")]
+    WrongMessage,
+    #[fail(display = "service error context - can not form sign")]
+    Sign,
+    #[fail(display = "service error context - can not verify sign")]
+    VerifySign,
 }
 
 derive_error_impls!();

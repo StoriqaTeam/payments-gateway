@@ -3,7 +3,6 @@ use std::sync::Arc;
 use serde_json;
 use validator::{Validate, ValidationError, ValidationErrors};
 
-use super::auth::AuthService;
 use super::error::*;
 use client::StoriqaClient;
 use models::*;
@@ -15,15 +14,14 @@ pub trait UsersService: Send + Sync + 'static {
     fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn get_jwt_by_oauth(&self, oauth_token: OauthToken, oauth_provider: Provider) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn create_user(&self, new_user: NewUser) -> Box<Future<Item = User, Error = Error> + Send>;
-    fn update_user(&self, update_user: UpdateUser, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send>;
+    fn update_user(&self, update_user: UpdateUser, user_id: UserId) -> Box<Future<Item = User, Error = Error> + Send>;
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn add_device(
         &self,
         device_id: DeviceId,
         device_os: String,
         public_key: DevicePublicKey,
-        email: String,
-        password: Password,
+        user_id: UserId,
     ) -> Box<Future<Item = (), Error = Error> + Send>;
     fn confirm_add_device(&self, token: DeviceConfirmToken) -> Box<Future<Item = (), Error = Error> + Send>;
     fn reset_password(&self, reset: ResetPassword) -> Box<Future<Item = (), Error = Error> + Send>;
@@ -33,7 +31,6 @@ pub trait UsersService: Send + Sync + 'static {
 }
 
 pub struct UsersServiceImpl<E: DbExecutor> {
-    auth_service: Arc<dyn AuthService>,
     storiqa_client: Arc<dyn StoriqaClient>,
     users_repo: Arc<dyn UsersRepo>,
     devices_repo: Arc<dyn DevicesRepo>,
@@ -45,7 +42,6 @@ pub struct UsersServiceImpl<E: DbExecutor> {
 
 impl<E: DbExecutor> UsersServiceImpl<E> {
     pub fn new(
-        auth_service: Arc<dyn AuthService>,
         storiqa_client: Arc<dyn StoriqaClient>,
         users_repo: Arc<dyn UsersRepo>,
         devices_repo: Arc<dyn DevicesRepo>,
@@ -55,7 +51,6 @@ impl<E: DbExecutor> UsersServiceImpl<E> {
         device_confirm_url: String,
     ) -> Self {
         UsersServiceImpl {
-            auth_service,
             storiqa_client,
             users_repo,
             devices_repo,
@@ -69,9 +64,6 @@ impl<E: DbExecutor> UsersServiceImpl<E> {
 
 impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
     fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
-        let cli = self.storiqa_client.clone();
-        let devices_repo = self.devices_repo.clone();
-        let db_executor = self.db_executor.clone();
         Box::new(self.storiqa_client.get_jwt(email, password).map_err(ectx!(convert)))
     }
 
@@ -112,10 +104,9 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
         )
     }
 
-    fn update_user(&self, update_user: UpdateUser, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send> {
+    fn update_user(&self, update_user: UpdateUser, user_id: UserId) -> Box<Future<Item = User, Error = Error> + Send> {
         let client = self.storiqa_client.clone();
         let users_repo = self.users_repo.clone();
-        let auth_service = self.auth_service.clone();
         let db_executor = self.db_executor.clone();
         let update_user_clone = update_user.clone();
         let update_user_clone2 = update_user.clone();
@@ -125,8 +116,7 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                 .map_err(
                     |e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_value(&e).unwrap_or_default()) => update_user_clone2),
                 ).into_future()
-                .and_then(move |_| auth_service.authenticate(token))
-                .and_then(move |auth| client.update_user(update_user, auth.user_id).map_err(ectx!(convert)))
+                .and_then(move |_| client.update_user(update_user, user_id).map_err(ectx!(convert)))
                 .and_then(move |user| {
                     db_executor.execute(move || {
                         users_repo
@@ -143,8 +133,7 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
         device_id: DeviceId,
         device_os: String,
         public_key: DevicePublicKey,
-        email: String,
-        password: Password,
+        user_id: UserId,
     ) -> Box<Future<Item = (), Error = Error> + Send> {
         let publisher = self.publisher.clone();
         let devices_repo = self.devices_repo.clone();
@@ -153,14 +142,10 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
         let users_repo = self.users_repo.clone();
         let device_confirm_url = self.device_confirm_url.clone();
         let device_id_clone3 = device_id.clone();
-        let auth_service = self.auth_service.clone();
 
-        Box::new(self.storiqa_client.get_jwt(email, password).map_err(ectx!(convert))
-        .and_then(move |token| auth_service.authenticate(token))
-        .and_then(move |auth| {
+        Box::new(
             db_executor
                 .execute(move || {
-                    let user_id = auth.user_id;
                     let device_id_clone = device_id.clone();
 
                     let user = users_repo.get(user_id).map_err(ectx!(try convert => user_id))?;
@@ -196,7 +181,7 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                         .send_email(device_add_email.clone().into())
                         .map_err(ectx!(ErrorContext::Lapin, ErrorKind::Internal => device_add_email))
                 })
-        }))
+        )
     }
 
     fn confirm_add_device(&self, token: DeviceConfirmToken) -> Box<Future<Item = (), Error = Error> + Send> {
@@ -225,22 +210,14 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
 
     fn me(&self, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send> {
         let cli = self.storiqa_client.clone();
-        Box::new(
-            self.auth_service
-                .authenticate(token)
-                .and_then(move |auth| cli.me(auth.token).map_err(ectx!(convert))),
-        )
+        Box::new(cli.me(token).map_err(ectx!(convert)))
     }
     fn reset_password(&self, reset: ResetPassword) -> Box<Future<Item = (), Error = Error> + Send> {
         Box::new(self.storiqa_client.reset_password(reset).map_err(ectx!(convert)))
     }
     fn change_password(&self, change_password: ChangePassword, token: StoriqaJWT) -> Box<Future<Item = (), Error = Error> + Send> {
         let cli = self.storiqa_client.clone();
-        Box::new(
-            self.auth_service
-                .authenticate(token)
-                .and_then(move |auth| cli.change_password(change_password, auth.token).map_err(ectx!(convert))),
-        )
+        Box::new(cli.change_password(change_password, token).map_err(ectx!(convert)))
     }
     fn confirm_reset_password(&self, confirm: ResetPasswordConfirm) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
         let cli = self.storiqa_client.clone();
