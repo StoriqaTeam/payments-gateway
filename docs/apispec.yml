@@ -1164,12 +1164,14 @@ components:
       required:
         - fromCurrency
         - toCurrency
+        - accountAddress
       properties:
         fromCurrency:
           $ref: '#/components/schemas/Currency'
         toCurrency:
           $ref: '#/components/schemas/Currency'
-          
+        accountAddress:
+          $ref: '#/components/schemas/AccountAddress'
     Value:
       type: string
       description: Monetary value - either fiat or blockchain

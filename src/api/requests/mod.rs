@@ -256,6 +256,7 @@ impl From<PostRateRequest> for GetRate {
 pub struct PostFeesRequest {
     pub from_currency: Currency,
     pub to_currency: Currency,
+    pub account_address: AccountAddress,
 }
 
 impl From<PostFeesRequest> for GetFees {
@@ -263,6 +264,7 @@ impl From<PostFeesRequest> for GetFees {
         Self {
             from_currency: req.from_currency,
             to_currency: req.to_currency,
+            account_address: req.account_address,
         }
     }
 }
