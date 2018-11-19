@@ -1259,6 +1259,7 @@ components:
         - toCurrency
         - fee
         - status
+        - blockchain_tx_ids
         - created_at
         - updated_at
       properties:
@@ -1280,8 +1281,10 @@ components:
           $ref: '#/components/schemas/Currency'
         fee:
           $ref: '#/components/schemas/Value'
-        blockchain_tx_id:
-          $ref: '#/components/schemas/Id'
+        blockchain_tx_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/Id'
         status:
           description: >
             Transaction status

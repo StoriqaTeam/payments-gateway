@@ -46,7 +46,7 @@ pub struct Transaction {
     pub to_currency: Currency,
     pub fee: Amount,
     pub status: TransactionStatus,
-    pub blockchain_tx_id: Option<BlockchainTransactionId>,
+    pub blockchain_tx_ids: Vec<BlockchainTransactionId>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
