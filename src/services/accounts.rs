@@ -7,6 +7,7 @@ use serde_json;
 use validator::Validate;
 
 use super::error::*;
+use api::responses::AccountsResponse;
 use client::TransactionsClient;
 use models::*;
 use prelude::*;
@@ -30,21 +31,26 @@ impl<E: DbExecutor> AccountsServiceImpl<E> {
 }
 
 pub trait AccountsService: Send + Sync + 'static {
-    fn create_account(&self, input: CreateAccount) -> Box<Future<Item = Account, Error = Error> + Send>;
+    fn create_account(&self, input: CreateAccount) -> Box<Future<Item = AccountsResponse, Error = Error> + Send>;
     fn create_default_accounts(&self, user_id: UserId) -> Box<Future<Item = (), Error = Error> + Send>;
-    fn get_account(&self, user_id: UserId, account_id: AccountId) -> Box<Future<Item = Option<Account>, Error = Error> + Send>;
+    fn get_account(&self, user_id: UserId, account_id: AccountId) -> Box<Future<Item = Option<AccountsResponse>, Error = Error> + Send>;
     fn update_account(
         &self,
         user_id: UserId,
         account_id: AccountId,
         payload: UpdateAccount,
-    ) -> Box<Future<Item = Account, Error = Error> + Send>;
-    fn delete_account(&self, user_id: UserId, account_id: AccountId) -> Box<Future<Item = Account, Error = Error> + Send>;
-    fn get_accounts_for_user(&self, user_id: UserId, offset: i64, limit: i64) -> Box<Future<Item = Vec<Account>, Error = Error> + Send>;
+    ) -> Box<Future<Item = AccountsResponse, Error = Error> + Send>;
+    fn delete_account(&self, user_id: UserId, account_id: AccountId) -> Box<Future<Item = (), Error = Error> + Send>;
+    fn get_accounts_for_user(
+        &self,
+        user_id: UserId,
+        offset: i64,
+        limit: i64,
+    ) -> Box<Future<Item = Vec<AccountsResponse>, Error = Error> + Send>;
 }
 
 impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
-    fn create_account(&self, input: CreateAccount) -> Box<Future<Item = Account, Error = Error> + Send> {
+    fn create_account(&self, input: CreateAccount) -> Box<Future<Item = AccountsResponse, Error = Error> + Send> {
         let accounts_repo = self.accounts_repo.clone();
         let db_executor = self.db_executor.clone();
         let transactions_client = self.transactions_client.clone();
@@ -55,16 +61,14 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
                 .into_future()
                 .and_then({
                     let input = input.clone();
-                    move |_| {
-                        transactions_client
-                            .create_account(input.clone())
-                            .map_err(ectx!(convert => input))
-                            .map(|acc| acc.address)
-                    }
-                }).and_then(move |account_address| {
+                    move |_| transactions_client.create_account(input.clone()).map_err(ectx!(convert => input))
+                }).and_then(move |account_transaction| {
                     db_executor.execute(move || {
-                        let new_account: NewAccount = (input, account_address).into();
-                        accounts_repo.create(new_account.clone()).map_err(ectx!(convert => new_account))
+                        let new_account: NewAccount = (input, account_transaction.address.clone()).into();
+                        accounts_repo
+                            .create(new_account.clone())
+                            .map_err(ectx!(convert => new_account))
+                            .map(|account| AccountsResponse::new(account, Amount::new(0), account_transaction.erc20_approved))
                     })
                 }),
         )
@@ -100,7 +104,7 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
         });
         Box::new(f)
     }
-    fn get_account(&self, user_id: UserId, account_id: AccountId) -> Box<Future<Item = Option<Account>, Error = Error> + Send> {
+    fn get_account(&self, user_id: UserId, account_id: AccountId) -> Box<Future<Item = Option<AccountsResponse>, Error = Error> + Send> {
         let accounts_repo = self.accounts_repo.clone();
         let db_executor = self.db_executor.clone();
         let transactions_client = self.transactions_client.clone();
@@ -117,14 +121,17 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
                     }
                     Ok(account)
                 }).and_then(move |account| {
-                    if let Some(mut account) = account {
+                    if let Some(account) = account {
                         Either::A(
                             transactions_client
                                 .get_account_balance(account.id)
                                 .map_err(ectx!(convert => account_id))
                                 .map(|transactions_acc| {
-                                    account.balance = transactions_acc.balance;
-                                    Some(account)
+                                    Some(AccountsResponse::new(
+                                        account,
+                                        transactions_acc.balance,
+                                        transactions_acc.account.erc20_approved,
+                                    ))
                                 }),
                         )
                     } else {
@@ -138,7 +145,7 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
         user_id: UserId,
         account_id: AccountId,
         payload: UpdateAccount,
-    ) -> Box<Future<Item = Account, Error = Error> + Send> {
+    ) -> Box<Future<Item = AccountsResponse, Error = Error> + Send> {
         let accounts_repo = self.accounts_repo.clone();
         let db_executor = self.db_executor.clone();
         let transactions_client = self.transactions_client.clone();
@@ -157,18 +164,17 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
                         }
                         Ok(account)
                     })
-                }).and_then(move |mut account| {
+                }).and_then(move |account| {
                     transactions_client
                         .get_account_balance(account.id)
                         .map_err(ectx!(convert => account_id))
                         .map(|transactions_acc| {
-                            account.balance = transactions_acc.balance;
-                            account
+                            AccountsResponse::new(account, transactions_acc.balance, transactions_acc.account.erc20_approved)
                         })
                 }),
         )
     }
-    fn delete_account(&self, user_id: UserId, account_id: AccountId) -> Box<Future<Item = Account, Error = Error> + Send> {
+    fn delete_account(&self, user_id: UserId, account_id: AccountId) -> Box<Future<Item = (), Error = Error> + Send> {
         let accounts_repo = self.accounts_repo.clone();
         let db_executor = self.db_executor.clone();
         Box::new(db_executor.execute_transaction(move || {
@@ -178,10 +184,15 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
             if account.user_id != user_id {
                 return Err(ectx!(err ErrorContext::InvalidToken, ErrorKind::Unauthorized => account.user_id));
             }
-            Ok(account)
+            Ok(())
         }))
     }
-    fn get_accounts_for_user(&self, user_id: UserId, offset: i64, limit: i64) -> Box<Future<Item = Vec<Account>, Error = Error> + Send> {
+    fn get_accounts_for_user(
+        &self,
+        user_id: UserId,
+        offset: i64,
+        limit: i64,
+    ) -> Box<Future<Item = Vec<AccountsResponse>, Error = Error> + Send> {
         let accounts_repo = self.accounts_repo.clone();
         let db_executor = self.db_executor.clone();
         let transactions_client = self.transactions_client.clone();
@@ -192,15 +203,18 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
                         .list_for_user(user_id, offset, limit)
                         .map_err(ectx!(ErrorKind::Internal => user_id, offset, limit))
                 }).and_then(move |accounts| {
-                    iter_ok::<_, Error>(accounts).fold(vec![], move |mut accounts, mut account| {
+                    iter_ok::<_, Error>(accounts).fold(vec![], move |mut accounts, account| {
                         let account_id = account.id;
                         transactions_client
                             .get_account_balance(account_id)
                             .map_err(ectx!(convert => account_id))
-                            .and_then(|balance| {
-                                account.balance = balance.balance;
-                                accounts.push(account);
-                                Ok(accounts) as Result<Vec<Account>, Error>
+                            .and_then(|transactions_acc| {
+                                accounts.push(AccountsResponse::new(
+                                    account,
+                                    transactions_acc.balance,
+                                    transactions_acc.account.erc20_approved,
+                                ));
+                                Ok(accounts) as Result<Vec<AccountsResponse>, Error>
                             })
                     })
                 }),
