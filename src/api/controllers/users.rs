@@ -9,32 +9,70 @@ use futures::prelude::*;
 
 pub fn post_sessions(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
+    let auth_service = ctx.auth_service.clone();
+    let body = ctx.body.clone();
     Box::new(
-        parse_body::<PostSessionsRequest>(ctx.body.clone())
-            .and_then(move |input| {
-                let input_clone = input.clone();
-                users_service
-                    .get_jwt(input.email, input.password)
-                    .map_err(ectx!(convert => input_clone))
-            }).and_then(|jwt| {
-                let model = PostSessionsResponse { token: jwt };
-                response_with_model(&model)
+        ctx.get_auth_info()
+            .into_future()
+            .map_err(ectx!(convert))
+            .and_then(move |auth_info| {
+                parse_body::<PostSessionsRequest>(body)
+                    .and_then(move |input| {
+                        let input_clone = input.clone();
+                        users_service
+                            .get_jwt(input.email, input.password)
+                            .map_err(ectx!(convert => input_clone))
+                    }).and_then(move |jwt| {
+                        let token = jwt.clone();
+                        let auth_service_clone = auth_service.clone();
+                        auth_service
+                            .get_jwt_auth(jwt.clone())
+                            .map_err(ectx!(convert => token))
+                            .into_future()
+                            .and_then(move |auth| {
+                                auth_service_clone
+                                    .authenticate(auth_info.clone(), auth.user_id)
+                                    .map_err(ectx!(convert => auth_info, auth.user_id))
+                            }).map(|_| jwt)
+                    }).and_then(|jwt| {
+                        let model = PostSessionsResponse { token: jwt };
+                        response_with_model(&model)
+                    })
             }),
     )
 }
 
 pub fn post_sessions_oauth(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
+    let auth_service = ctx.auth_service.clone();
+    let body = ctx.body.clone();
     Box::new(
-        parse_body::<PostSessionsOauthRequest>(ctx.body.clone())
-            .and_then(move |input| {
-                let input_clone = input.clone();
-                users_service
-                    .get_jwt_by_oauth(input.oauth_token, input.oauth_provider)
-                    .map_err(ectx!(convert => input_clone))
-            }).and_then(|jwt| {
-                let model = PostSessionsResponse { token: jwt };
-                response_with_model(&model)
+        ctx.get_auth_info()
+            .into_future()
+            .map_err(ectx!(convert))
+            .and_then(move |auth_info| {
+                parse_body::<PostSessionsOauthRequest>(body)
+                    .and_then(move |input| {
+                        let input_clone = input.clone();
+                        users_service
+                            .get_jwt_by_oauth(input.oauth_token, input.oauth_provider)
+                            .map_err(ectx!(convert => input_clone))
+                    }).and_then(move |jwt| {
+                        let token = jwt.clone();
+                        let auth_service_clone = auth_service.clone();
+                        auth_service
+                            .get_jwt_auth(jwt.clone())
+                            .map_err(ectx!(convert => token))
+                            .into_future()
+                            .and_then(move |auth| {
+                                auth_service_clone
+                                    .authenticate(auth_info.clone(), auth.user_id)
+                                    .map_err(ectx!(convert => auth_info, auth.user_id))
+                            }).map(|_| jwt)
+                    }).and_then(|jwt| {
+                        let model = PostSessionsResponse { token: jwt };
+                        response_with_model(&model)
+                    })
             }),
     )
 }
