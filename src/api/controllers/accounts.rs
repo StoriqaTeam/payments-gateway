@@ -7,7 +7,6 @@ use super::Context;
 use super::ControllerFuture;
 use api::error::*;
 use api::requests::*;
-use api::responses::*;
 use models::*;
 use serde_qs;
 
@@ -29,7 +28,7 @@ pub fn post_accounts(ctx: &Context, user_id: UserId) -> ControllerFuture {
                         accounts_service
                             .create_account((input, user_id).into())
                             .map_err(ectx!(convert => input_clone))
-                    }).and_then(|account| response_with_model(&AccountsResponse::from(account)))
+                    }).and_then(|account| response_with_model(&account))
             }),
     )
 }
@@ -61,10 +60,7 @@ pub fn get_users_accounts(ctx: &Context, user_id: UserId) -> ControllerFuture {
                 accounts_service
                     .get_accounts_for_user(user_id, input.offset, input.limit)
                     .map_err(ectx!(convert => input_clone))
-            }).and_then(|accounts| {
-                let accounts: Vec<AccountsResponse> = accounts.into_iter().map(From::from).collect();
-                response_with_model(&accounts)
-            }),
+            }).and_then(|accounts| response_with_model(&accounts)),
     )
 }
 
@@ -74,7 +70,7 @@ pub fn get_accounts(ctx: &Context, account_id: AccountId) -> ControllerFuture {
         accounts_service
             .get_account(user_id_auth, account_id)
             .map_err(ectx!(convert))
-            .and_then(|account| response_with_model(&account.map(AccountsResponse::from)))
+            .and_then(|account| response_with_model(&account))
     }))
 }
 
@@ -88,7 +84,7 @@ pub fn put_accounts(ctx: &Context, account_id: AccountId) -> ControllerFuture {
                 accounts_service
                     .update_account(user_id_auth, account_id, input.into())
                     .map_err(ectx!(convert => input_clone))
-            }).and_then(|account| response_with_model(&AccountsResponse::from(account)))
+            }).and_then(|account| response_with_model(&account))
     }))
 }
 
@@ -98,6 +94,6 @@ pub fn delete_accounts(ctx: &Context, account_id: AccountId) -> ControllerFuture
         accounts_service
             .delete_account(user_id_auth, account_id)
             .map_err(ectx!(convert))
-            .and_then(|account| response_with_model(&AccountsResponse::from(account)))
+            .and_then(|a| response_with_model(&a))
     }))
 }

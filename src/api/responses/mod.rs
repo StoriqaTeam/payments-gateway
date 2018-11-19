@@ -17,19 +17,21 @@ pub struct AccountsResponse {
     pub account_address: AccountAddress,
     pub name: String,
     pub balance: String,
+    pub erc20_approved: bool,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
 
-impl From<Account> for AccountsResponse {
-    fn from(account: Account) -> Self {
+impl AccountsResponse {
+    pub fn new(account: Account, balance: Amount, erc20_approved: bool) -> Self {
         Self {
             id: account.id,
             user_id: account.user_id,
             currency: account.currency,
             account_address: account.account_address.to_formatted(account.currency),
             name: account.name,
-            balance: account.balance.to_string(),
+            balance: balance.to_string(),
+            erc20_approved,
             created_at: account.created_at,
             updated_at: account.updated_at,
         }

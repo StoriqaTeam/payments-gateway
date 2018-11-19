@@ -1164,12 +1164,14 @@ components:
       required:
         - fromCurrency
         - toCurrency
+        - accountAddress
       properties:
         fromCurrency:
           $ref: '#/components/schemas/Currency'
         toCurrency:
           $ref: '#/components/schemas/Currency'
-          
+        accountAddress:
+          $ref: '#/components/schemas/AccountAddress'
     Value:
       type: string
       description: Monetary value - either fiat or blockchain
@@ -1338,6 +1340,7 @@ components:
         - userId
         - accountAddress
         - name
+        - erc20Approved
       properties:
         id:
           $ref: '#/components/schemas/Id'
@@ -1353,6 +1356,9 @@ components:
           type: string
           description: Short name for the account
           example: My main account
+        erc20Approved:
+          type: boolean
+          description: Can withdraw from erc20 account status 
     Currency:
       type: string
       description: >-

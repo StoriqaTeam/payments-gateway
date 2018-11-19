@@ -80,21 +80,6 @@ pub struct UpdateAccount {
     pub name: String,
 }
 
-#[derive(Debug, Clone)]
-pub struct Balance {
-    pub currency: Currency,
-    pub balance: Amount,
-}
-
-impl From<Account> for Balance {
-    fn from(acc: Account) -> Self {
-        Self {
-            currency: acc.currency,
-            balance: acc.balance,
-        }
-    }
-}
-
 #[derive(Debug, Clone, Validate)]
 pub struct CreateAccount {
     pub id: AccountId,
