@@ -56,7 +56,7 @@ pub struct TransactionResponse {
     pub to_currency: Currency,
     pub fee: Amount,
     pub status: TransactionStatus,
-    pub blockchain_tx_id: Option<BlockchainTransactionId>,
+    pub blockchain_tx_ids: Vec<BlockchainTransactionId>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -73,7 +73,7 @@ impl Default for TransactionResponse {
             to_value: Amount::default(),
             fee: Amount::default(),
             status: TransactionStatus::Done,
-            blockchain_tx_id: None,
+            blockchain_tx_ids: vec![],
             created_at: ::chrono::Utc::now().naive_utc(),
             updated_at: ::chrono::Utc::now().naive_utc(),
         }
@@ -92,7 +92,7 @@ impl From<TransactionResponse> for Transaction {
             to_value: transaction.to_value,
             fee: transaction.fee,
             status: transaction.status,
-            blockchain_tx_id: transaction.blockchain_tx_id,
+            blockchain_tx_ids: transaction.blockchain_tx_ids,
             created_at: transaction.created_at,
             updated_at: transaction.updated_at,
         }
