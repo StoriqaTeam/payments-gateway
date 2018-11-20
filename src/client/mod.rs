@@ -1,4 +1,4 @@
-mod http_client;
+pub mod http_client;
 pub mod storiqa;
 pub mod transactions;
 

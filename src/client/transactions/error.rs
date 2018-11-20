@@ -1,6 +1,10 @@
-use failure::{Backtrace, Context, Fail};
 use std::fmt;
 use std::fmt::Display;
+
+use failure::{Backtrace, Context, Fail};
+use serde_json;
+
+use client::http_client::error::ErrorKind as HttpClientErrorKind;
 
 #[derive(Debug)]
 pub struct Error {
@@ -8,7 +12,7 @@ pub struct Error {
 }
 
 #[allow(dead_code)]
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
+#[derive(Clone, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
     #[fail(display = "storiqa client error - malformed input")]
     MalformedInput,
@@ -16,6 +20,8 @@ pub enum ErrorKind {
     Unauthorized,
     #[fail(display = "storiqa client error - internal error")]
     Internal,
+    #[fail(display = "storiqa client error - bad request")]
+    Validation(serde_json::Value),
 }
 
 #[allow(dead_code)]
@@ -37,3 +43,12 @@ pub enum ErrorContext {
 }
 
 derive_error_impls!();
+
+impl From<HttpClientErrorKind> for ErrorKind {
+    fn from(err: HttpClientErrorKind) -> Self {
+        match err {
+            HttpClientErrorKind::Validation(s) => ErrorKind::Validation(serde_json::to_value(s).unwrap_or_default()),
+            _ => ErrorKind::Internal,
+        }
+    }
+}

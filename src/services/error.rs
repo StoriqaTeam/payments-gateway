@@ -101,6 +101,7 @@ impl From<TransactionsClientErrorKind> for ErrorKind {
             TransactionsClientErrorKind::Internal => ErrorKind::Internal,
             TransactionsClientErrorKind::Unauthorized => ErrorKind::Unauthorized,
             TransactionsClientErrorKind::MalformedInput => ErrorKind::MalformedInput,
+            TransactionsClientErrorKind::Validation(s) => ErrorKind::InvalidInput(s),
         }
     }
 }

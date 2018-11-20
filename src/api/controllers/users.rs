@@ -124,28 +124,14 @@ pub fn post_users_confirm_email(ctx: &Context) -> ControllerFuture {
 
 pub fn post_users_add_device(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
-    let users_service_clone = ctx.users_service.clone();
-    let auth_service = ctx.auth_service.clone();
     let body = ctx.body.clone();
     Box::new(
         parse_body::<PostUsersAddDeviceRequest>(body)
             .and_then(move |input| {
                 let input_clone = input.clone();
-                let input_clone2 = input_clone.clone();
                 users_service
-                    .get_jwt(input.email.clone(), input.password.clone())
+                    .add_device(input.device_id, input.device_os, input.public_key, input.user_id)
                     .map_err(ectx!(convert => input_clone))
-                    .and_then(move |token| auth_service.get_jwt_auth(token.clone()).map_err(ectx!(convert => token)))
-                    .and_then(move |auth| {
-                        let input_clone3 = input_clone2.clone();
-                        users_service_clone
-                            .add_device(
-                                input_clone2.device_id,
-                                input_clone2.device_os,
-                                input_clone2.public_key,
-                                auth.user_id,
-                            ).map_err(ectx!(convert => input_clone3))
-                    })
             }).and_then(|token| response_with_model(&token)),
     )
 }

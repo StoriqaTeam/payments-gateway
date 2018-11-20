@@ -1007,18 +1007,13 @@ components:
     UsersAddDeviceInput:
       type: object
       required:
-        - email
-        - password
+        - userId
         - publicKey
         - deviceId
         - deviceOs
       properties:
-        email:
-          type: string
-          example: a.karasev@storiqa.com
-        password:
-          type: string
-          example: secret password
+        userId:
+          $ref: '#/components/schemas/UserId'
         deviceOs:
           type: string
           description: Android SDK / iOS version. Requied for mobile only.
@@ -1162,13 +1157,10 @@ components:
     FeeInput:
       type: object
       required:
-        - fromCurrency
-        - toCurrency
+        - currency
         - accountAddress
       properties:
-        fromCurrency:
-          $ref: '#/components/schemas/Currency'
-        toCurrency:
+        currency:
           $ref: '#/components/schemas/Currency'
         accountAddress:
           $ref: '#/components/schemas/AccountAddress'
