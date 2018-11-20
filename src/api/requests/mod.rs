@@ -138,8 +138,7 @@ pub struct PostUsersAddDeviceRequest {
     pub device_id: DeviceId,
     pub device_os: String,
     pub public_key: DevicePublicKey,
-    pub email: String,
-    pub password: Password,
+    pub user_id: UserId,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -254,16 +253,14 @@ impl From<PostRateRequest> for GetRate {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PostFeesRequest {
-    pub from_currency: Currency,
-    pub to_currency: Currency,
+    pub currency: Currency,
     pub account_address: AccountAddress,
 }
 
 impl From<PostFeesRequest> for GetFees {
     fn from(req: PostFeesRequest) -> Self {
         Self {
-            from_currency: req.from_currency,
-            to_currency: req.to_currency,
+            currency: req.currency,
             account_address: req.account_address,
         }
     }

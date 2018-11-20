@@ -94,6 +94,7 @@ impl<E: DbExecutor> AuthService for AuthServiceImpl<E> {
                     let mut error = ValidationError::new("exists");
                     error.add_param("message".into(), &"device not exists".to_string());
                     error.add_param("details".into(), &"no details".to_string());
+                    error.add_param("user_id".into(), &user_id.to_string());
                     errors.add("device", error);
                     let device_id = info.device_id.clone();
                     return Err(ectx!(err ErrorContext::DeviceNotExists, ErrorKind::InvalidInput(serde_json::to_value(&errors).unwrap_or_default()) => user_id, device_id));

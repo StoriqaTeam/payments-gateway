@@ -1,6 +1,7 @@
-use failure::{Backtrace, Context, Fail};
 use std::fmt;
 use std::fmt::Display;
+
+use failure::{Backtrace, Context, Fail};
 
 #[derive(Debug)]
 pub struct Error {
@@ -8,7 +9,7 @@ pub struct Error {
 }
 
 #[allow(dead_code)]
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
+#[derive(Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
     #[fail(display = "http client error - bad request")]
     BadRequest,
@@ -28,6 +29,8 @@ pub enum ErrorKind {
     UnknownServerError,
     #[fail(display = "http client error - internal error")]
     Internal,
+    #[fail(display = "http client error - bad request")]
+    Validation(String),
 }
 
 #[allow(dead_code)]
