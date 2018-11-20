@@ -152,7 +152,7 @@ impl StoriqaClient for StoriqaClientImpl {
         let query = format!(
             r#"
                 mutation M {{
-                    createUser(input: {{email: \"{}\", password: \"{}\", firstName: \"{}\", lastName: \"{}\", device: {}, clientMutationId:\"\"}}) {{
+                    createUser(input: {{email: \"{}\", password: \"{}\", firstName: \"{}\", lastName: \"{}\", device: {}, project: WALLET, clientMutationId:\"\"}}) {{
                         rawId
                         email
                         firstName
@@ -276,7 +276,7 @@ impl StoriqaClient for StoriqaClientImpl {
         let query = format!(
             r#"
                 mutation M {{
-                    requestPasswordReset(input: {{email: \"{}\", device: {}, clientMutationId:\"\"}}) {{
+                    requestPasswordReset(input: {{email: \"{}\", device: {}, project: WALLET, clientMutationId:\"\"}}) {{
                         success
                     }}
                 }}
