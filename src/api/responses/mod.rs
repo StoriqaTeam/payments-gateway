@@ -113,14 +113,31 @@ impl From<Rate> for RateResponse {
 #[serde(rename_all = "camelCase")]
 pub struct FeesResponse {
     pub currency: Currency,
-    pub fees: Vec<Fee>,
+    pub fees: Vec<FeeResponse>,
 }
 
 impl From<Fees> for FeesResponse {
     fn from(rate: Fees) -> Self {
+        let fees = rate.fees.into_iter().map(From::from).collect();
         Self {
             currency: rate.currency,
-            fees: rate.fees,
+            fees,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FeeResponse {
+    pub value: String,
+    pub estimated_time: u64,
+}
+
+impl From<Fee> for FeeResponse {
+    fn from(fee: Fee) -> Self {
+        Self {
+            value: fee.value.to_string(),
+            estimated_time: fee.estimated_time,
         }
     }
 }
