@@ -31,12 +31,12 @@ impl DeviceAddEmail {
 impl From<DeviceAddEmail> for Email {
     fn from(email: DeviceAddEmail) -> Self {
         Self {
-                to : email.to,
-                subject : format!("New device will be added to your wallet"),
-                text : format!(
-                    "Please, follow <a href=\"{}?token={}\">this link</a> to add new device with number `{}` to your account in Storiqa wallet.",
-                    email.base_url, email.token, email.device_id
-                ),
-            }
+            to: email.to,
+            subject: format!("New device will be added to your wallet"),
+            text: format!(
+                "Please, follow <a href=\"{}/{}\">this link</a> to add new device to your account in wallet.",
+                email.base_url, email.token
+            ),
+        }
     }
 }
