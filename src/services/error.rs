@@ -2,7 +2,6 @@ use std::fmt;
 use std::fmt::Display;
 
 use failure::{Backtrace, Context, Fail};
-use serde_json;
 
 use client::storiqa::ErrorKind as StoriqaClientErrorKind;
 use client::transactions::ErrorKind as TransactionsClientErrorKind;
@@ -21,7 +20,7 @@ pub enum ErrorKind {
     #[fail(display = "service error - malformed input")]
     MalformedInput,
     #[fail(display = "service error - invalid input, errors: {}", _0)]
-    InvalidInput(serde_json::Value),
+    InvalidInput(String),
     #[fail(display = "service error - internal error")]
     Internal,
     #[fail(display = "service error - not found")]
@@ -77,9 +76,7 @@ impl From<ReposErrorKind> for ErrorKind {
         match e {
             ReposErrorKind::Internal => ErrorKind::Internal,
             ReposErrorKind::Unauthorized => ErrorKind::Unauthorized,
-            ReposErrorKind::Constraints(validation_errors) => {
-                ErrorKind::InvalidInput(serde_json::to_value(&validation_errors).unwrap_or_default())
-            }
+            ReposErrorKind::Constraints(validation_errors) => ErrorKind::InvalidInput(validation_errors.to_string()),
         }
     }
 }
@@ -90,7 +87,7 @@ impl From<StoriqaClientErrorKind> for ErrorKind {
             StoriqaClientErrorKind::Internal => ErrorKind::Internal,
             StoriqaClientErrorKind::Unauthorized => ErrorKind::Unauthorized,
             StoriqaClientErrorKind::MalformedInput => ErrorKind::MalformedInput,
-            StoriqaClientErrorKind::Validation(s) => ErrorKind::InvalidInput(s),
+            StoriqaClientErrorKind::Validation(s) => ErrorKind::InvalidInput(s.to_string()),
         }
     }
 }

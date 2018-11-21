@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use serde_json;
 use validator::{Validate, ValidationError, ValidationErrors};
 
 use super::error::*;
@@ -84,7 +83,7 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
         Box::new(
             new_user
                 .validate()
-                .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_value(&e).unwrap_or_default()) => new_user))
+                .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(e.to_string()) => new_user))
                 .into_future()
                 .and_then(move |_| client.create_user(new_user.clone()).map_err(ectx!(convert)))
                 .and_then(move |user| {
@@ -113,9 +112,8 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
         Box::new(
             update_user
                 .validate()
-                .map_err(
-                    |e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_value(&e).unwrap_or_default()) => update_user_clone2),
-                ).into_future()
+                .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(e.to_string()) => update_user_clone2))
+                .into_future()
                 .and_then(move |_| client.update_user(update_user, user_id).map_err(ectx!(convert)))
                 .and_then(move |user| {
                     db_executor.execute(move || {
@@ -163,7 +161,7 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                         error.add_param("message".into(), &"device already exists".to_string());
                         error.add_param("details".into(), &"no details".to_string());
                         errors.add("device", error);
-                        return Err(ectx!(err ErrorContext::DeviceAlreadyExists, ErrorKind::InvalidInput(serde_json::to_value(&errors).unwrap_or_default()) => user_id, device_id_clone2));
+                        return Err(ectx!(err ErrorContext::DeviceAlreadyExists, ErrorKind::InvalidInput(errors.to_string()) => user_id, device_id_clone2));
                     }
 
                     let device_id_clone2 = device_id_clone.clone();
@@ -224,7 +222,7 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
         Box::new(
             confirm
                 .validate()
-                .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_value(&e).unwrap_or_default()) => confirm))
+                .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(e.to_string()) => confirm))
                 .into_future()
                 .and_then(move |_| cli.confirm_reset_password(confirm).map_err(ectx!(convert))),
         )
