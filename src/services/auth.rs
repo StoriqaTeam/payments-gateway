@@ -4,7 +4,6 @@ use crypto::digest::Digest;
 use crypto::sha2::Sha256;
 use jsonwebtoken::{decode, Algorithm, Validation};
 use secp256k1::{Message, PublicKey, Secp256k1, Signature};
-use serde_json;
 use validator::{ValidationError, ValidationErrors};
 
 use super::error::*;
@@ -65,40 +64,38 @@ impl<E: DbExecutor> AuthService for AuthServiceImpl<E> {
     fn authenticate(&self, info: AuthInfo, user_id: UserId) -> ServiceFuture<()> {
         let devices_repo = self.devices_repo.clone();
         let db_executor = self.db_executor.clone();
-        Box::new(db_executor
-            .execute(move || {
-                let device_id = info.device_id.clone();
-                let device = devices_repo
-                    .get(device_id.clone(), user_id)
-                    .map_err(ectx!(try convert => user_id, device_id))?;
-                if let Some(device) = device {
-                    let info_timestamp = info.timestamp;
-                    if info_timestamp <= device.last_timestamp {
-                        return Err(ectx!(err ErrorContext::WrongTimestamp, ErrorKind::Unauthorized => info_timestamp));
-                    }
-                    let mut hasher = Sha256::new();
-                    hasher.input_str(&format!("{}{}",info.timestamp, info.device_id));
-                    let mut bytes = [0; 32];
-                    hasher.result(&mut bytes);
-                    let message = Message::from_slice(&bytes)
-                        .map_err(ectx!(try ErrorContext::WrongMessage, ErrorKind::Unauthorized))?;
-                    let secp = Secp256k1::new();
-                    let public_key = PublicKey::from_slice(&secp, &parse_hex(&device.public_key.inner()))
-                        .map_err(ectx!(try ErrorContext::PublicKey, ErrorKind::Unauthorized))?;
-                    let sig = Signature::from_compact(&secp, &parse_hex(&info.sign))
-                        .map_err(ectx!(try ErrorContext::Sign, ErrorKind::Unauthorized))?;
-                    secp.verify(&message, &sig, &public_key)
-                        .map_err(ectx!(try ErrorContext::VerifySign, ErrorKind::Unauthorized))?;
-                } else {
-                    let mut errors = ValidationErrors::new();
-                    let mut error = ValidationError::new("exists");
-                    error.add_param("message".into(), &"device not exists".to_string());
-                    error.add_param("details".into(), &"no details".to_string());
-                    error.add_param("user_id".into(), &user_id.to_string());
-                    errors.add("device", error);
-                    let device_id = info.device_id.clone();
-                    return Err(ectx!(err ErrorContext::DeviceNotExists, ErrorKind::InvalidInput(serde_json::to_value(&errors).unwrap_or_default()) => user_id, device_id));
+        Box::new(db_executor.execute(move || {
+            let device_id = info.device_id.clone();
+            let device = devices_repo
+                .get(device_id.clone(), user_id)
+                .map_err(ectx!(try convert => user_id, device_id))?;
+            if let Some(device) = device {
+                let info_timestamp = info.timestamp;
+                if info_timestamp <= device.last_timestamp {
+                    return Err(ectx!(err ErrorContext::WrongTimestamp, ErrorKind::Unauthorized => info_timestamp));
                 }
+                let mut hasher = Sha256::new();
+                hasher.input_str(&format!("{}{}", info.timestamp, info.device_id));
+                let mut bytes = [0; 32];
+                hasher.result(&mut bytes);
+                let message = Message::from_slice(&bytes).map_err(ectx!(try ErrorContext::WrongMessage, ErrorKind::Unauthorized))?;
+                let secp = Secp256k1::new();
+                let public_key = PublicKey::from_slice(&secp, &parse_hex(&device.public_key.inner()))
+                    .map_err(ectx!(try ErrorContext::PublicKey, ErrorKind::Unauthorized))?;
+                let sig = Signature::from_compact(&secp, &parse_hex(&info.sign))
+                    .map_err(ectx!(try ErrorContext::Sign, ErrorKind::Unauthorized))?;
+                secp.verify(&message, &sig, &public_key)
+                    .map_err(ectx!(try ErrorContext::VerifySign, ErrorKind::Unauthorized))?;
+            } else {
+                let mut errors = ValidationErrors::new();
+                let mut error = ValidationError::new("exists");
+                error.add_param("message".into(), &"device not exists".to_string());
+                error.add_param("details".into(), &"no details".to_string());
+                error.add_param("user_id".into(), &user_id.to_string());
+                errors.add("device", error);
+                let device_id = info.device_id.clone();
+                return Err(ectx!(err ErrorContext::DeviceNotExists, ErrorKind::InvalidInput(errors.to_string()) => user_id, device_id));
+            }
             Ok(())
         }))
     }
