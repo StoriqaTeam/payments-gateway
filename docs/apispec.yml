@@ -964,9 +964,9 @@ components:
     UsersConfirmAddDeviceInput:
       type: object
       required:
-        - deviceConfirmToken
+        - token
       properties:
-        deviceConfirmToken:
+        token:
           type: string
           description: Confirmation token that is sent via email after adding device request
           example: lkg7713rlkf==
