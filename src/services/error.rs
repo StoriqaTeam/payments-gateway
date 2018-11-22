@@ -2,6 +2,7 @@ use std::fmt;
 use std::fmt::Display;
 
 use failure::{Backtrace, Context, Fail};
+use serde_json;
 
 use client::storiqa::ErrorKind as StoriqaClientErrorKind;
 use client::transactions::ErrorKind as TransactionsClientErrorKind;
@@ -76,7 +77,9 @@ impl From<ReposErrorKind> for ErrorKind {
         match e {
             ReposErrorKind::Internal => ErrorKind::Internal,
             ReposErrorKind::Unauthorized => ErrorKind::Unauthorized,
-            ReposErrorKind::Constraints(validation_errors) => ErrorKind::InvalidInput(validation_errors.to_string()),
+            ReposErrorKind::Constraints(validation_errors) => {
+                ErrorKind::InvalidInput(serde_json::to_string(&validation_errors).unwrap_or_default())
+            }
         }
     }
 }

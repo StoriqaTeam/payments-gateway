@@ -74,7 +74,7 @@ use tokio::timer::{Delay, Timeout};
 
 use self::models::*;
 use config::Config;
-use rabbit::{ConnectionHooks, RabbitConnectionManager, TransactionConsumerImpl, R2D2ErrorHandler, TransactionPublisherImpl};
+use rabbit::{ConnectionHooks, R2D2ErrorHandler, RabbitConnectionManager, TransactionConsumerImpl, TransactionPublisherImpl};
 use rabbit::{ErrorKind, ErrorSource};
 use repos::{AccountsRepoImpl, DbExecutorImpl, DevicesRepoImpl, UsersRepoImpl};
 use services::Notificator;
