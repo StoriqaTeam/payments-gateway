@@ -3,6 +3,7 @@ use std::sync::Arc;
 use futures::prelude::*;
 use futures::stream::iter_ok;
 use futures::IntoFuture;
+use serde_json;
 use validator::Validate;
 
 use super::error::*;
@@ -65,12 +66,13 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
             db_executor
                 .execute({
                     let input = input.clone();
+                    let input_from = input.from.clone();
                     move || {
                         let accounts = accounts_repo
                             .get_by_user(user_id)
                             .map_err(ectx!(try ErrorKind::Internal => user_id))?;
-                        if !accounts.iter().any(|account| input.from == account.id) {
-                            Err(ectx!(err ErrorContext::InvalidToken, ErrorKind::Unauthorized => user_id))
+                        if !accounts.iter().any(|account| input_from == account.id) {
+                            Err(ectx!(err ErrorContext::NoAccount, ErrorKind::Unauthorized => user_id, input_from))
                         } else {
                             Ok(())
                         }
@@ -78,7 +80,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                 }).and_then(move |_| {
                     input
                         .validate()
-                        .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(e.to_string()) => input))
+                        .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_string(&e).unwrap_or_default()) => input))
                         .into_future()
                         .and_then(move |_| {
                             transactions_client

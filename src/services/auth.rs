@@ -4,6 +4,7 @@ use crypto::digest::Digest;
 use crypto::sha2::Sha256;
 use jsonwebtoken::{decode, Algorithm, Validation};
 use secp256k1::{Message, PublicKey, Secp256k1, Signature};
+use serde_json;
 use validator::{ValidationError, ValidationErrors};
 
 use super::error::*;
@@ -66,6 +67,7 @@ impl<E: DbExecutor> AuthService for AuthServiceImpl<E> {
         let db_executor = self.db_executor.clone();
         Box::new(db_executor.execute(move || {
             let device_id = info.device_id.clone();
+            let device_id_clone = info.device_id.clone();
             let device = devices_repo
                 .get(device_id.clone(), user_id)
                 .map_err(ectx!(try convert => user_id, device_id))?;
@@ -86,6 +88,8 @@ impl<E: DbExecutor> AuthService for AuthServiceImpl<E> {
                     .map_err(ectx!(try ErrorContext::Sign, ErrorKind::Unauthorized))?;
                 secp.verify(&message, &sig, &public_key)
                     .map_err(ectx!(try ErrorContext::VerifySign, ErrorKind::Unauthorized))?;
+                devices_repo.update_timestamp(device_id_clone.clone(), user_id, info_timestamp)
+                    .map_err(ectx!(try convert => user_id, device_id_clone, info_timestamp))?;
             } else {
                 let mut errors = ValidationErrors::new();
                 let mut error = ValidationError::new("exists");
@@ -94,7 +98,7 @@ impl<E: DbExecutor> AuthService for AuthServiceImpl<E> {
                 error.add_param("user_id".into(), &user_id.to_string());
                 errors.add("device", error);
                 let device_id = info.device_id.clone();
-                return Err(ectx!(err ErrorContext::DeviceNotExists, ErrorKind::InvalidInput(errors.to_string()) => user_id, device_id));
+                return Err(ectx!(err ErrorContext::DeviceNotExists, ErrorKind::InvalidInput(serde_json::to_string(&errors).unwrap_or_default()) => user_id, device_id));
             }
             Ok(())
         }))

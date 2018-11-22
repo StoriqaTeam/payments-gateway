@@ -3,6 +3,7 @@ use std::sync::Arc;
 use futures::future::{self, Either};
 use futures::stream::iter_ok;
 use futures::IntoFuture;
+use serde_json;
 use validator::Validate;
 
 use super::error::*;
@@ -56,7 +57,7 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
         Box::new(
             input
                 .validate()
-                .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(e.to_string()) => input))
+                .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_string(&e).unwrap_or_default()) => input))
                 .into_future()
                 .and_then({
                     let input = input.clone();
@@ -151,7 +152,7 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
         Box::new(
             payload
                 .validate()
-                .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(e.to_string()) => payload))
+                .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_string(&e).unwrap_or_default()) => payload))
                 .into_future()
                 .and_then(move |_| {
                     db_executor.execute_transaction(move || {
