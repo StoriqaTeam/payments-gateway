@@ -7,8 +7,8 @@ use super::error::*;
 use client::StoriqaClient;
 use models::*;
 use prelude::*;
-use rabbit::TransactionPublisher;
 use repos::{DbExecutor, DeviceTokensRepo, DevicesRepo, UsersRepo};
+use services::EmailSenderService;
 
 pub trait UsersService: Send + Sync + 'static {
     fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
@@ -36,8 +36,7 @@ pub struct UsersServiceImpl<E: DbExecutor> {
     devices_repo: Arc<dyn DevicesRepo>,
     devices_tokens_repo: Arc<dyn DeviceTokensRepo>,
     db_executor: E,
-    publisher: Arc<dyn TransactionPublisher>,
-    device_confirm_url: String,
+    email_sender: Arc<dyn EmailSenderService>,
 }
 
 impl<E: DbExecutor> UsersServiceImpl<E> {
@@ -47,8 +46,7 @@ impl<E: DbExecutor> UsersServiceImpl<E> {
         devices_repo: Arc<dyn DevicesRepo>,
         devices_tokens_repo: Arc<dyn DeviceTokensRepo>,
         db_executor: E,
-        publisher: Arc<dyn TransactionPublisher>,
-        device_confirm_url: String,
+        email_sender: Arc<dyn EmailSenderService>,
     ) -> Self {
         UsersServiceImpl {
             storiqa_client,
@@ -56,8 +54,7 @@ impl<E: DbExecutor> UsersServiceImpl<E> {
             devices_repo,
             devices_tokens_repo,
             db_executor,
-            publisher,
-            device_confirm_url,
+            email_sender,
         }
     }
 }
@@ -135,14 +132,12 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
         public_key: DevicePublicKey,
         user_id: UserId,
     ) -> Box<Future<Item = (), Error = Error> + Send> {
-        let publisher = self.publisher.clone();
         let devices_repo = self.devices_repo.clone();
         let devices_tokens_repo = self.devices_tokens_repo.clone();
         let db_executor = self.db_executor.clone();
         let users_repo = self.users_repo.clone();
-        let device_confirm_url = self.device_confirm_url.clone();
+        let email_sender = self.email_sender.clone();
         let device_id_clone3 = device_id.clone();
-
         Box::new(
             db_executor
                 .execute(move || {
@@ -176,10 +171,8 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
 
                     Ok((user.email, token.id))
                 }).and_then(move |(user_email, token)| {
-                    let device_add_email = DeviceAddEmail::new(user_email, device_confirm_url, token, device_id_clone3);
-                    publisher
-                        .send_email(device_add_email.clone().into())
-                        .map_err(ectx!(ErrorContext::Lapin, ErrorKind::Internal => device_add_email))
+                    email_sender
+                        .send_add_device(user_email,token,device_id_clone3)
                 })
         )
     }

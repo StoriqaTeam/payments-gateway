@@ -18,6 +18,7 @@ failure = "0.1"
 futures = "0.1"
 futures-cpupool = "0.1.7"
 gelf = { git = "https://github.com/StoriqaTeam/gelf-rust", rev = "b05956244f020bb4a62b859bd1025b6c699b2628" }
+handlebars = "1.0.0"
 http_router = "0.1"
 hyper = "0.12"
 hyper-tls = "0.3"

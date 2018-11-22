@@ -36,6 +36,7 @@ extern crate validator;
 extern crate sentry;
 extern crate crypto;
 extern crate gelf;
+extern crate handlebars;
 extern crate secp256k1;
 extern crate simplelog;
 extern crate tokio;

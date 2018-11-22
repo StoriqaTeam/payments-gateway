@@ -61,6 +61,10 @@ pub enum ErrorContext {
     Sign,
     #[fail(display = "service error context - can not verify sign")]
     VerifySign,
+    #[fail(display = "service error context - can not load template")]
+    NoTemplate,
+    #[fail(display = "service error context - render email template")]
+    RenderTemplate,
 }
 
 derive_error_impls!();
