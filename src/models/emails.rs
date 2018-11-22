@@ -28,15 +28,8 @@ impl DeviceAddEmail {
     }
 }
 
-impl From<DeviceAddEmail> for Email {
-    fn from(email: DeviceAddEmail) -> Self {
-        Self {
-            to: email.to,
-            subject: format!("New device will be added to your wallet"),
-            text: format!(
-                "Please, follow <a href=\"{}/{}\">this link</a> to add new device to your account in wallet.",
-                email.base_url, email.token
-            ),
-        }
+impl Email {
+    pub fn new(to: String, subject: String, text: String) -> Self {
+        Self { to, subject, text }
     }
 }
