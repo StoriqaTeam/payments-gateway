@@ -14,7 +14,7 @@ pub trait UsersService: Send + Sync + 'static {
     fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn get_jwt_by_oauth(&self, oauth_token: OauthToken, oauth_provider: Provider) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn create_user(&self, new_user: NewUser) -> Box<Future<Item = User, Error = Error> + Send>;
-    fn update_user(&self, update_user: UpdateUser, user_id: UserId) -> Box<Future<Item = User, Error = Error> + Send>;
+    fn update_user(&self, update_user: UpdateUser, user_id: UserId, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send>;
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn add_device(
         &self,
@@ -102,7 +102,7 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
         )
     }
 
-    fn update_user(&self, update_user: UpdateUser, user_id: UserId) -> Box<Future<Item = User, Error = Error> + Send> {
+    fn update_user(&self, update_user: UpdateUser, user_id: UserId, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send> {
         let client = self.storiqa_client.clone();
         let users_repo = self.users_repo.clone();
         let db_executor = self.db_executor.clone();
@@ -114,7 +114,7 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                 .map_err(
                     |e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_string(&e).unwrap_or_default()) => update_user_clone2),
                 ).into_future()
-                .and_then(move |_| client.update_user(update_user, user_id).map_err(ectx!(convert)))
+                .and_then(move |_| client.update_user(update_user, user_id, token).map_err(ectx!(convert)))
                 .and_then(move |user| {
                     db_executor.execute(move || {
                         users_repo

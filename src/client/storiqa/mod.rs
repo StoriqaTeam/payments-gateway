@@ -24,7 +24,7 @@ pub trait StoriqaClient: Send + Sync + 'static {
     fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn get_jwt_by_oauth(&self, oauth_token: OauthToken, oauth_provider: Provider) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn create_user(&self, new_user: NewUser) -> Box<Future<Item = User, Error = Error> + Send>;
-    fn update_user(&self, update_user: UpdateUser, user_id: UserId) -> Box<Future<Item = User, Error = Error> + Send>;
+    fn update_user(&self, update_user: UpdateUser, user_id: UserId, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send>;
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn reset_password(&self, reset: ResetPassword) -> Box<Future<Item = (), Error = Error> + Send>;
     fn resend_email_verify(&self, resend: ResendEmailVerify) -> Box<Future<Item = (), Error = Error> + Send>;
@@ -181,7 +181,7 @@ impl StoriqaClient for StoriqaClientImpl {
         )
     }
 
-    fn update_user(&self, update_user: UpdateUser, user_id: UserId) -> Box<Future<Item = User, Error = Error> + Send> {
+    fn update_user(&self, update_user: UpdateUser, user_id: UserId, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send> {
         let UpdateUser {
             first_name,
             last_name,
@@ -219,7 +219,7 @@ impl StoriqaClient for StoriqaClientImpl {
             id, first_name, last_name, phone,
         );
         Box::new(
-            self.exec_query::<Me>(&query, None)
+            self.exec_query::<Me>(&query, Some(token))
                 .and_then(|resp| {
                     resp.data.clone().ok_or_else(|| {
                         if let Some(payload) = get_error_payload(resp.clone().errors) {
