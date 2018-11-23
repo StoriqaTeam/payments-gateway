@@ -127,7 +127,7 @@ pipeline:
       && git reset --hard \
       && git fetch \
       && git pull origin master \
-      ansible-playbook \
+      && ansible-playbook \
       -i ~/payments-infra/ansible/hosts-production.yml \
       --tags gateway \
       --extra-vars "pay_gw_tag=${DRONE_TAG}" \
