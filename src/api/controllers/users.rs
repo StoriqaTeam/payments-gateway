@@ -96,15 +96,21 @@ pub fn post_users(ctx: &Context) -> ControllerFuture {
 pub fn put_users(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
     let body = ctx.body.clone();
+    let maybe_token = ctx.get_auth_token();
     Box::new(
         ctx.authenticate()
             .and_then(move |user_id_auth| {
-                parse_body::<PutUsersRequest>(body).and_then(move |input| {
-                    let input_clone = input.clone();
-                    users_service
-                        .update_user(input.into(), user_id_auth)
-                        .map_err(ectx!(convert => input_clone))
-                })
+                maybe_token
+                    .ok_or_else(|| ectx!(err ErrorContext::Token, ErrorKind::Unauthorized))
+                    .into_future()
+                    .and_then(move |token| {
+                        parse_body::<PutUsersRequest>(body).and_then(move |input| {
+                            let input_clone = input.clone();
+                            users_service
+                                .update_user(input.into(), user_id_auth, token)
+                                .map_err(ectx!(convert => input_clone))
+                        })
+                    })
             }).and_then(move |user| response_with_model(&user)),
     )
 }
