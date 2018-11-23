@@ -8,7 +8,7 @@ use prelude::*;
 use schema::devices_tokens::dsl::*;
 
 pub trait DeviceTokensRepo: Send + Sync + 'static {
-    fn create(&self, payload: NewDeviceToken) -> RepoResult<DeviceToken>;
+    fn upsert(&self, payload: NewDeviceToken) -> RepoResult<DeviceToken>;
     fn delete(&self, id_arg: DeviceConfirmToken) -> RepoResult<DeviceToken>;
 }
 
@@ -16,8 +16,14 @@ pub trait DeviceTokensRepo: Send + Sync + 'static {
 pub struct DeviceTokensRepoImpl;
 
 impl<'a> DeviceTokensRepo for DeviceTokensRepoImpl {
-    fn create(&self, payload: NewDeviceToken) -> RepoResult<DeviceToken> {
+    fn upsert(&self, payload: NewDeviceToken) -> RepoResult<DeviceToken> {
         with_tls_connection(|conn| {
+            let device_id_clone = payload.device_id.clone();
+            let filtered = devices_tokens.filter(device_id.eq(device_id_clone.clone()));
+            let _: Vec<DeviceToken> = diesel::delete(filtered).get_results(conn).map_err(move |e| {
+                let error_kind = ErrorKind::from(&e);
+                ectx!(try err e, error_kind => device_id_clone)
+            })?;
             diesel::insert_into(devices_tokens)
                 .values(payload.clone())
                 .get_result::<DeviceToken>(conn)
@@ -65,7 +71,7 @@ pub mod tests {
         let devices_tokens_repo = DeviceTokensRepoImpl::default();
         let _ = core.run(db_executor.execute_test_transaction(move || {
             let new_device = NewDeviceToken::default();
-            let res = devices_tokens_repo.create(new_device);
+            let res = devices_tokens_repo.upsert(new_device);
             assert!(res.is_ok());
             res
         }));
@@ -78,7 +84,7 @@ pub mod tests {
         let devices_tokens_repo = DeviceTokensRepoImpl::default();
         let _ = core.run(db_executor.execute_test_transaction(move || {
             let new_device = NewDeviceToken::default();
-            let device = devices_tokens_repo.create(new_device).unwrap();
+            let device = devices_tokens_repo.upsert(new_device).unwrap();
             let res = devices_tokens_repo.delete(device.id);
             assert!(res.is_ok());
             res

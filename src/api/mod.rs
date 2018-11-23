@@ -95,6 +95,7 @@ impl Service for ApiService {
         let storiqa_client = self.storiqa_client.clone();
         let storiqa_jwt_public_key = self.storiqa_jwt_public_key.clone();
         let storiqa_jwt_valid_secs = self.config.auth.storiqa_jwt_valid_secs.clone();
+        let device_add_token_expiration = self.config.auth.device_add_token_valid_secs.clone();
         let device_confirm_url = self.config.notifications.device_confirm_url.clone();
         let db_pool = self.db_pool.clone();
         let cpu_pool = self.cpu_pool.clone();
@@ -151,6 +152,7 @@ impl Service for ApiService {
                         Arc::new(DeviceTokensRepoImpl),
                         db_executor.clone(),
                         email_service,
+                        device_add_token_expiration,
                     ));
                     let accounts_service = Arc::new(AccountsServiceImpl::new(
                         Arc::new(AccountsRepoImpl),

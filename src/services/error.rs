@@ -35,7 +35,7 @@ pub enum ErrorContext {
     Internal,
     #[fail(display = "service error context - error inside json web token crate")]
     JsonWebToken,
-    #[fail(display = "service error context - invalid auth token")]
+    #[fail(display = "service error context - invalid token")]
     InvalidToken,
     #[fail(display = "service error context - no account found")]
     NoAccount,

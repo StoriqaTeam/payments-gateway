@@ -38,6 +38,7 @@ pub struct UsersServiceImpl<E: DbExecutor> {
     devices_tokens_repo: Arc<dyn DeviceTokensRepo>,
     db_executor: E,
     email_sender: Arc<dyn EmailSenderService>,
+    token_expiration: usize,
 }
 
 impl<E: DbExecutor> UsersServiceImpl<E> {
@@ -48,6 +49,7 @@ impl<E: DbExecutor> UsersServiceImpl<E> {
         devices_tokens_repo: Arc<dyn DeviceTokensRepo>,
         db_executor: E,
         email_sender: Arc<dyn EmailSenderService>,
+        token_expiration: usize,
     ) -> Self {
         UsersServiceImpl {
             storiqa_client,
@@ -56,6 +58,7 @@ impl<E: DbExecutor> UsersServiceImpl<E> {
             devices_tokens_repo,
             db_executor,
             email_sender,
+            token_expiration,
         }
     }
 }
@@ -167,7 +170,7 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                     let new_devices_tokens = NewDeviceToken::new(device_id_clone.clone(), device_os, user_id, public_key);
 
                     let token = devices_tokens_repo
-                        .create(new_devices_tokens)
+                        .upsert(new_devices_tokens)
                         .map_err(ectx!(try convert => user_id, device_id_clone2))?;
 
                     Ok((user.email, token.id))
@@ -182,6 +185,7 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
         let db_executor = self.db_executor.clone();
         let devices_repo = self.devices_repo.clone();
         let devices_tokens_repo = self.devices_tokens_repo.clone();
+        let token_expiration = self.token_expiration.clone();
 
         Box::new(db_executor.execute_transaction(move || {
             let DeviceToken {
@@ -189,8 +193,18 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                 device_os,
                 user_id,
                 public_key,
+                created_at,
                 ..
             } = devices_tokens_repo.delete(token).map_err(ectx!(try convert => token))?;
+            let token_duration = (created_at - ::chrono::Utc::now().naive_utc()).num_seconds() as usize;
+            if token_duration > token_expiration  {
+                let mut errors = ValidationErrors::new();
+                let mut error = ValidationError::new("token");
+                error.add_param("message".into(), &"device token expired".to_string());
+                error.add_param("details".into(), &"no details".to_string());
+                errors.add("device", error);
+                return Err(ectx!(err ErrorContext::InvalidToken, ErrorKind::InvalidInput(serde_json::to_string(&errors).unwrap_or_default()) => token_duration, token_expiration));
+            }
 
             let new_device = NewDevice::new(device_id, device_os, user_id, public_key);
             devices_repo.create(new_device.clone()).map_err(ectx!(try convert => new_device))?;
