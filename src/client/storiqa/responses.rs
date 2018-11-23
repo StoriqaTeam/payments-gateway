@@ -61,6 +61,12 @@ pub struct Me {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateUserResponse {
+    pub update_user: User,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct GetJWTByEmail {
     #[serde(rename = "getJWTByEmail")]
     pub get_jwt_by_email: Token,

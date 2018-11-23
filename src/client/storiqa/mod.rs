@@ -219,7 +219,7 @@ impl StoriqaClient for StoriqaClientImpl {
             id, first_name, last_name, phone,
         );
         Box::new(
-            self.exec_query::<Me>(&query, Some(token))
+            self.exec_query::<UpdateUserResponse>(&query, Some(token))
                 .and_then(|resp| {
                     resp.data.clone().ok_or_else(|| {
                         if let Some(payload) = get_error_payload(resp.clone().errors) {
@@ -228,7 +228,7 @@ impl StoriqaClient for StoriqaClientImpl {
                             ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp.clone())
                         }
                     })
-                }).map(|resp_data| resp_data.me),
+                }).map(|resp_data| resp_data.update_user),
         )
     }
 
@@ -258,7 +258,7 @@ impl StoriqaClient for StoriqaClientImpl {
         let query = format!(
             r#"
                 mutation M {{
-                    verifyEmail(input: {{token: \"{}\", clientMutationId:\"\"}}) {{
+                    verifyEmail(input: {{token: \"{}\", project: WALLET, clientMutationId:\"\"}}) {{
                         token
                     }}
                 }}
@@ -318,7 +318,7 @@ impl StoriqaClient for StoriqaClientImpl {
         let query = format!(
             r#"
                 mutation M {{
-                    applyPasswordReset(input: {{token: \"{}\", password: \"{}\", clientMutationId:\"\"}}) {{
+                    applyPasswordReset(input: {{token: \"{}\", password: \"{}\", project: WALLET, clientMutationId:\"\"}}) {{
                         success
                         token
                     }}
