@@ -27,6 +27,7 @@ pub trait StoriqaClient: Send + Sync + 'static {
     fn update_user(&self, update_user: UpdateUser, user_id: UserId) -> Box<Future<Item = User, Error = Error> + Send>;
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn reset_password(&self, reset: ResetPassword) -> Box<Future<Item = (), Error = Error> + Send>;
+    fn resend_email_verify(&self, resend: ResendEmailVerify) -> Box<Future<Item = (), Error = Error> + Send>;
     fn confirm_reset_password(&self, reset: ResetPasswordConfirm) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn change_password(&self, change: ChangePassword, token: StoriqaJWT) -> Box<Future<Item = (), Error = Error> + Send>;
     fn me(&self, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send>;
@@ -285,6 +286,26 @@ impl StoriqaClient for StoriqaClientImpl {
         );
         Box::new(
             self.exec_query::<GetResetPassword>(&query, None)
+                .and_then(|resp| {
+                    resp.data
+                        .clone()
+                        .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
+                }).map(|_| ()),
+        )
+    }
+    fn resend_email_verify(&self, resend: ResendEmailVerify) -> Box<Future<Item = (), Error = Error> + Send> {
+        let query = format!(
+            r#"
+                mutation M {{
+                    resendEmailVerificationLink(input: {{email: \"{}\", device: {}, project: WALLET, clientMutationId:\"\"}}) {{
+                        success
+                    }}
+                }}
+            "#,
+            resend.email, resend.device,
+        );
+        Box::new(
+            self.exec_query::<GetResendEmailVerify>(&query, None)
                 .and_then(|resp| {
                     resp.data
                         .clone()

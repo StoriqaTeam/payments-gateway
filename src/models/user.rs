@@ -139,6 +139,12 @@ pub struct ResetPassword {
     pub device: DeviceType,
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub struct ResendEmailVerify {
+    pub email: String,
+    pub device: DeviceType,
+}
+
 #[derive(Serialize, Debug, Clone, Validate)]
 pub struct ResetPasswordConfirm {
     pub token: String,

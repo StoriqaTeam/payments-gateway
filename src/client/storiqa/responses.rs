@@ -85,6 +85,12 @@ pub struct GetResetPassword {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct GetResendEmailVerify {
+    #[serde(rename = "resendEmailVerificationLink")]
+    pub resend_email_verify: Reset,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct GetResetPasswordApply {
     #[serde(rename = "applyPasswordReset")]
     pub apply_password_reset: ResetApply,
