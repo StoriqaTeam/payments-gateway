@@ -114,6 +114,7 @@ impl Service for ApiService {
                         POST /v1/users/add_device => post_users_add_device,
                         POST /v1/users/confirm_add_device => post_users_confirm_add_device,
                         POST /v1/users/confirm_email => post_users_confirm_email,
+                        POST /v1/users/resend_confirm_email => post_users_resend_confirm_email,
                         POST /v1/users/reset_password => post_users_reset_password,
                         POST /v1/users/change_password => post_users_change_password,
                         POST /v1/users/confirm_reset_password => post_users_confirm_reset_password,

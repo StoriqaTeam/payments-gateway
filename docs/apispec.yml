@@ -345,6 +345,23 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UsersResetPasswordInput'
+  /users/resend_confirm_email:
+    post:
+      summary: Resends email verification link to user
+      tags:
+        - users
+      responses:
+        200:
+          description: Ok
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/Internal'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsersResendConfirmEmailInput'
   /users/change_password:
     parameters:
       - in: header
@@ -992,6 +1009,17 @@ components:
           type: string
           example: 1237987834798375349
     UsersResetPasswordInput:
+      type: object
+      required:
+        - email
+        - deviceType
+      properties:
+        email:
+          type: string
+          example: a.karasev@storiqa.com
+        deviceType:
+          $ref: '#/components/schemas/DeviceType'
+    UsersResendConfirmEmailInput:
       type: object
       required:
         - email
