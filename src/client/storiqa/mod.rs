@@ -188,25 +188,26 @@ impl StoriqaClient for StoriqaClientImpl {
             phone,
         } = update_user;
         let first_name = if let Some(text) = first_name {
-            format!("\"{}\"", text)
+            format!(r#",firstName: \"{}\""#, text)
         } else {
-            "null".to_string()
+            "".to_string()
         };
         let last_name = if let Some(text) = last_name {
-            format!("\"{}\"", text)
+            format!(r#",lastName: \"{}\""#, text)
         } else {
-            "null".to_string()
+            "".to_string()
         };
         let phone = if let Some(text) = phone {
-            format!("\"{}\"", text)
+            format!(r#",phone: \"{}\""#, text)
         } else {
-            "null".to_string()
+            "".to_string()
         };
         let graphql_id = base64::encode(&format!("users|user|{}", user_id));
+        let id = format!(r#"id: \"{}\""#, graphql_id);
         let query = format!(
             r#"
                 mutation M {{
-                    updateUser(input: {{id: \"{}\", firstName: {}, lastName: {}, phone: {}, clientMutationId:\"\"}}) {{
+                    updateUser(input: {{{}{}{}{}, clientMutationId:\"\"}}) {{
                         rawId
                         email
                         firstName
@@ -215,7 +216,7 @@ impl StoriqaClient for StoriqaClientImpl {
                     }}
                 }}
             "#,
-            graphql_id, first_name, last_name, phone,
+            id, first_name, last_name, phone,
         );
         Box::new(
             self.exec_query::<Me>(&query, None)
