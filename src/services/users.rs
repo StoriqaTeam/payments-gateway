@@ -219,18 +219,25 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                 updated_at,
                 ..
             } = device_token.ok_or_else(|| ectx!(try err ErrorContext::InvalidToken, ErrorKind::NotFound => token))?;
-            let token_duration = (updated_at - ::chrono::Utc::now().naive_utc()).num_seconds() as usize;
-            if token_duration > token_expiration  {
-                let mut errors = ValidationErrors::new();
-                let mut error = ValidationError::new("token");
-                error.add_param("message".into(), &"device token expired".to_string());
-                error.add_param("details".into(), &"no details".to_string());
-                errors.add("device", error);
-                return Err(ectx!(err ErrorContext::InvalidToken, ErrorKind::InvalidInput(serde_json::to_string(&errors).unwrap_or_default()) => token_duration, token_expiration));
+
+            let device = devices_repo.get(device_id.clone(), user_id).map_err(ectx!(try convert => user_id))?;
+
+            // if user wants to confirm his device again and again he will receive Ok(()) everytime
+            if device.is_none() {
+                let token_duration = (::chrono::Utc::now().naive_utc() - updated_at).num_seconds() as usize;
+                if token_duration > token_expiration  {
+                    let mut errors = ValidationErrors::new();
+                    let mut error = ValidationError::new("token");
+                    error.add_param("message".into(), &"device token expired".to_string());
+                    error.add_param("details".into(), &"no details".to_string());
+                    errors.add("device", error);
+                    return Err(ectx!(err ErrorContext::InvalidToken, ErrorKind::InvalidInput(serde_json::to_string(&errors).unwrap_or_default()) => token_duration, token_expiration));
+                }
+
+                let new_device = NewDevice::new(device_id, device_os, user_id, public_key);
+                devices_repo.create(new_device.clone()).map_err(ectx!(try convert => new_device))?;
             }
 
-            let new_device = NewDevice::new(device_id, device_os, user_id, public_key);
-            devices_repo.create(new_device.clone()).map_err(ectx!(try convert => new_device))?;
             Ok(())
         }))
     }
