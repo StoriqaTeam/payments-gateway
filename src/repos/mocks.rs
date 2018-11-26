@@ -73,6 +73,10 @@ impl UsersRepo for UsersRepoMock {
         let data = self.data.lock().unwrap();
         Ok(data.iter().filter(|x| x.id == user_id).nth(0).cloned())
     }
+    fn get_by_email(&self, email_: String) -> RepoResult<Option<UserDB>> {
+        let data = self.data.lock().unwrap();
+        Ok(data.iter().filter(|x| x.email == email_).nth(0).cloned())
+    }
 }
 
 #[derive(Clone, Default)]

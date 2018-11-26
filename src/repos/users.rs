@@ -11,6 +11,7 @@ pub trait UsersRepo: Send + Sync + 'static {
     fn create(&self, payload: NewUserDB) -> RepoResult<UserDB>;
     fn update(&self, user_id: UserId, payload: UpdateUser) -> RepoResult<UserDB>;
     fn get(&self, user_id: UserId) -> RepoResult<Option<UserDB>>;
+    fn get_by_email(&self, email: String) -> RepoResult<Option<UserDB>>;
 }
 
 #[derive(Clone, Default)]
@@ -48,6 +49,19 @@ impl<'a> UsersRepo for UsersRepoImpl {
                 .map_err(move |e| {
                     let error_kind = ErrorKind::from(&e);
                     ectx!(err e, error_kind => user_id_arg)
+                })
+        })
+    }
+    fn get_by_email(&self, email_: String) -> RepoResult<Option<UserDB>> {
+        with_tls_connection(|conn| {
+            users
+                .filter(email.eq(email_.clone()))
+                .limit(1)
+                .get_result(conn)
+                .optional()
+                .map_err(move |e| {
+                    let error_kind = ErrorKind::from(&e);
+                    ectx!(err e, error_kind => email_)
                 })
         })
     }
