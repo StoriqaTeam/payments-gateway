@@ -138,6 +138,7 @@ impl Service for ApiService {
                         storiqa_jwt_public_key,
                         storiqa_jwt_valid_secs,
                         Arc::new(DevicesRepoImpl),
+                        Arc::new(UsersRepoImpl),
                         db_executor.clone(),
                     ));
                     let email_service = Arc::new(EmailSenderServiceImpl::new(
