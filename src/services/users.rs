@@ -39,6 +39,7 @@ pub struct UsersServiceImpl<E: DbExecutor> {
     db_executor: E,
     email_sender: Arc<dyn EmailSenderService>,
     token_expiration: usize,
+    email_sending_timeout: usize,
 }
 
 impl<E: DbExecutor> UsersServiceImpl<E> {
@@ -50,6 +51,7 @@ impl<E: DbExecutor> UsersServiceImpl<E> {
         db_executor: E,
         email_sender: Arc<dyn EmailSenderService>,
         token_expiration: usize,
+        email_sending_timeout: usize,
     ) -> Self {
         UsersServiceImpl {
             storiqa_client,
@@ -59,6 +61,7 @@ impl<E: DbExecutor> UsersServiceImpl<E> {
             db_executor,
             email_sender,
             token_expiration,
+            email_sending_timeout,
         }
     }
 }
@@ -139,6 +142,7 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
         let devices_repo = self.devices_repo.clone();
         let devices_tokens_repo = self.devices_tokens_repo.clone();
         let db_executor = self.db_executor.clone();
+        let email_sending_timeout = self.email_sending_timeout.clone();
         let users_repo = self.users_repo.clone();
         let email_sender = self.email_sender.clone();
         let device_id_clone3 = device_id.clone();
@@ -165,6 +169,22 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                         return Err(ectx!(err ErrorContext::DeviceAlreadyExists, ErrorKind::InvalidInput(serde_json::to_string(&errors).unwrap_or_default()) => user_id, device_id_clone2));
                     }
 
+                    let public_key_clone = public_key.clone();
+
+                    let token = devices_tokens_repo.get_by_public_key(public_key_clone.clone()).map_err(ectx!(try convert => public_key_clone))?;
+
+                    if let Some(token) = token {
+                        let token_duration = (::chrono::Utc::now().naive_utc() - token.updated_at).num_seconds() as usize;
+                        if token_duration < email_sending_timeout  {
+                            let mut errors = ValidationErrors::new();
+                            let mut error = ValidationError::new("email_timeout");
+                            error.add_param("message".into(), &"can not send email more often then 30 seconds".to_string());
+                            error.add_param("details".into(), &"no details".to_string());
+                            errors.add("device", error);
+                            return Err(ectx!(err ErrorContext::EmailSending, ErrorKind::InvalidInput(serde_json::to_string(&errors).unwrap_or_default()) => token));
+                        }
+                    }
+
                     let device_id_clone2 = device_id_clone.clone();
 
                     let new_devices_tokens = NewDeviceToken::new(device_id_clone.clone(), device_os, user_id, public_key);
@@ -188,15 +208,18 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
         let token_expiration = self.token_expiration.clone();
 
         Box::new(db_executor.execute_transaction(move || {
+
+            let device_token = devices_tokens_repo.get(token).map_err(ectx!(try convert => token))?;
+
             let DeviceToken {
                 device_id,
                 device_os,
                 user_id,
                 public_key,
-                created_at,
+                updated_at,
                 ..
-            } = devices_tokens_repo.delete(token).map_err(ectx!(try convert => token))?;
-            let token_duration = (created_at - ::chrono::Utc::now().naive_utc()).num_seconds() as usize;
+            } = device_token.ok_or_else(|| ectx!(try err ErrorContext::InvalidToken, ErrorKind::NotFound => token))?;
+            let token_duration = (updated_at - ::chrono::Utc::now().naive_utc()).num_seconds() as usize;
             if token_duration > token_expiration  {
                 let mut errors = ValidationErrors::new();
                 let mut error = ValidationError::new("token");

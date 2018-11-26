@@ -31,6 +31,7 @@ pub struct Auth {
     pub storiqa_jwt_public_key_base64: String,
     pub storiqa_jwt_valid_secs: usize,
     pub device_add_token_valid_secs: usize,
+    pub email_sending_timeout_secs: usize,
     pub storiqa_transactions_token: AuthenticationToken,
     pub storiqa_transactions_user_id: WorkspaceId,
 }

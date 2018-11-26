@@ -49,6 +49,8 @@ pub enum ErrorContext {
     Lapin,
     #[fail(display = "service error context - device already added to user")]
     DeviceAlreadyExists,
+    #[fail(display = "service error context - email sending timeout")]
+    EmailSending,
     #[fail(display = "service error context - device not added to user")]
     DeviceNotExists,
     #[fail(display = "service error context - received timestamp is less or equal to timestamp in db")]

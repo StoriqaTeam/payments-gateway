@@ -8,6 +8,7 @@ storiqa_jwt_valid_secs = 86400
 storiqa_transactions_token = "MIIBCgKCAQEAt3TQPCbcWM/Fba2s6V/WRuQv8SlEQp4F56fSY4LQ+yW2xY3f2fLOw/SurObHMQF7QpnQ7x/2zhGqe11Ad0MHbWG+OARR/B/76X8QhA3xEneZpgc8aykagl0Tr616tazEKr0JxGuUo3qHy+e/dqSQ9T04EjGqccfr3+gfmVZlzml2/kN2EmaFa28Q8NseY5a2TVL9XcEDHHpGHVpoRQI8ibfa92i2Lwo7E33Iz8hpbp+GgeyReua2z341nxSNqk0VSYa6KtNUk03G5YYmsrsoE+ECC69GAD07R4YcGqF4NRKSA0T3L8jY8rVbl5HUCIFuZynZEHWWpFvyMYW+9ffMfwIDAQAB"
 storiqa_transactions_user_id = "d214c8e0-5e70-4723-b9a6-bc9196adbbb4"
 device_add_token_valid_secs = 86400
+email_sending_timeout_secs = 30
 
 [client]
 dns_threads = 4
@@ -28,4 +29,4 @@ connection_pool_size = 10
 restart_subscription_secs = 30
 
 [notifications]
-device_confirm_url = "https://pay-nightly.stq.cloud/v1/users/confirm_add_device"
+device_confirm_url = "https://stable.stq.cloud/wallet/register_device"
