@@ -35,7 +35,7 @@ pub enum ErrorContext {
     Internal,
     #[fail(display = "service error context - error inside json web token crate")]
     JsonWebToken,
-    #[fail(display = "service error context - invalid auth token")]
+    #[fail(display = "service error context - invalid token")]
     InvalidToken,
     #[fail(display = "service error context - no account found")]
     NoAccount,
@@ -49,6 +49,8 @@ pub enum ErrorContext {
     Lapin,
     #[fail(display = "service error context - device already added to user")]
     DeviceAlreadyExists,
+    #[fail(display = "service error context - email sending timeout")]
+    EmailSending,
     #[fail(display = "service error context - device not added to user")]
     DeviceNotExists,
     #[fail(display = "service error context - received timestamp is less or equal to timestamp in db")]
