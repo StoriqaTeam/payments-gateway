@@ -36,7 +36,7 @@ pub struct ApiService {
     storiqa_client: Arc<dyn StoriqaClient>,
     storiqa_jwt_public_key: Vec<u8>,
     server_address: SocketAddr,
-    config: Config,
+    config: Arc<Config>,
     db_pool: Pool<ConnectionManager<PgConnection>>,
     cpu_pool: CpuPool,
     transactions_client: Arc<dyn TransactionsClient>,
@@ -44,22 +44,22 @@ pub struct ApiService {
 }
 
 impl ApiService {
-    fn from_config(config: &Config, publisher: Arc<dyn TransactionPublisher>) -> Result<Self, Error> {
-        let client = HttpClientImpl::new(config);
-        let storiqa_client = StoriqaClientImpl::new(&config, client);
+    fn from_config(config: Config, publisher: Arc<dyn TransactionPublisher>) -> Result<Self, Error> {
+        let client = HttpClientImpl::new(&config);
+        let storiqa_client = StoriqaClientImpl::new(&config, client.clone());
         let storiqa_jwt_public_key_base64 = config.auth.storiqa_jwt_public_key_base64.clone();
         let storiqa_jwt_public_key = base64::decode(&config.auth.storiqa_jwt_public_key_base64).map_err(ectx!(try
             ErrorContext::Config,
             ErrorKind::Internal =>
             storiqa_jwt_public_key_base64
         ))?;
-        let server_address = format!("{}:{}", config.server.host, config.server.port)
-            .parse::<SocketAddr>()
-            .map_err(ectx!(try
+        let host = config.server.host.clone();
+        let port = config.server.port.clone();
+        let server_address = format!("{}:{}", host, port).parse::<SocketAddr>().map_err(ectx!(try
                 ErrorContext::Config,
                 ErrorKind::Internal =>
-                config.server.host,
-                config.server.port
+                host,
+                port
             ))?;
         let database_url = config.database.url.clone();
         let manager = ConnectionManager::<PgConnection>::new(database_url.clone());
@@ -69,10 +69,9 @@ impl ApiService {
             database_url
         ))?;
         let cpu_pool = CpuPool::new(config.cpu_pool.size);
-        let client = HttpClientImpl::new(config);
-        let transactions_client = TransactionsClientImpl::new(&config, client.clone());
+        let transactions_client = TransactionsClientImpl::new(&config, client);
         Ok(ApiService {
-            config: config.clone(),
+            config: Arc::new(config),
             storiqa_client: Arc::new(storiqa_client),
             storiqa_jwt_public_key,
             server_address,
@@ -103,6 +102,7 @@ impl Service for ApiService {
         let db_executor = DbExecutorImpl::new(db_pool.clone(), cpu_pool.clone());
         let transactions_client = self.transactions_client.clone();
         let publisher = self.publisher.clone();
+        let config = self.config.clone();
 
         Box::new(
             read_body(http_body)
@@ -131,6 +131,9 @@ impl Service for ApiService {
                         POST /v1/transactions => post_transactions,
                         POST /v1/rate => post_rate,
                         POST /v1/fees => post_fees,
+                        GET /wallet/register_device/{token: DeviceConfirmToken} => get_register_device,
+                        GET /wallet/verify_email/{token: EmailConfirmToken} => get_users_confirm_email,
+                        GET /wallet/reset_password => get_confirm_reset_password,
                         _ => not_found,
                     };
 
@@ -178,6 +181,7 @@ impl Service for ApiService {
                         accounts_service,
                         transactions_service,
                         auth_service,
+                        config,
                     };
 
                     debug!("Received request {}", ctx);
@@ -244,7 +248,7 @@ impl Service for ApiService {
 
 pub fn start_server(config: Config, publisher: Arc<dyn TransactionPublisher>) {
     hyper::rt::run(future::lazy(move || {
-        ApiService::from_config(&config, publisher)
+        ApiService::from_config(config, publisher)
             .into_future()
             .and_then(move |api| {
                 let api_clone = api.clone();

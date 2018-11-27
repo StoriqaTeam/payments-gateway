@@ -4,7 +4,7 @@ use futures::prelude::*;
 
 use super::super::requests::*;
 use super::super::responses::*;
-use super::super::utils::{parse_body, response_with_model};
+use super::super::utils::{parse_body, response_with_model, response_with_redirect};
 use super::Context;
 use super::ControllerFuture;
 use api::error::*;
@@ -159,6 +159,16 @@ pub fn post_users_confirm_email(ctx: &Context) -> ControllerFuture {
     )
 }
 
+pub fn get_users_confirm_email(ctx: &Context, token: EmailConfirmToken) -> ControllerFuture {
+    let confirm_email_url = ctx.config.redirections.confirm_email_url.clone();
+    Box::new(
+        ctx.users_service
+            .confirm_email(token.clone())
+            .map_err(ectx!(convert => token))
+            .and_then(|_| response_with_redirect(confirm_email_url)),
+    )
+}
+
 pub fn post_users_add_device(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
     let body = ctx.body.clone();
@@ -183,6 +193,16 @@ pub fn post_users_confirm_add_device(ctx: &Context) -> ControllerFuture {
                 let input_clone = input.clone();
                 users_service.confirm_add_device(input.token).map_err(ectx!(convert => input_clone))
             }).and_then(|token| response_with_model(&token)),
+    )
+}
+
+pub fn get_register_device(ctx: &Context, token: DeviceConfirmToken) -> ControllerFuture {
+    let confirm_register_device_url = ctx.config.redirections.confirm_register_device_url.clone();
+    Box::new(
+        ctx.users_service
+            .confirm_add_device(token)
+            .map_err(ectx!(convert => token))
+            .and_then(|_| response_with_redirect(confirm_register_device_url)),
     )
 }
 
@@ -242,6 +262,11 @@ pub fn post_users_confirm_reset_password(ctx: &Context) -> ControllerFuture {
                     .map_err(ectx!(convert => input_clone))
             }).and_then(|token| response_with_model(&token)),
     )
+}
+
+pub fn get_confirm_reset_password(ctx: &Context) -> ControllerFuture {
+    let confirm_reset_password_url = ctx.config.redirections.confirm_reset_password_url.clone();
+    response_with_redirect(confirm_reset_password_url)
 }
 
 pub fn get_users_me(ctx: &Context) -> ControllerFuture {

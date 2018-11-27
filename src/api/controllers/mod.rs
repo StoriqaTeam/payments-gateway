@@ -5,6 +5,7 @@ use futures::prelude::*;
 use hyper::{header::HeaderValue, header::AUTHORIZATION, Body, HeaderMap, Method, Response, Uri};
 
 use super::error::*;
+use config::Config;
 use models::*;
 use prelude::*;
 use services::{AccountsService, AuthService, TransactionsService, UsersService};
@@ -31,6 +32,7 @@ pub struct Context {
     pub accounts_service: Arc<dyn AccountsService>,
     pub transactions_service: Arc<dyn TransactionsService>,
     pub auth_service: Arc<dyn AuthService>,
+    pub config: Arc<Config>,
 }
 
 impl Context {

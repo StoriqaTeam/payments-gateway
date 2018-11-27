@@ -1,12 +1,16 @@
-use super::error::*;
-use super::ControllerFuture;
+use std::fmt::Debug;
+
 use failure::Fail;
+use futures::future;
 use futures::prelude::*;
+use hyper::Body;
 use hyper::Response;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json;
-use std::fmt::Debug;
+
+use super::error::*;
+use super::ControllerFuture;
 
 pub fn parse_body<T>(body: Vec<u8>) -> impl Future<Item = T, Error = Error> + Send
 where
@@ -34,4 +38,14 @@ where
                     .unwrap()
             }),
     )
+}
+
+pub fn response_with_redirect(url: String) -> ControllerFuture {
+    Box::new(future::ok(
+        Response::builder()
+            .status(308)
+            .header("Location", &*url)
+            .body(Body::empty())
+            .unwrap(),
+    ))
 }
