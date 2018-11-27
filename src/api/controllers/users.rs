@@ -1,16 +1,44 @@
+use failure::Fail;
+use futures::future::{self, Either};
+use futures::prelude::*;
+
 use super::super::requests::*;
 use super::super::responses::*;
 use super::super::utils::{parse_body, response_with_model};
 use super::Context;
 use super::ControllerFuture;
 use api::error::*;
-use failure::Fail;
-use futures::prelude::*;
+use models::*;
+
+pub fn merge_user(ctx: Context, jwt: StoriqaJWT) -> Box<Future<Item = (), Error = Error> + Send> {
+    let users_service = ctx.users_service.clone();
+    let accounts_service = ctx.accounts_service.clone();
+    let users_service_clone = users_service.clone();
+    Box::new(users_service.me(jwt.clone()).map_err(ectx!(convert => jwt)).and_then(move |user| {
+        let user_id = user.id.clone();
+        users_service_clone
+            .merge_user(user.clone())
+            .map_err(ectx!(convert => user))
+            .and_then(move |new_user| {
+                if new_user {
+                    Either::A(
+                        accounts_service
+                            .create_default_accounts(user_id)
+                            .map_err(ectx!(convert => user_id))
+                            .map(|_| ()),
+                    )
+                } else {
+                    Either::B(future::ok(()))
+                }
+            })
+    }))
+}
 
 pub fn post_sessions(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
     let auth_service = ctx.auth_service.clone();
     let body = ctx.body.clone();
+    let ctx_clone = ctx.clone();
     Box::new(
         ctx.get_auth_info()
             .into_future()
@@ -22,6 +50,7 @@ pub fn post_sessions(ctx: &Context) -> ControllerFuture {
                         users_service
                             .get_jwt(input.email, input.password)
                             .map_err(ectx!(convert => input_clone))
+                            .and_then(move |jwt| merge_user(ctx_clone, jwt.clone()).map(|_| jwt))
                     }).and_then(move |jwt| {
                         let token = jwt.clone();
                         let auth_service_clone = auth_service.clone();
@@ -46,6 +75,7 @@ pub fn post_sessions_oauth(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
     let auth_service = ctx.auth_service.clone();
     let body = ctx.body.clone();
+    let ctx_clone = ctx.clone();
     Box::new(
         ctx.get_auth_info()
             .into_future()
@@ -57,6 +87,7 @@ pub fn post_sessions_oauth(ctx: &Context) -> ControllerFuture {
                         users_service
                             .get_jwt_by_oauth(input.oauth_token, input.oauth_provider)
                             .map_err(ectx!(convert => input_clone))
+                            .and_then(move |jwt| merge_user(ctx_clone, jwt.clone()).map(|_| jwt))
                     }).and_then(move |jwt| {
                         let token = jwt.clone();
                         let auth_service_clone = auth_service.clone();
