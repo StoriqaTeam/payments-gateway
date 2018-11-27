@@ -30,3 +30,8 @@ restart_subscription_secs = 30
 
 [notifications]
 device_confirm_url = "https://stable.stq.cloud/wallet/register_device"
+
+[redirections]
+confirm_email_url = "https://stable.stq.cloud/wallet/email_confirmed"
+confirm_register_device_url = "https://stable.stq.cloud/wallet/register_device_confirmed"
+confirm_reset_password_url = "https://stable.stq.cloud/wallet/password_reset_deny"

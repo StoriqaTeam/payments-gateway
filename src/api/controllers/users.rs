@@ -1,16 +1,44 @@
+use failure::Fail;
+use futures::future::{self, Either};
+use futures::prelude::*;
+
 use super::super::requests::*;
 use super::super::responses::*;
-use super::super::utils::{parse_body, response_with_model};
+use super::super::utils::{parse_body, response_with_model, response_with_redirect};
 use super::Context;
 use super::ControllerFuture;
 use api::error::*;
-use failure::Fail;
-use futures::prelude::*;
+use models::*;
+
+pub fn merge_user(ctx: Context, jwt: StoriqaJWT) -> Box<Future<Item = (), Error = Error> + Send> {
+    let users_service = ctx.users_service.clone();
+    let accounts_service = ctx.accounts_service.clone();
+    let users_service_clone = users_service.clone();
+    Box::new(users_service.me(jwt.clone()).map_err(ectx!(convert => jwt)).and_then(move |user| {
+        let user_id = user.id.clone();
+        users_service_clone
+            .merge_user(user.clone())
+            .map_err(ectx!(convert => user))
+            .and_then(move |new_user| {
+                if new_user {
+                    Either::A(
+                        accounts_service
+                            .create_default_accounts(user_id)
+                            .map_err(ectx!(convert => user_id))
+                            .map(|_| ()),
+                    )
+                } else {
+                    Either::B(future::ok(()))
+                }
+            })
+    }))
+}
 
 pub fn post_sessions(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
     let auth_service = ctx.auth_service.clone();
     let body = ctx.body.clone();
+    let ctx_clone = ctx.clone();
     Box::new(
         ctx.get_auth_info()
             .into_future()
@@ -22,6 +50,7 @@ pub fn post_sessions(ctx: &Context) -> ControllerFuture {
                         users_service
                             .get_jwt(input.email, input.password)
                             .map_err(ectx!(convert => input_clone))
+                            .and_then(move |jwt| merge_user(ctx_clone, jwt.clone()).map(|_| jwt))
                     }).and_then(move |jwt| {
                         let token = jwt.clone();
                         let auth_service_clone = auth_service.clone();
@@ -46,6 +75,7 @@ pub fn post_sessions_oauth(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
     let auth_service = ctx.auth_service.clone();
     let body = ctx.body.clone();
+    let ctx_clone = ctx.clone();
     Box::new(
         ctx.get_auth_info()
             .into_future()
@@ -57,6 +87,7 @@ pub fn post_sessions_oauth(ctx: &Context) -> ControllerFuture {
                         users_service
                             .get_jwt_by_oauth(input.oauth_token, input.oauth_provider)
                             .map_err(ectx!(convert => input_clone))
+                            .and_then(move |jwt| merge_user(ctx_clone, jwt.clone()).map(|_| jwt))
                     }).and_then(move |jwt| {
                         let token = jwt.clone();
                         let auth_service_clone = auth_service.clone();
@@ -128,6 +159,16 @@ pub fn post_users_confirm_email(ctx: &Context) -> ControllerFuture {
     )
 }
 
+pub fn get_users_confirm_email(ctx: &Context, token: EmailConfirmToken) -> ControllerFuture {
+    let confirm_email_url = ctx.config.redirections.confirm_email_url.clone();
+    Box::new(
+        ctx.users_service
+            .confirm_email(token.clone())
+            .map_err(ectx!(convert => token))
+            .and_then(|_| response_with_redirect(confirm_email_url)),
+    )
+}
+
 pub fn post_users_add_device(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
     let body = ctx.body.clone();
@@ -152,6 +193,16 @@ pub fn post_users_confirm_add_device(ctx: &Context) -> ControllerFuture {
                 let input_clone = input.clone();
                 users_service.confirm_add_device(input.token).map_err(ectx!(convert => input_clone))
             }).and_then(|token| response_with_model(&token)),
+    )
+}
+
+pub fn get_register_device(ctx: &Context, token: DeviceConfirmToken) -> ControllerFuture {
+    let confirm_register_device_url = ctx.config.redirections.confirm_register_device_url.clone();
+    Box::new(
+        ctx.users_service
+            .confirm_add_device(token)
+            .map_err(ectx!(convert => token))
+            .and_then(|_| response_with_redirect(confirm_register_device_url)),
     )
 }
 
@@ -211,6 +262,11 @@ pub fn post_users_confirm_reset_password(ctx: &Context) -> ControllerFuture {
                     .map_err(ectx!(convert => input_clone))
             }).and_then(|token| response_with_model(&token)),
     )
+}
+
+pub fn get_confirm_reset_password(ctx: &Context) -> ControllerFuture {
+    let confirm_reset_password_url = ctx.config.redirections.confirm_reset_password_url.clone();
+    response_with_redirect(confirm_reset_password_url)
 }
 
 pub fn get_users_me(ctx: &Context) -> ControllerFuture {

@@ -10,6 +10,8 @@ storiqa_jwt_public_key_base64 = "MIIBCgKCAQEAt3TQPCbcWM/Fba2s6V/WRuQv8SlEQp4F56f
 storiqa_jwt_valid_secs = 86400
 storiqa_transactions_token = "s7oQwXCpn2trQ00aXGiK15BUao7WoNbShtDeVne9zVY="
 storiqa_transactions_user_id = "a50df4fa-703b-49a3-81a6-04008f01f413"
+device_add_token_valid_secs = 86400
+email_sending_timeout_secs = 30
 
 [client]
 dns_threads = 4
@@ -17,7 +19,7 @@ storiqa_url = "https://stable.stq.cloud/graphql"
 transactions_url = "http://transactions:8000/v1"
 
 [database]
-url = "postgresql://gateway:gateway@postgres/gateway"
+url = "postgresql://payments-gateway:payments-gateway@payments-gateway-pg/payments-gateway"
 
 [rabbit]
 url = "amqp://guest:guest@localhost:5672//?heartbeat=3&frame_max=131072"
@@ -25,3 +27,11 @@ thread_pool_size = 2
 connection_timeout_secs = 10
 connection_pool_size = 10
 restart_subscription_secs = 30
+
+[notifications]
+device_confirm_url = "https://stable.stq.cloud/wallet/register_device"
+
+[redirections]
+confirm_email_url = "https://stable.stq.cloud/wallet/email_confirmed"
+confirm_register_device_url = "https://stable.stq.cloud/wallet/register_device_confirmed"
+confirm_reset_password_url = "https://stable.stq.cloud/wallet/password_reset_deny"

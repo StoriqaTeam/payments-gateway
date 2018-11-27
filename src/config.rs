@@ -14,6 +14,7 @@ pub struct Config {
     pub cpu_pool: CpuPool,
     pub rabbit: Rabbit,
     pub notifications: Notifications,
+    pub redirections: Redirections,
     pub sentry: Option<SentryConfig>,
     pub graylog: Option<GrayLogConfig>,
     pub filelog: Option<FileLogConfig>,
@@ -40,6 +41,13 @@ pub struct Auth {
 pub struct Server {
     pub host: String,
     pub port: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Redirections {
+    pub confirm_email_url: String,
+    pub confirm_register_device_url: String,
+    pub confirm_reset_password_url: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]

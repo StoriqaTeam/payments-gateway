@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use futures::future::{self, Either};
 use serde_json;
 use validator::{Validate, ValidationError, ValidationErrors};
 
@@ -14,6 +13,7 @@ use services::EmailSenderService;
 pub trait UsersService: Send + Sync + 'static {
     fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn get_jwt_by_oauth(&self, oauth_token: OauthToken, oauth_provider: Provider) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
+    fn merge_user(&self, user: User) -> Box<Future<Item = bool, Error = Error> + Send>;
     fn create_user(&self, new_user: NewUser) -> Box<Future<Item = User, Error = Error> + Send>;
     fn update_user(&self, update_user: UpdateUser, user_id: UserId, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send>;
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
@@ -69,57 +69,14 @@ impl<E: DbExecutor> UsersServiceImpl<E> {
 
 impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
     fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
-        let client = self.storiqa_client.clone();
-        let users_repo = self.users_repo.clone();
-        let db_executor = self.db_executor.clone();
-        Box::new(
-            self.storiqa_client
-                .get_jwt(email.clone(), password)
-                .map_err(ectx!(convert))
-                .and_then(move |jwt_token| {
-                    let token = jwt_token.clone();
-                    let db_executor_clone = db_executor.clone();
-                    let users_repo_clone = users_repo.clone();
-                    db_executor
-                        .execute(move || {
-                            let user = users_repo.get_by_email(email.clone()).map_err(ectx!(try convert => email))?;
-                            Ok(user.is_some())
-                        }).and_then(move |user_exists| {
-                            if user_exists {
-                                Either::A(future::ok(jwt_token))
-                            } else {
-                                Either::B(client.me(token.clone()).map_err(ectx!(convert)).and_then(move |user| {
-                                    db_executor_clone.execute(move || {
-                                        users_repo_clone.create(user.clone().into()).map_err(ectx!(try convert => user))?;
-                                        Ok(token)
-                                    })
-                                }))
-                            }
-                        })
-                }),
-        )
+        Box::new(self.storiqa_client.get_jwt(email.clone(), password).map_err(ectx!(convert)))
     }
 
     fn get_jwt_by_oauth(&self, oauth_token: OauthToken, oauth_provider: Provider) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
-        let client = self.storiqa_client.clone();
-        let users_repo = self.users_repo.clone();
-        let db_executor = self.db_executor.clone();
         Box::new(
             self.storiqa_client
                 .get_jwt_by_oauth(oauth_token, oauth_provider)
-                .map_err(ectx!(convert))
-                .and_then(move |jwt_token| {
-                    client.me(jwt_token.clone()).map_err(ectx!(convert)).and_then(move |user| {
-                        db_executor.execute(move || {
-                            let email = user.email.clone();
-                            let user_db = users_repo.get_by_email(email.clone()).map_err(ectx!(try convert => email))?;
-                            if user_db.is_none() {
-                                users_repo.create(user.clone().into()).map_err(ectx!(try convert => user))?;
-                            }
-                            Ok(jwt_token)
-                        })
-                    })
-                }),
+                .map_err(ectx!(convert)),
         )
     }
 
@@ -150,6 +107,21 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                     })
                 }),
         )
+    }
+
+    fn merge_user(&self, user: User) -> Box<Future<Item = bool, Error = Error> + Send> {
+        let users_repo = self.users_repo.clone();
+        let db_executor = self.db_executor.clone();
+        Box::new(db_executor.execute(move || {
+            let email = user.email.clone();
+            let user_db = users_repo.get_by_email(email.clone()).map_err(ectx!(try convert => email))?;
+            if user_db.is_none() {
+                users_repo.create(user.clone().into()).map_err(ectx!(try convert => user))?;
+                Ok(true)
+            } else {
+                Ok(false)
+            }
+        }))
     }
 
     fn update_user(&self, update_user: UpdateUser, user_id: UserId, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send> {
