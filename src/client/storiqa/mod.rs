@@ -288,9 +288,13 @@ impl StoriqaClient for StoriqaClientImpl {
         Box::new(
             self.exec_query::<GetResetPassword>(&query, None)
                 .and_then(|resp| {
-                    resp.data
-                        .clone()
-                        .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
+                    resp.data.clone().ok_or_else(|| {
+                        if let Some(payload) = get_error_payload(resp.clone().errors) {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Validation(payload) => resp.clone())
+                        } else {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp.clone())
+                        }
+                    })
                 }).map(|_| ()),
         )
     }
@@ -308,9 +312,13 @@ impl StoriqaClient for StoriqaClientImpl {
         Box::new(
             self.exec_query::<GetResendEmailVerify>(&query, None)
                 .and_then(|resp| {
-                    resp.data
-                        .clone()
-                        .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
+                    resp.data.clone().ok_or_else(|| {
+                        if let Some(payload) = get_error_payload(resp.clone().errors) {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Validation(payload) => resp.clone())
+                        } else {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp.clone())
+                        }
+                    })
                 }).map(|_| ()),
         )
     }
