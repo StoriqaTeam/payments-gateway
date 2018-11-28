@@ -196,7 +196,7 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                             let mut error = ValidationError::new("email_timeout");
                             error.add_param("message".into(), &"can not send email more often then 30 seconds".to_string());
                             error.add_param("details".into(), &"no details".to_string());
-                            errors.add("device", error);
+                            errors.add("email", error);
                             return Err(ectx!(err ErrorContext::EmailSending, ErrorKind::InvalidInput(serde_json::to_string(&errors).unwrap_or_default()) => token));
                         }
                     }
