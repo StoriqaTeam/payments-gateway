@@ -24,7 +24,7 @@ pub trait UsersService: Send + Sync + 'static {
         public_key: DevicePublicKey,
         user_id: UserId,
     ) -> Box<Future<Item = (), Error = Error> + Send>;
-    fn confirm_add_device(&self, token: DeviceConfirmToken) -> Box<Future<Item = (), Error = Error> + Send>;
+    fn confirm_add_device(&self, token: DeviceConfirmToken, device_id: Option<DeviceId>) -> Box<Future<Item = (), Error = Error> + Send>;
     fn reset_password(&self, reset: ResetPassword) -> Box<Future<Item = (), Error = Error> + Send>;
     fn resend_email_verify(&self, reset: ResendEmailVerify) -> Box<Future<Item = (), Error = Error> + Send>;
     fn change_password(&self, change_password: ChangePassword, token: StoriqaJWT) -> Box<Future<Item = (), Error = Error> + Send>;
@@ -217,7 +217,11 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
         )
     }
 
-    fn confirm_add_device(&self, token: DeviceConfirmToken) -> Box<Future<Item = (), Error = Error> + Send> {
+    fn confirm_add_device(
+        &self,
+        token: DeviceConfirmToken,
+        device_id_ex: Option<DeviceId>,
+    ) -> Box<Future<Item = (), Error = Error> + Send> {
         let db_executor = self.db_executor.clone();
         let devices_repo = self.devices_repo.clone();
         let devices_tokens_repo = self.devices_tokens_repo.clone();
@@ -235,6 +239,16 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                 updated_at,
                 ..
             } = device_token.ok_or_else(|| ectx!(try err ErrorContext::InvalidToken, ErrorKind::NotFound => token))?;
+
+            if let Some(device_id_ex) = device_id_ex {
+                if device_id_ex != device_id {
+                    let mut errors = ValidationErrors::new();
+                    let mut error = ValidationError::new("device_id");
+                    error.message = Some("device confirmed differs from your device".into());
+                    errors.add("device", error);
+                    return Err(ectx!(err ErrorContext::InvalidToken, ErrorKind::InvalidInput(serde_json::to_string(&errors).unwrap_or_default()) => device_id_ex, device_id));
+                }
+            }
 
             let device = devices_repo.get(device_id.clone(), user_id).map_err(ectx!(try convert => user_id))?;
 

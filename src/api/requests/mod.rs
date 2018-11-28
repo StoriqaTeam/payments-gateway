@@ -146,6 +146,7 @@ pub struct PostUsersConfirmEmailRequest {
 #[serde(rename_all = "camelCase")]
 pub struct PostUsersConfirmAddDeviceRequest {
     pub token: DeviceConfirmToken,
+    pub device_id: DeviceId,
 }
 
 #[derive(Debug, Deserialize, Clone)]

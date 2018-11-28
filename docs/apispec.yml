@@ -982,11 +982,16 @@ components:
       type: object
       required:
         - token
+        - deviceId
       properties:
         token:
           type: string
           description: Confirmation token that is sent via email after adding device request
           example: lkg7713rlkf==
+        deviceId:
+          description: IMEI. Requied for mobile only.
+          type: string
+          example: 1237987834798375349
     UsersAddDeviceInput:
       type: object
       required:
