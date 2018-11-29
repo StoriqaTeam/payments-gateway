@@ -82,7 +82,7 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
             let input = CreateAccount {
                 user_id,
                 currency,
-                name: currency.to_string(),
+                name: format!("Account {}", currency.to_string().to_uppercase()),
                 ..Default::default()
             };
             let input_clone = input.clone();
