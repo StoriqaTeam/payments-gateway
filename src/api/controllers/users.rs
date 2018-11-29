@@ -191,7 +191,9 @@ pub fn post_users_confirm_add_device(ctx: &Context) -> ControllerFuture {
         parse_body::<PostUsersConfirmAddDeviceRequest>(body)
             .and_then(move |input| {
                 let input_clone = input.clone();
-                users_service.confirm_add_device(input.token).map_err(ectx!(convert => input_clone))
+                users_service
+                    .confirm_add_device(input.token, Some(input.device_id))
+                    .map_err(ectx!(convert => input_clone))
             }).and_then(|token| response_with_model(&token)),
     )
 }
@@ -200,7 +202,7 @@ pub fn get_register_device(ctx: &Context, token: DeviceConfirmToken) -> Controll
     let confirm_register_device_url = ctx.config.redirections.confirm_register_device_url.clone();
     Box::new(
         ctx.users_service
-            .confirm_add_device(token)
+            .confirm_add_device(token, None)
             .map_err(ectx!(convert => token))
             .and_then(|_| response_with_redirect(confirm_register_device_url)),
     )
