@@ -209,10 +209,10 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                         .upsert(new_devices_tokens)
                         .map_err(ectx!(try convert => user_id, device_id_clone2))?;
 
-                    Ok((user.email, token.id))
-                }).and_then(move |(user_email, token)| {
+                    Ok((user, token.id))
+                }).and_then(move |(user, token)| {
                     email_sender
-                        .send_add_device(user_email,token,device_id_clone3)
+                        .send_add_device(user,token,device_id_clone3)
                 })
         )
     }

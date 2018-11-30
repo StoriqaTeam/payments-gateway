@@ -9,12 +9,8 @@ use rabbit::TransactionPublisher;
 use repos::{DbExecutor, TemplatesRepo};
 
 pub trait EmailSenderService: Send + Sync + 'static {
-    fn send_add_device(
-        &self,
-        email: String,
-        token: DeviceConfirmToken,
-        device_id: DeviceId,
-    ) -> Box<Future<Item = (), Error = Error> + Send>;
+    fn send_add_device(&self, user: UserDB, token: DeviceConfirmToken, device_id: DeviceId)
+        -> Box<Future<Item = (), Error = Error> + Send>;
     fn get_template(&self, name: TemplateName) -> Box<Future<Item = String, Error = Error> + Send>;
 }
 
@@ -44,13 +40,13 @@ impl<E: DbExecutor> EmailSenderServiceImpl<E> {
 impl<E: DbExecutor> EmailSenderService for EmailSenderServiceImpl<E> {
     fn send_add_device(
         &self,
-        email: String,
+        user: UserDB,
         token: DeviceConfirmToken,
         device_id: DeviceId,
     ) -> Box<Future<Item = (), Error = Error> + Send> {
         let device_confirm_url = self.device_confirm_url.clone();
         let publisher = self.publisher.clone();
-        let mail = DeviceAddEmail::new(email, device_confirm_url, token, device_id);
+        let mail = DeviceAddEmail::new(device_confirm_url, token, device_id, user);
         let handlebars = Handlebars::new();
         Box::new(
             self.get_template(TemplateName::AddDevice)
@@ -63,7 +59,7 @@ impl<E: DbExecutor> EmailSenderService for EmailSenderServiceImpl<E> {
                             .into_future()
                     }
                 }).and_then(move |text| {
-                    let email = Email::new(mail.to, "New device will be added to your account".to_string(), text);
+                    let email = Email::new(mail.user.email, "New device will be added to your account".to_string(), text);
                     publisher
                         .send_email(email.clone())
                         .map_err(ectx!(ErrorContext::Lapin, ErrorKind::Internal => email))
