@@ -11,15 +11,20 @@ pub struct Email {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DeviceAddEmail {
-    pub to: String,
     pub url: String,
     pub token: DeviceConfirmToken,
     pub device_id: DeviceId,
+    pub user: UserDB,
 }
 
 impl DeviceAddEmail {
-    pub fn new(to: String, url: String, token: DeviceConfirmToken, device_id: DeviceId) -> Self {
-        Self { to, url, token, device_id }
+    pub fn new(url: String, token: DeviceConfirmToken, device_id: DeviceId, user: UserDB) -> Self {
+        Self {
+            url,
+            token,
+            device_id,
+            user,
+        }
     }
 }
 
