@@ -82,9 +82,6 @@ impl<E: DbExecutor> AuthService for AuthServiceImpl<E> {
                 .map_err(ectx!(try convert => user_id, device_id))?;
             if let Some(device) = device {
                 let info_timestamp = info.timestamp;
-                if info_timestamp <= device.last_timestamp {
-                    return Err(ectx!(err ErrorContext::WrongTimestamp, ErrorKind::Unauthorized => info_timestamp));
-                }
                 let mut hasher = Sha256::new();
                 hasher.input_str(&format!("{}{}", info.timestamp, info.device_id));
                 let mut bytes = [0; 32];
