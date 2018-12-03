@@ -266,7 +266,7 @@ pub fn post_users_confirm_reset_password(ctx: &Context) -> ControllerFuture {
     )
 }
 
-pub fn get_confirm_reset_password(ctx: &Context) -> ControllerFuture {
+pub fn get_confirm_reset_password(ctx: &Context, _token: PasswordResetToken) -> ControllerFuture {
     let confirm_reset_password_url = ctx.config.redirections.confirm_reset_password_url.clone();
     response_with_redirect(confirm_reset_password_url)
 }
