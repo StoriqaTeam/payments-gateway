@@ -133,7 +133,7 @@ impl Service for ApiService {
                         POST /v1/fees => post_fees,
                         GET /wallet/register_device/{token: DeviceConfirmToken} => get_register_device,
                         GET /wallet/verify_email/{token: EmailConfirmToken} => get_users_confirm_email,
-                        GET /wallet/reset_password => get_confirm_reset_password,
+                        GET /wallet/reset_password/{token: PasswordResetToken} => get_confirm_reset_password,
                         _ => not_found,
                     };
 
