@@ -60,6 +60,7 @@ table! {
     }
 }
 
+joinable!(accounts -> users (user_id));
 joinable!(devices -> users (user_id));
 joinable!(devices_tokens -> users (user_id));
 
