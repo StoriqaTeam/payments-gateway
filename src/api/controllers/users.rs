@@ -287,3 +287,37 @@ pub fn get_users_me(ctx: &Context) -> ControllerFuture {
             })
     }))
 }
+
+pub fn post_sessions_refresh(ctx: &Context) -> ControllerFuture {
+    let users_service = ctx.users_service.clone();
+    let maybe_token = ctx.get_auth_token();
+
+    Box::new(ctx.authenticate().and_then(move |_user_id_auth| {
+        maybe_token
+            .ok_or_else(|| ectx!(err ErrorContext::Token, ErrorKind::Unauthorized))
+            .into_future()
+            .and_then(move |token| {
+                users_service
+                    .refresh_jwt(token)
+                    .map_err(ectx!(convert))
+                    .and_then(|user| response_with_model(&user))
+            })
+    }))
+}
+
+pub fn post_sessions_revoke(ctx: &Context) -> ControllerFuture {
+    let users_service = ctx.users_service.clone();
+    let maybe_token = ctx.get_auth_token();
+
+    Box::new(ctx.authenticate().and_then(move |_user_id_auth| {
+        maybe_token
+            .ok_or_else(|| ectx!(err ErrorContext::Token, ErrorKind::Unauthorized))
+            .into_future()
+            .and_then(move |token| {
+                users_service
+                    .revoke_jwt(token)
+                    .map_err(ectx!(convert))
+                    .and_then(|user| response_with_model(&user))
+            })
+    }))
+}

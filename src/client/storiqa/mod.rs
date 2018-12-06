@@ -22,6 +22,8 @@ use utils::read_body;
 
 pub trait StoriqaClient: Send + Sync + 'static {
     fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
+    fn refresh_jwt(&self, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
+    fn revoke_jwt(&self, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn get_jwt_by_oauth(&self, oauth_token: OauthToken, oauth_provider: Provider) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn create_user(&self, new_user: NewUser) -> Box<Future<Item = User, Error = Error> + Send>;
     fn update_user(&self, update_user: UpdateUser, user_id: UserId, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send>;
@@ -29,7 +31,7 @@ pub trait StoriqaClient: Send + Sync + 'static {
     fn reset_password(&self, reset: ResetPassword) -> Box<Future<Item = (), Error = Error> + Send>;
     fn resend_email_verify(&self, resend: ResendEmailVerify) -> Box<Future<Item = (), Error = Error> + Send>;
     fn confirm_reset_password(&self, reset: ResetPasswordConfirm) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
-    fn change_password(&self, change: ChangePassword, token: StoriqaJWT) -> Box<Future<Item = (), Error = Error> + Send>;
+    fn change_password(&self, change: ChangePassword, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn me(&self, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send>;
 }
 
@@ -344,7 +346,7 @@ impl StoriqaClient for StoriqaClientImpl {
                 }).map(|resp_data| resp_data.apply_password_reset.token),
         )
     }
-    fn change_password(&self, change: ChangePassword, token: StoriqaJWT) -> Box<Future<Item = (), Error = Error> + Send> {
+    fn change_password(&self, change: ChangePassword, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
         let query = format!(
             r#"
                 mutation M {{
@@ -366,7 +368,49 @@ impl StoriqaClient for StoriqaClientImpl {
                             ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp.clone())
                         }
                     })
-                }).map(|_| ()),
+                }).map(|resp| resp.request_password_change.token),
+        )
+    }
+    fn refresh_jwt(&self, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
+        let query = format!(
+            r#"
+                mutation M {{
+                    refreshJWT
+                }}
+            "#
+        );
+        Box::new(
+            self.exec_query::<GetRefreshJWT>(&query, Some(token))
+                .and_then(|resp| {
+                    resp.data.clone().ok_or_else(|| {
+                        if let Some(payload) = get_error_payload(resp.clone().errors) {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Validation(payload) => resp.clone())
+                        } else {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp.clone())
+                        }
+                    })
+                }).map(|resp| resp.refresh_jwt),
+        )
+    }
+    fn revoke_jwt(&self, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
+        let query = format!(
+            r#"
+                mutation M {{
+                    revokeJWT
+                }}
+            "#
+        );
+        Box::new(
+            self.exec_query::<GetRevokeJWT>(&query, Some(token))
+                .and_then(|resp| {
+                    resp.data.clone().ok_or_else(|| {
+                        if let Some(payload) = get_error_payload(resp.clone().errors) {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Validation(payload) => resp.clone())
+                        } else {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp.clone())
+                        }
+                    })
+                }).map(|resp| resp.revoke_jwt),
         )
     }
 }

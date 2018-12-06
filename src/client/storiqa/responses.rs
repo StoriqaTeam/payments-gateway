@@ -97,6 +97,18 @@ pub struct GetResendEmailVerify {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct GetRefreshJWT {
+    #[serde(rename = "refreshJWT")]
+    pub refresh_jwt: StoriqaJWT,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct GetRevokeJWT {
+    #[serde(rename = "revokeJWT")]
+    pub revoke_jwt: StoriqaJWT,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct GetResetPasswordApply {
     #[serde(rename = "applyPasswordReset")]
     pub apply_password_reset: ResetApply,
@@ -105,7 +117,7 @@ pub struct GetResetPasswordApply {
 #[derive(Debug, Deserialize, Clone)]
 pub struct GetChangePassword {
     #[serde(rename = "changePassword")]
-    pub request_password_change: Reset,
+    pub request_password_change: ResetApply,
 }
 
 #[derive(Debug, Deserialize, Clone)]

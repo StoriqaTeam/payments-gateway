@@ -111,6 +111,8 @@ impl Service for ApiService {
                     let router = router! {
                         POST /v1/sessions => post_sessions,
                         POST /v1/sessions/oauth => post_sessions_oauth,
+                        POST /v1/sessions/refresh => post_sessions_refresh,
+                        POST /v1/sessions/revoke => post_sessions_revoke,
                         POST /v1/users => post_users,
                         PUT /v1/users => put_users,
                         POST /v1/users/add_device => post_users_add_device,
