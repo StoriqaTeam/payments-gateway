@@ -35,7 +35,8 @@ impl AccountsRepo for AccountsRepoMock {
                 } else {
                     None
                 }
-            }).nth(0)
+            })
+            .nth(0)
             .cloned();
         Ok(u.unwrap())
     }

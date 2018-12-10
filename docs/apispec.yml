@@ -181,6 +181,76 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SessionOauthCreateInput'
+  /sessions/refresh:
+    parameters:
+      - in: header
+        name: Timestamp
+        schema:
+          type: string
+          format: integer
+        required: true
+      - in: header
+        name: Device-id
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: Sign
+        schema:
+          type: string
+        required: true
+    post:
+      summary: Returns new jwt token
+      security:
+        - Bearer: []
+      tags:
+        - users
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JWT'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/Internal'
+  /sessions/revoke:
+    parameters:
+      - in: header
+        name: Timestamp
+        schema:
+          type: string
+          format: integer
+        required: true
+      - in: header
+        name: Device-id
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: Sign
+        schema:
+          type: string
+        required: true
+    post:
+      summary: Revokes all jwt tokens and returns new jwt token
+      security:
+        - Bearer: []
+      tags:
+        - users
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JWT'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/Internal'
   /users:
     parameters:
       - in: header
@@ -381,12 +451,16 @@ paths:
           type: string
         required: true
     post:
-      summary: Change password with old_password and new_password
+      summary: Change password with old_password and new_password and returns new jwt
       tags:
         - users
       responses:
         200:
           description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JWT'
         401:
           $ref: '#/components/responses/Unauthorized'
         500:

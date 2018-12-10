@@ -67,7 +67,8 @@ pub fn parse_hex(hex_asm: &str) -> Vec<u8> {
             b'a'...b'f' => Some(b - b'a' + 10),
             b'A'...b'F' => Some(b - b'A' + 10),
             _ => None,
-        }).fuse();
+        })
+        .fuse();
 
     let mut bytes = Vec::new();
     while let (Some(h), Some(l)) = (hex_bytes.next(), hex_bytes.next()) {

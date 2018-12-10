@@ -77,7 +77,8 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                             Ok(())
                         }
                     }
-                }).and_then(move |_| {
+                })
+                .and_then(move |_| {
                     input
                         .validate()
                         .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_string(&e).unwrap_or_default()) => input))
@@ -88,7 +89,8 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                                 .map_err(ectx!(convert => input))
                                 .map(From::from)
                         })
-                }).and_then(move |transaction: Transaction| service.add_user_to_transaction(transaction)),
+                })
+                .and_then(move |transaction: Transaction| service.add_user_to_transaction(transaction)),
         )
     }
 
@@ -108,7 +110,8 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                     accounts_repo
                         .get_by_user(user_id)
                         .map_err(ectx!(ErrorKind::Internal => user_id, offset, limit))
-                }).and_then(move |accounts| {
+                })
+                .and_then(move |accounts| {
                     iter_ok::<_, Error>(accounts).fold(vec![], move |mut total_transactions, account| {
                         transactions_client
                             .get_account_transactions(account.id, offset, limit)
@@ -119,7 +122,8 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                                 Ok(total_transactions) as Result<Vec<Transaction>, Error>
                             })
                     })
-                }).and_then(move |transactions: Vec<Transaction>| {
+                })
+                .and_then(move |transactions: Vec<Transaction>| {
                     iter_ok::<_, Error>(transactions).fold(vec![], move |mut transactions, transaction| {
                         service.add_user_to_transaction(transaction).and_then(|res| {
                             transactions.push(res);
@@ -155,12 +159,14 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                             Err(ectx!(err ErrorContext::InvalidToken, ErrorKind::NotFound => user_id))
                         }
                     }
-                }).and_then(move |_| {
+                })
+                .and_then(move |_| {
                     transactions_client
                         .get_account_transactions(account_id, offset, limit)
                         .map_err(ectx!(convert => account_id))
                         .map(|resp| resp.into_iter().map(From::from).collect())
-                }).and_then(move |transactions: Vec<Transaction>| {
+                })
+                .and_then(move |transactions: Vec<Transaction>| {
                     iter_ok::<_, Error>(transactions).fold(vec![], move |mut transactions, transaction| {
                         service.add_user_to_transaction(transaction).and_then(|res| {
                             transactions.push(res);

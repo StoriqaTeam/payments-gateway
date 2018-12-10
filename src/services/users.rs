@@ -27,9 +27,11 @@ pub trait UsersService: Send + Sync + 'static {
     fn confirm_add_device(&self, token: DeviceConfirmToken, device_id: Option<DeviceId>) -> Box<Future<Item = (), Error = Error> + Send>;
     fn reset_password(&self, reset: ResetPassword) -> Box<Future<Item = (), Error = Error> + Send>;
     fn resend_email_verify(&self, reset: ResendEmailVerify) -> Box<Future<Item = (), Error = Error> + Send>;
-    fn change_password(&self, change_password: ChangePassword, token: StoriqaJWT) -> Box<Future<Item = (), Error = Error> + Send>;
+    fn change_password(&self, change_password: ChangePassword, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn confirm_reset_password(&self, reset: ResetPasswordConfirm) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn me(&self, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send>;
+    fn refresh_jwt(&self, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
+    fn revoke_jwt(&self, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
 }
 
 pub struct UsersServiceImpl<E: DbExecutor> {
@@ -135,7 +137,8 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                 .validate()
                 .map_err(
                     |e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_string(&e).unwrap_or_default()) => update_user_clone2),
-                ).into_future()
+                )
+                .into_future()
                 .and_then(move |_| client.update_user(update_user, user_id, token).map_err(ectx!(convert)))
                 .and_then(move |user| {
                     db_executor.execute(move || {
@@ -286,9 +289,17 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
     fn resend_email_verify(&self, resend: ResendEmailVerify) -> Box<Future<Item = (), Error = Error> + Send> {
         Box::new(self.storiqa_client.resend_email_verify(resend).map_err(ectx!(convert)))
     }
-    fn change_password(&self, change_password: ChangePassword, token: StoriqaJWT) -> Box<Future<Item = (), Error = Error> + Send> {
+    fn change_password(&self, change_password: ChangePassword, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
         let cli = self.storiqa_client.clone();
         Box::new(cli.change_password(change_password, token).map_err(ectx!(convert)))
+    }
+    fn refresh_jwt(&self, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
+        let cli = self.storiqa_client.clone();
+        Box::new(cli.refresh_jwt(token).map_err(ectx!(convert)))
+    }
+    fn revoke_jwt(&self, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
+        let cli = self.storiqa_client.clone();
+        Box::new(cli.revoke_jwt(token).map_err(ectx!(convert)))
     }
     fn confirm_reset_password(&self, confirm: ResetPasswordConfirm) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
         let cli = self.storiqa_client.clone();

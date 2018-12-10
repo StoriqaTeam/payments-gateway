@@ -1,4 +1,5 @@
 use serde_json;
+use validator::{ValidationError, ValidationErrors};
 
 use models::*;
 
@@ -36,6 +37,22 @@ pub fn get_error_payload(errors: Option<Vec<GraphQLError>>) -> Option<serde_json
             if let Some(e) = error.data {
                 if let Some(payload) = e.details.payload {
                     let payload = serde_json::from_str(&payload).unwrap_or_default();
+                    res.push(payload)
+                }
+                if e.code == 111 {
+                    let mut errors = ValidationErrors::new();
+                    let mut error = ValidationError::new("expired");
+                    error.message = Some("JWT has expired.".into());
+                    errors.add("token", error);
+                    let payload = serde_json::to_value(&errors).unwrap_or_default();
+                    res.push(payload)
+                }
+                if e.code == 112 {
+                    let mut errors = ValidationErrors::new();
+                    let mut error = ValidationError::new("revoked");
+                    error.message = Some("JWT has been revoked.".into());
+                    errors.add("token", error);
+                    let payload = serde_json::to_value(&errors).unwrap_or_default();
                     res.push(payload)
                 }
             }
@@ -97,6 +114,18 @@ pub struct GetResendEmailVerify {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct GetRefreshJWT {
+    #[serde(rename = "refreshJWT")]
+    pub refresh_jwt: StoriqaJWT,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct GetRevokeJWT {
+    #[serde(rename = "revokeJWT")]
+    pub revoke_jwt: StoriqaJWT,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct GetResetPasswordApply {
     #[serde(rename = "applyPasswordReset")]
     pub apply_password_reset: ResetApply,
@@ -105,7 +134,7 @@ pub struct GetResetPasswordApply {
 #[derive(Debug, Deserialize, Clone)]
 pub struct GetChangePassword {
     #[serde(rename = "changePassword")]
-    pub request_password_change: Reset,
+    pub request_password_change: ResetApply,
 }
 
 #[derive(Debug, Deserialize, Clone)]

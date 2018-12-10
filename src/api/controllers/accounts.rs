@@ -21,14 +21,16 @@ pub fn post_accounts(ctx: &Context, user_id: UserId) -> ControllerFuture {
                 } else {
                     future::err(ectx!(err ErrorContext::Token, ErrorKind::Unauthorized))
                 }
-            }).and_then(move |_| {
+            })
+            .and_then(move |_| {
                 parse_body::<PostAccountsRequest>(body)
                     .and_then(move |input| {
                         let input_clone = input.clone();
                         accounts_service
                             .create_account((input, user_id).into())
                             .map_err(ectx!(convert => input_clone))
-                    }).and_then(|account| response_with_model(&account))
+                    })
+                    .and_then(|account| response_with_model(&account))
             }),
     )
 }
@@ -44,7 +46,8 @@ pub fn get_users_accounts(ctx: &Context, user_id: UserId) -> ControllerFuture {
                 } else {
                     future::err(ectx!(err ErrorContext::Token, ErrorKind::Unauthorized))
                 }
-            }).and_then(move |_| {
+            })
+            .and_then(move |_| {
                 let uri_clone = uri.clone();
                 uri.clone()
                     .query()
@@ -54,13 +57,16 @@ pub fn get_users_accounts(ctx: &Context, user_id: UserId) -> ControllerFuture {
                             let e = format_err!("{}", e);
                             ectx!(err e, ErrorContext::RequestQueryParams, ErrorKind::BadRequest => uri_clone)
                         })
-                    }).into_future()
-            }).and_then(move |input| {
+                    })
+                    .into_future()
+            })
+            .and_then(move |input| {
                 let input_clone = input.clone();
                 accounts_service
                     .get_accounts_for_user(user_id, input.offset, input.limit)
                     .map_err(ectx!(convert => input_clone))
-            }).and_then(|accounts| response_with_model(&accounts)),
+            })
+            .and_then(|accounts| response_with_model(&accounts)),
     )
 }
 
@@ -84,7 +90,8 @@ pub fn put_accounts(ctx: &Context, account_id: AccountId) -> ControllerFuture {
                 accounts_service
                     .update_account(user_id_auth, account_id, input.into())
                     .map_err(ectx!(convert => input_clone))
-            }).and_then(|account| response_with_model(&account))
+            })
+            .and_then(|account| response_with_model(&account))
     }))
 }
 
