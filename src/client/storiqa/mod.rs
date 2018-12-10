@@ -249,9 +249,13 @@ impl StoriqaClient for StoriqaClientImpl {
         Box::new(
             self.exec_query::<Me>(&query, Some(token))
                 .and_then(|resp| {
-                    resp.data
-                        .clone()
-                        .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
+                    resp.data.clone().ok_or_else(|| {
+                        if let Some(payload) = get_error_payload(resp.clone().errors) {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Validation(payload) => resp.clone())
+                        } else {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp.clone())
+                        }
+                    })
                 }).map(|resp_data| resp_data.me),
         )
     }
@@ -270,9 +274,13 @@ impl StoriqaClient for StoriqaClientImpl {
         Box::new(
             self.exec_query::<GetEmailVerify>(&query, None)
                 .and_then(|resp| {
-                    resp.data
-                        .clone()
-                        .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
+                    resp.data.clone().ok_or_else(|| {
+                        if let Some(payload) = get_error_payload(resp.clone().errors) {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Validation(payload) => resp.clone())
+                        } else {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp.clone())
+                        }
+                    })
                 }).map(|resp_data| resp_data.verify_email.token),
         )
     }
@@ -340,9 +348,13 @@ impl StoriqaClient for StoriqaClientImpl {
         Box::new(
             self.exec_query::<GetResetPasswordApply>(&query, None)
                 .and_then(|resp| {
-                    resp.data
-                        .clone()
-                        .ok_or(ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp))
+                    resp.data.clone().ok_or_else(|| {
+                        if let Some(payload) = get_error_payload(resp.clone().errors) {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Validation(payload) => resp.clone())
+                        } else {
+                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp.clone())
+                        }
+                    })
                 }).map(|resp_data| resp_data.apply_password_reset.token),
         )
     }

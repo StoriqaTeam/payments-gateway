@@ -1,4 +1,5 @@
 use serde_json;
+use validator::{ValidationError, ValidationErrors};
 
 use models::*;
 
@@ -36,6 +37,22 @@ pub fn get_error_payload(errors: Option<Vec<GraphQLError>>) -> Option<serde_json
             if let Some(e) = error.data {
                 if let Some(payload) = e.details.payload {
                     let payload = serde_json::from_str(&payload).unwrap_or_default();
+                    res.push(payload)
+                }
+                if e.code == 111 {
+                    let mut errors = ValidationErrors::new();
+                    let mut error = ValidationError::new("expired");
+                    error.message = Some("JWT has been expired.".into());
+                    errors.add("token", error);
+                    let payload = serde_json::to_value(&errors).unwrap_or_default();
+                    res.push(payload)
+                }
+                if e.code == 112 {
+                    let mut errors = ValidationErrors::new();
+                    let mut error = ValidationError::new("revoked");
+                    error.message = Some("JWT has been revoked.".into());
+                    errors.add("token", error);
+                    let payload = serde_json::to_value(&errors).unwrap_or_default();
                     res.push(payload)
                 }
             }
