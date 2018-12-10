@@ -66,7 +66,8 @@ impl TransactionPublisherImpl {
                         ..Default::default()
                     },
                     Default::default(),
-                ).map(|_| ()),
+                )
+                .map(|_| ()),
         );
         let f3: Box<Future<Item = (), Error = StdIoError>> = Box::new(
             channel
@@ -77,7 +78,8 @@ impl TransactionPublisherImpl {
                         ..Default::default()
                     },
                     Default::default(),
-                ).map(|_| ()),
+                )
+                .map(|_| ()),
         );
         let f4: Box<Future<Item = (), Error = StdIoError>> = Box::new(
             channel
@@ -88,7 +90,8 @@ impl TransactionPublisherImpl {
                         ..Default::default()
                     },
                     Default::default(),
-                ).map(|_| ()),
+                )
+                .map(|_| ()),
         );
         let f5: Box<Future<Item = (), Error = StdIoError>> =
             Box::new(channel.queue_bind("pushes", "notifications", "pushes", Default::default(), Default::default()));
@@ -112,7 +115,8 @@ impl TransactionPublisher for TransactionPublisherImpl {
                         .clone()
                         .basic_publish("notifications", "pushes", payload, Default::default(), Default::default())
                         .map_err(ectx!(ErrorSource::Lapin, ErrorKind::Internal))
-                }).map(|_| ()),
+                })
+                .map(|_| ()),
         )
     }
     fn callback(&self, callback: Callback) -> Box<Future<Item = (), Error = Error> + Send> {
@@ -124,7 +128,8 @@ impl TransactionPublisher for TransactionPublisherImpl {
                         .clone()
                         .basic_publish("notifications", "callbacks", payload, Default::default(), Default::default())
                         .map_err(ectx!(ErrorSource::Lapin, ErrorKind::Internal))
-                }).map(|_| ()),
+                })
+                .map(|_| ()),
         )
     }
     fn send_email(&self, email: Email) -> Box<Future<Item = (), Error = Error> + Send> {
@@ -136,7 +141,8 @@ impl TransactionPublisher for TransactionPublisherImpl {
                         .clone()
                         .basic_publish("notifications", "emails", payload, Default::default(), Default::default())
                         .map_err(ectx!(ErrorSource::Lapin, ErrorKind::Internal))
-                }).map(|_| ()),
+                })
+                .map(|_| ()),
         )
     }
 }

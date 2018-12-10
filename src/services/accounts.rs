@@ -62,7 +62,8 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
                 .and_then({
                     let input = input.clone();
                     move |_| transactions_client.create_account(input.clone()).map_err(ectx!(convert => input))
-                }).and_then(move |account_transaction| {
+                })
+                .and_then(move |account_transaction| {
                     db_executor.execute(move || {
                         let new_account: NewAccount = (input, account_transaction.address.clone()).into();
                         accounts_repo
@@ -120,7 +121,8 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
                         }
                     }
                     Ok(account)
-                }).and_then(move |account| {
+                })
+                .and_then(move |account| {
                     if let Some(account) = account {
                         Either::A(
                             transactions_client
@@ -164,7 +166,8 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
                         }
                         Ok(account)
                     })
-                }).and_then(move |account| {
+                })
+                .and_then(move |account| {
                     transactions_client
                         .get_account_balance(account.id)
                         .map_err(ectx!(convert => account_id))
@@ -202,7 +205,8 @@ impl<E: DbExecutor> AccountsService for AccountsServiceImpl<E> {
                     accounts_repo
                         .list_for_user(user_id, offset, limit)
                         .map_err(ectx!(ErrorKind::Internal => user_id, offset, limit))
-                }).and_then(move |accounts| {
+                })
+                .and_then(move |accounts| {
                     iter_ok::<_, Error>(accounts).fold(vec![], move |mut accounts, account| {
                         let account_id = account.id;
                         transactions_client

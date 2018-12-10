@@ -113,7 +113,8 @@ pub fn start_server() {
         .run(RabbitConnectionManager::create(&config_clone))
         .map_err(|e| {
             log_error(&e);
-        }).unwrap();
+        })
+        .unwrap();
     let rabbit_connection_pool = r2d2::Pool::builder()
         .max_size(config_clone.rabbit.connection_pool_size as u32)
         .connection_customizer(Box::new(ConnectionHooks))
@@ -130,7 +131,8 @@ pub fn start_server() {
     core.run(publisher.init())
         .map_err(|e| {
             log_error(&e);
-        }).unwrap();
+        })
+        .unwrap();
     let publisher_clone = publisher.clone();
     let fetcher = Notificator::new(
         Arc::new(AccountsRepoImpl),
@@ -200,8 +202,10 @@ pub fn start_server() {
                                     Either::B(future::ok(()))
                                 }
                             })
-                        }).map_err(ectx!(ErrorSource::Lapin, ErrorKind::Internal))
-                }).map_err(|e| {
+                        })
+                        .map_err(ectx!(ErrorSource::Lapin, ErrorKind::Internal))
+                })
+                .map_err(|e| {
                     log_error(&e);
                 });
             let _ = core
@@ -223,9 +227,11 @@ pub fn start_server() {
                             channel
                                 .cancel_consumer(consumer_tag.to_string())
                                 .and_then(move |_| channel.close(0, "Cancelled on consumer resubscribe"))
-                        }).collect();
+                        })
+                        .collect();
                     future::join_all(fs)
-                })).map(|_| ())
+                }))
+                .map(|_| ())
                 .map_err(|e: io::Error| {
                     error!("Error closing consumer {}", e);
                 });

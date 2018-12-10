@@ -58,7 +58,8 @@ impl<E: DbExecutor> EmailSenderService for EmailSenderServiceImpl<E> {
                             .map_err(ectx!(ErrorContext::RenderTemplate, ErrorKind::Internal => mail))
                             .into_future()
                     }
-                }).and_then(move |text| {
+                })
+                .and_then(move |text| {
                     let email = Email::new(mail.user.email, "New device will be added to your account".to_string(), text);
                     publisher
                         .send_email(email.clone())

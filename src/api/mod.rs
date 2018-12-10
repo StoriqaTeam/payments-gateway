@@ -56,11 +56,11 @@ impl ApiService {
         let host = config.server.host.clone();
         let port = config.server.port.clone();
         let server_address = format!("{}:{}", host, port).parse::<SocketAddr>().map_err(ectx!(try
-                ErrorContext::Config,
-                ErrorKind::Internal =>
-                host,
-                port
-            ))?;
+            ErrorContext::Config,
+            ErrorKind::Internal =>
+            host,
+            port
+        ))?;
         let database_url = config.database.url.clone();
         let manager = ConnectionManager::<PgConnection>::new(database_url.clone());
         let db_pool = r2d2::Pool::builder().build(manager).map_err(ectx!(try
@@ -189,12 +189,14 @@ impl Service for ApiService {
                     debug!("Received request {}", ctx);
 
                     router(ctx, parts.method.into(), parts.uri.path())
-                }).and_then(|resp| {
+                })
+                .and_then(|resp| {
                     let (parts, body) = resp.into_parts();
                     read_body(body)
                         .map_err(ectx!(ErrorSource::Hyper, ErrorKind::Internal))
                         .map(|body| (parts, body))
-                }).map(|(parts, body)| {
+                })
+                .map(|(parts, body)| {
                     debug!(
                         "Sent response with status {}, headers: {:#?}, body: {:?}",
                         parts.status.as_u16(),
@@ -202,7 +204,8 @@ impl Service for ApiService {
                         String::from_utf8(body.clone()).ok()
                     );
                     Response::from_parts(parts, body.into())
-                }).or_else(|e| match e.kind() {
+                })
+                .or_else(|e| match e.kind() {
                     ErrorKind::BadRequest => {
                         log_error(&e);
                         Ok(Response::builder()
@@ -264,6 +267,7 @@ pub fn start_server(config: Config, publisher: Arc<dyn TransactionPublisher>) {
                     .map_err(ectx!(ErrorSource::Hyper, ErrorKind::Internal => addr));
                 info!("Listening on http://{}", addr);
                 server
-            }).map_err(|e: Error| log_error(&e))
+            })
+            .map_err(|e: Error| log_error(&e))
     }));
 }

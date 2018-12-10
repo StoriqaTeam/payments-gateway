@@ -42,7 +42,7 @@ pub fn get_error_payload(errors: Option<Vec<GraphQLError>>) -> Option<serde_json
                 if e.code == 111 {
                     let mut errors = ValidationErrors::new();
                     let mut error = ValidationError::new("expired");
-                    error.message = Some("JWT has been expired.".into());
+                    error.message = Some("JWT has expired.".into());
                     errors.add("token", error);
                     let payload = serde_json::to_value(&errors).unwrap_or_default();
                     res.push(payload)

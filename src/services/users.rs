@@ -137,7 +137,8 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                 .validate()
                 .map_err(
                     |e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_string(&e).unwrap_or_default()) => update_user_clone2),
-                ).into_future()
+                )
+                .into_future()
                 .and_then(move |_| client.update_user(update_user, user_id, token).map_err(ectx!(convert)))
                 .and_then(move |user| {
                     db_executor.execute(move || {

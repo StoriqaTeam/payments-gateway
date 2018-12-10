@@ -66,7 +66,8 @@ pub fn get_users_transactions(ctx: &Context, user_id: UserId) -> ControllerFutur
                 } else {
                     future::err(ectx!(err ErrorContext::Token, ErrorKind::Unauthorized))
                 }
-            }).and_then(move |_| {
+            })
+            .and_then(move |_| {
                 let uri_clone = uri.clone();
                 uri.clone()
                     .query()
@@ -76,13 +77,16 @@ pub fn get_users_transactions(ctx: &Context, user_id: UserId) -> ControllerFutur
                             let e = format_err!("{}", e);
                             ectx!(err e, ErrorContext::RequestQueryParams, ErrorKind::BadRequest => uri_clone)
                         })
-                    }).into_future()
-            }).and_then(move |input| {
+                    })
+                    .into_future()
+            })
+            .and_then(move |input| {
                 let input_clone = input.clone();
                 transactions_service
                     .get_transactions_for_user(user_id, input.offset, input.limit)
                     .map_err(ectx!(convert => input_clone))
-            }).and_then(|transactions| {
+            })
+            .and_then(|transactions| {
                 let transactions: Vec<TransactionsResponse> = transactions.into_iter().map(From::from).collect();
                 response_with_model(&transactions)
             }),
@@ -105,13 +109,16 @@ pub fn get_accounts_transactions(ctx: &Context, account_id: AccountId) -> Contro
                             let e = format_err!("{}", e);
                             ectx!(err e, ErrorContext::RequestQueryParams, ErrorKind::BadRequest => uri_clone2)
                         })
-                    }).map(|input| (user_id_auth, input))
+                    })
+                    .map(|input| (user_id_auth, input))
                     .into_future()
-            }).and_then(move |(user_id_auth, input)| {
+            })
+            .and_then(move |(user_id_auth, input)| {
                 transactions_service
                     .get_account_transactions(user_id_auth, account_id, input.offset, input.limit)
                     .map_err(ectx!(convert))
-            }).and_then(|transactions| {
+            })
+            .and_then(|transactions| {
                 let transactions: Vec<TransactionsResponse> = transactions.into_iter().map(From::from).collect();
                 response_with_model(&transactions)
             }),
