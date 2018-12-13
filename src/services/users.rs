@@ -74,7 +74,7 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
         Box::new(
             self.storiqa_client
                 .get_jwt(email.clone(), password.clone())
-                .map_err(ectx!(convert => email.clone(), password))
+                .map_err(ectx!(convert => email.clone(), password)),
         )
     }
 
@@ -143,11 +143,11 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                     |e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_string(&e).unwrap_or_default()) => update_user_clone2),
                 )
                 .into_future()
-                .and_then(move |_|
+                .and_then(move |_| {
                     client
                         .update_user(update_user.clone(), user_id, token.clone())
                         .map_err(ectx!(convert => update_user, user_id, token))
-                )
+                })
                 .and_then(move |user| {
                     db_executor.execute(move || {
                         let user_id = user.id.clone();
@@ -298,11 +298,18 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
         Box::new(self.storiqa_client.reset_password(reset.clone()).map_err(ectx!(convert => reset)))
     }
     fn resend_email_verify(&self, resend: ResendEmailVerify) -> Box<Future<Item = (), Error = Error> + Send> {
-        Box::new(self.storiqa_client.resend_email_verify(resend.clone()).map_err(ectx!(convert => resend)))
+        Box::new(
+            self.storiqa_client
+                .resend_email_verify(resend.clone())
+                .map_err(ectx!(convert => resend)),
+        )
     }
     fn change_password(&self, change_password: ChangePassword, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
         let cli = self.storiqa_client.clone();
-        Box::new(cli.change_password(change_password.clone(), token.clone()).map_err(ectx!(convert => change_password, token)))
+        Box::new(
+            cli.change_password(change_password.clone(), token.clone())
+                .map_err(ectx!(convert => change_password, token)),
+        )
     }
     fn refresh_jwt(&self, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
         let cli = self.storiqa_client.clone();

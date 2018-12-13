@@ -106,11 +106,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
         let service = self.clone();
         Box::new(
             db_executor
-                .execute(move || {
-                    accounts_repo
-                        .get_by_user(user_id)
-                        .map_err(ectx!(ErrorKind::Internal => user_id))
-                })
+                .execute(move || accounts_repo.get_by_user(user_id).map_err(ectx!(ErrorKind::Internal => user_id)))
                 .and_then(move |accounts| {
                     iter_ok::<_, Error>(accounts).fold(vec![], move |mut total_transactions, account| {
                         transactions_client
@@ -148,7 +144,9 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
             db_executor
                 .execute({
                     move || {
-                        let account = accounts_repo.get(account_id).map_err(ectx!(try ErrorKind::Internal => account_id))?;
+                        let account = accounts_repo
+                            .get(account_id)
+                            .map_err(ectx!(try ErrorKind::Internal => account_id))?;
                         if let Some(account) = account {
                             if account.user_id != user_id {
                                 Err(ectx!(err ErrorContext::InvalidToken, ErrorKind::Unauthorized => user_id, account.user_id))
