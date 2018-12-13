@@ -94,7 +94,7 @@ impl From<StoriqaClientErrorKind> for ErrorKind {
     fn from(err: StoriqaClientErrorKind) -> Self {
         match err {
             StoriqaClientErrorKind::Internal => ErrorKind::Internal,
-            StoriqaClientErrorKind::Unauthorized => ErrorKind::Internal,
+            StoriqaClientErrorKind::Unauthorized => ErrorKind::Unauthorized,
             StoriqaClientErrorKind::MalformedInput => ErrorKind::Internal,
             StoriqaClientErrorKind::Validation(s) => ErrorKind::InvalidInput(s.to_string()),
         }
