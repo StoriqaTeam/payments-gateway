@@ -15,6 +15,13 @@ lazy_static! {
     static ref REG_CONTAINS_NUMBERS: Regex = Regex::new(r#"\d"#).unwrap();
 }
 
+impl Password {
+    #[allow(dead_code)]
+    pub fn new(s: &str) -> Password {
+        Password(String::from(s))
+    }
+}
+
 impl Debug for Password {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         f.write_str(PASSWORD_MASK)
