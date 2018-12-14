@@ -19,7 +19,14 @@ pub struct GraphQLError {
 #[derive(Debug, Deserialize, Clone)]
 pub struct GraphQLErrorData {
     pub code: usize,
-    pub details: GraphQLErrorDataDetails,
+    pub details: GraphQLErrorDataDetailsEnum,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum GraphQLErrorDataDetailsEnum {
+    Data(GraphQLErrorDataDetails),
+    Str(String),
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -35,9 +42,11 @@ pub fn get_error_payload(errors: Option<Vec<GraphQLError>>) -> Option<serde_json
     errors.map(|errors| {
         let mut errors = errors.into_iter().fold(vec![], move |mut res, error| {
             if let Some(e) = error.data {
-                if let Some(payload) = e.details.payload {
-                    let payload = serde_json::from_str(&payload).unwrap_or_default();
-                    res.push(payload)
+                if let GraphQLErrorDataDetailsEnum::Data(details) = e.details {
+                    if let Some(payload) = details.payload {
+                        let payload = serde_json::from_str(&payload).unwrap_or_default();
+                        res.push(payload)
+                    }
                 }
                 if e.code == 111 {
                     let mut errors = ValidationErrors::new();
