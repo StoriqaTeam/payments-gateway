@@ -19,7 +19,7 @@ storiqa_url = "https://stable.stq.cloud/graphql"
 transactions_url = "http://transactions:8000/v1"
 
 [database]
-url = "postgresql://payments-gateway:payments-gateway@payments-gateway-pg/payments-gateway"
+url = "postgresql://payments:payments@db-postgresql/payments"
 
 [rabbit]
 url = "amqp://guest:guest@localhost:5672//?heartbeat=3&frame_max=131072"

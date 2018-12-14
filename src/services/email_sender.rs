@@ -55,7 +55,7 @@ impl<E: DbExecutor> EmailSenderService for EmailSenderServiceImpl<E> {
                     move |template| {
                         handlebars
                             .render_template(&template, &mail)
-                            .map_err(ectx!(ErrorContext::RenderTemplate, ErrorKind::Internal => mail))
+                            .map_err(ectx!(ErrorContext::RenderTemplate, ErrorKind::Internal => template, mail))
                             .into_future()
                     }
                 })

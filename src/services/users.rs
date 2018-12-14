@@ -71,14 +71,18 @@ impl<E: DbExecutor> UsersServiceImpl<E> {
 
 impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
     fn get_jwt(&self, email: String, password: Password) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
-        Box::new(self.storiqa_client.get_jwt(email.clone(), password).map_err(ectx!(convert)))
+        Box::new(
+            self.storiqa_client
+                .get_jwt(email.clone(), password.clone())
+                .map_err(ectx!(convert => email.clone(), password)),
+        )
     }
 
     fn get_jwt_by_oauth(&self, oauth_token: OauthToken, oauth_provider: Provider) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
         Box::new(
             self.storiqa_client
-                .get_jwt_by_oauth(oauth_token, oauth_provider)
-                .map_err(ectx!(convert)),
+                .get_jwt_by_oauth(oauth_token.clone(), oauth_provider.clone())
+                .map_err(ectx!(convert => oauth_token, oauth_provider)),
         )
     }
 
@@ -93,7 +97,7 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                 .validate()
                 .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_string(&e).unwrap_or_default()) => new_user))
                 .into_future()
-                .and_then(move |_| client.create_user(new_user.clone()).map_err(ectx!(convert)))
+                .and_then(move |_| client.create_user(new_user.clone()).map_err(ectx!(convert => new_user)))
                 .and_then(move |user| {
                     db_executor.execute_transaction(move || {
                         let user_db: NewUserDB = user.clone().into();
@@ -139,12 +143,17 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                     |e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_string(&e).unwrap_or_default()) => update_user_clone2),
                 )
                 .into_future()
-                .and_then(move |_| client.update_user(update_user, user_id, token).map_err(ectx!(convert)))
+                .and_then(move |_| {
+                    client
+                        .update_user(update_user.clone(), user_id, token.clone())
+                        .map_err(ectx!(convert => update_user, user_id, token))
+                })
                 .and_then(move |user| {
                     db_executor.execute(move || {
+                        let user_id = user.id.clone();
                         users_repo
-                            .update(user.id, update_user_clone.clone())
-                            .map_err(ectx!(try convert => update_user_clone))?;
+                            .update(user_id, update_user_clone.clone())
+                            .map_err(ectx!(try convert => user_id, update_user_clone))?;
                         Ok(user)
                     })
                 }),
@@ -176,7 +185,7 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
 
                     let device = devices_repo
                         .get(device_id.clone(), user_id)
-                        .map_err(ectx!(try convert => user_id, device_id))?;
+                        .map_err(ectx!(try convert => device_id, user_id))?;
 
                     let device_id_clone2 = device_id_clone.clone();
                     if device.is_some() {
@@ -209,13 +218,13 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                     let new_devices_tokens = NewDeviceToken::new(device_id_clone.clone(), device_os, user_id, public_key);
 
                     let token = devices_tokens_repo
-                        .upsert(new_devices_tokens)
-                        .map_err(ectx!(try convert => user_id, device_id_clone2))?;
+                        .upsert(new_devices_tokens.clone())
+                        .map_err(ectx!(try convert => new_devices_tokens, user_id, device_id_clone2))?;
 
                     Ok((user, token.id))
                 }).and_then(move |(user, token)| {
                     email_sender
-                        .send_add_device(user,token,device_id_clone3)
+                        .send_add_device(user, token, device_id_clone3)
                 })
         )
     }
@@ -253,7 +262,9 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                 }
             }
 
-            let device = devices_repo.get(device_id.clone(), user_id).map_err(ectx!(try convert => user_id))?;
+            let device_id_clone = device_id.clone();
+            let device = devices_repo.get(device_id_clone.clone(), user_id)
+                .map_err(ectx!(try convert => device_id_clone, user_id))?;
 
             // if user wants to confirm his device again and again he will receive Ok(()) everytime
             if device.is_none() {
@@ -276,30 +287,37 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
     }
 
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
-        Box::new(self.storiqa_client.confirm_email(token).map_err(ectx!(convert)))
+        Box::new(self.storiqa_client.confirm_email(token.clone()).map_err(ectx!(convert => token)))
     }
 
     fn me(&self, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send> {
         let cli = self.storiqa_client.clone();
-        Box::new(cli.me(token).map_err(ectx!(convert)))
+        Box::new(cli.me(token.clone()).map_err(ectx!(convert => token)))
     }
     fn reset_password(&self, reset: ResetPassword) -> Box<Future<Item = (), Error = Error> + Send> {
-        Box::new(self.storiqa_client.reset_password(reset).map_err(ectx!(convert)))
+        Box::new(self.storiqa_client.reset_password(reset.clone()).map_err(ectx!(convert => reset)))
     }
     fn resend_email_verify(&self, resend: ResendEmailVerify) -> Box<Future<Item = (), Error = Error> + Send> {
-        Box::new(self.storiqa_client.resend_email_verify(resend).map_err(ectx!(convert)))
+        Box::new(
+            self.storiqa_client
+                .resend_email_verify(resend.clone())
+                .map_err(ectx!(convert => resend)),
+        )
     }
     fn change_password(&self, change_password: ChangePassword, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
         let cli = self.storiqa_client.clone();
-        Box::new(cli.change_password(change_password, token).map_err(ectx!(convert)))
+        Box::new(
+            cli.change_password(change_password.clone(), token.clone())
+                .map_err(ectx!(convert => change_password, token)),
+        )
     }
     fn refresh_jwt(&self, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
         let cli = self.storiqa_client.clone();
-        Box::new(cli.refresh_jwt(token).map_err(ectx!(convert)))
+        Box::new(cli.refresh_jwt(token.clone()).map_err(ectx!(convert => token)))
     }
     fn revoke_jwt(&self, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
         let cli = self.storiqa_client.clone();
-        Box::new(cli.revoke_jwt(token).map_err(ectx!(convert)))
+        Box::new(cli.revoke_jwt(token.clone()).map_err(ectx!(convert => token)))
     }
     fn confirm_reset_password(&self, confirm: ResetPasswordConfirm) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {
         let cli = self.storiqa_client.clone();
@@ -308,7 +326,7 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                 .validate()
                 .map_err(|e| ectx!(err e.clone(), ErrorKind::InvalidInput(serde_json::to_string(&e).unwrap_or_default()) => confirm))
                 .into_future()
-                .and_then(move |_| cli.confirm_reset_password(confirm).map_err(ectx!(convert))),
+                .and_then(move |_| cli.confirm_reset_password(confirm.clone()).map_err(ectx!(convert => confirm))),
         )
     }
 }

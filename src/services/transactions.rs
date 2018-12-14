@@ -106,16 +106,12 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
         let service = self.clone();
         Box::new(
             db_executor
-                .execute(move || {
-                    accounts_repo
-                        .get_by_user(user_id)
-                        .map_err(ectx!(ErrorKind::Internal => user_id, offset, limit))
-                })
+                .execute(move || accounts_repo.get_by_user(user_id).map_err(ectx!(ErrorKind::Internal => user_id)))
                 .and_then(move |accounts| {
                     iter_ok::<_, Error>(accounts).fold(vec![], move |mut total_transactions, account| {
                         transactions_client
                             .get_account_transactions(account.id, offset, limit)
-                            .map_err(ectx!(convert => account.id))
+                            .map_err(ectx!(convert => account.id, offset, limit))
                             .map(|resp| resp.into_iter().map(From::from).collect())
                             .and_then(|mut transactions| {
                                 total_transactions.append(&mut transactions);
@@ -148,10 +144,12 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
             db_executor
                 .execute({
                     move || {
-                        let account = accounts_repo.get(account_id).map_err(ectx!(try ErrorKind::Internal => user_id))?;
+                        let account = accounts_repo
+                            .get(account_id)
+                            .map_err(ectx!(try ErrorKind::Internal => account_id))?;
                         if let Some(account) = account {
                             if account.user_id != user_id {
-                                Err(ectx!(err ErrorContext::InvalidToken, ErrorKind::Unauthorized => user_id))
+                                Err(ectx!(err ErrorContext::InvalidToken, ErrorKind::Unauthorized => user_id, account.user_id))
                             } else {
                                 Ok(())
                             }
@@ -163,7 +161,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                 .and_then(move |_| {
                     transactions_client
                         .get_account_transactions(account_id, offset, limit)
-                        .map_err(ectx!(convert => account_id))
+                        .map_err(ectx!(convert => account_id, offset, limit))
                         .map(|resp| resp.into_iter().map(From::from).collect())
                 })
                 .and_then(move |transactions: Vec<Transaction>| {
@@ -190,7 +188,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                         if let Some(account) = account {
                             let user = users_repo
                                 .get(account.user_id)
-                                .map_err(ectx!(try ErrorKind::Internal => account_id))?;
+                                .map_err(ectx!(try ErrorKind::Internal => account.user_id))?;
                             if let Some(user) = user {
                                 from.owner_name = Some(user.get_full_name());
                             }
@@ -207,7 +205,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                     if let Some(account) = account {
                         let user = users_repo
                             .get(account.user_id)
-                            .map_err(ectx!(try ErrorKind::Internal => account_id))?;
+                            .map_err(ectx!(try ErrorKind::Internal => account.user_id))?;
                         if let Some(user) = user {
                             transaction.to.owner_name = Some(user.get_full_name());
                         }

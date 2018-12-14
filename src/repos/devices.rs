@@ -77,6 +77,38 @@ pub mod tests {
     use config::Config;
     use repos::DbExecutorImpl;
 
+    fn get_or_create_user() -> UserId {
+        let users_repo = UsersRepoImpl::default();
+        users_repo
+            .get(UserId::new(1))
+            .unwrap()
+            .unwrap_or_else(|| {
+                let new_user = NewUserDB {
+                    id: UserId::new(1),
+                    email: "test_user_noreply@storiqa.com".to_string(),
+                    first_name: "FirstName".to_string(),
+                    last_name: "LastName".to_string(),
+                    phone: None,
+                    device_id: None,
+                    device_os: None,
+                };
+                users_repo.create(new_user).unwrap()
+            })
+            .id
+    }
+
+    fn create_device() -> RepoResult<Device> {
+        let user_id_ = get_or_create_user();
+        let devices_repo = DevicesRepoImpl::default();
+        let new_device = NewDevice {
+            device_id: DeviceId::generate(),
+            device_os: "android".to_string(),
+            user_id: user_id_,
+            public_key: DevicePublicKey::generate(),
+        };
+        devices_repo.create(new_device)
+    }
+
     fn create_executor() -> DbExecutorImpl {
         let config = Config::new().unwrap();
         let manager = ConnectionManager::<PgConnection>::new(config.database.url);
@@ -89,10 +121,8 @@ pub mod tests {
     fn devices_create() {
         let mut core = Core::new().unwrap();
         let db_executor = create_executor();
-        let devices_repo = DevicesRepoImpl::default();
         let _ = core.run(db_executor.execute_test_transaction(move || {
-            let new_device = NewDevice::default();
-            let res = devices_repo.create(new_device);
+            let res = create_device();
             assert!(res.is_ok());
             res
         }));
@@ -104,8 +134,7 @@ pub mod tests {
         let db_executor = create_executor();
         let devices_repo = DevicesRepoImpl::default();
         let _ = core.run(db_executor.execute_test_transaction(move || {
-            let new_device = NewDevice::default();
-            let device = devices_repo.create(new_device).unwrap();
+            let device = create_device().unwrap();
             let res = devices_repo.get(device.device_id, device.user_id);
             assert!(res.is_ok());
             res

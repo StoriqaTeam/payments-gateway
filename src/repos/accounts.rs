@@ -107,14 +107,42 @@ pub mod tests {
         DbExecutorImpl::new(db_pool.clone(), cpu_pool.clone())
     }
 
+    fn create_account() -> RepoResult<Account> {
+        let user_id_ = get_or_create_user();
+        let accounts_repo = AccountsRepoImpl::default();
+        let new_account = NewAccount {
+            user_id: user_id_,
+            ..NewAccount::default()
+        };
+        accounts_repo.create(new_account)
+    }
+
+    fn get_or_create_user() -> UserId {
+        let users_repo = UsersRepoImpl::default();
+        users_repo
+            .get(UserId::new(1))
+            .unwrap()
+            .unwrap_or_else(|| {
+                let new_user = NewUserDB {
+                    id: UserId::new(1),
+                    email: "test_user_noreply@storiqa.com".to_string(),
+                    first_name: "FirstName".to_string(),
+                    last_name: "LastName".to_string(),
+                    phone: None,
+                    device_id: None,
+                    device_os: None,
+                };
+                users_repo.create(new_user).unwrap()
+            })
+            .id
+    }
+
     #[test]
     fn accounts_create() {
         let mut core = Core::new().unwrap();
         let db_executor = create_executor();
-        let accounts_repo = AccountsRepoImpl::default();
         let _ = core.run(db_executor.execute_test_transaction(move || {
-            let new_account = NewAccount::default();
-            let res = accounts_repo.create(new_account);
+            let res = create_account();
             assert!(res.is_ok());
             res
         }));
@@ -126,8 +154,7 @@ pub mod tests {
         let db_executor = create_executor();
         let accounts_repo = AccountsRepoImpl::default();
         let _ = core.run(db_executor.execute_test_transaction(move || {
-            let new_account = NewAccount::default();
-            let account = accounts_repo.create(new_account).unwrap();
+            let account = create_account().unwrap();
             let res = accounts_repo.get(account.id);
             assert!(res.is_ok());
             res
@@ -140,9 +167,7 @@ pub mod tests {
         let db_executor = create_executor();
         let accounts_repo = AccountsRepoImpl::default();
         let _ = core.run(db_executor.execute_test_transaction(move || {
-            let new_account = NewAccount::default();
-            let account = accounts_repo.create(new_account).unwrap();
-
+            let account = create_account().unwrap();
             let payload = UpdateAccount {
                 name: "test".to_string(),
                 ..Default::default()
@@ -159,8 +184,7 @@ pub mod tests {
         let db_executor = create_executor();
         let accounts_repo = AccountsRepoImpl::default();
         let _ = core.run(db_executor.execute_test_transaction(move || {
-            let new_account = NewAccount::default();
-            let account = accounts_repo.create(new_account).unwrap();
+            let account = create_account().unwrap();
             let res = accounts_repo.delete(account.id);
             assert!(res.is_ok());
             res
@@ -172,8 +196,7 @@ pub mod tests {
         let db_executor = create_executor();
         let accounts_repo = AccountsRepoImpl::default();
         let _ = core.run(db_executor.execute_test_transaction(move || {
-            let new_account = NewAccount::default();
-            let account = accounts_repo.create(new_account).unwrap();
+            let account = create_account().unwrap();
             let res = accounts_repo.list_for_user(account.user_id, 0, 1);
             assert!(res.is_ok());
             res
@@ -185,8 +208,7 @@ pub mod tests {
         let db_executor = create_executor();
         let accounts_repo = AccountsRepoImpl::default();
         let _ = core.run(db_executor.execute_test_transaction(move || {
-            let new_account = NewAccount::default();
-            let account = accounts_repo.create(new_account).unwrap();
+            let account = create_account().unwrap();
             let res = accounts_repo.get_by_user(account.user_id);
             assert!(res.is_ok());
             res
