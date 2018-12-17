@@ -374,6 +374,7 @@ impl StoriqaClient for StoriqaClientImpl {
                 mutation M {{
                     changePassword(input: {{newPassword: \"{}\", oldPassword: \"{}\", clientMutationId:\"\"}}) {{
                         success
+                        token
                     }}
                 }}
             "#,
