@@ -334,10 +334,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  token:
-                    $ref: '#/components/schemas/JWT'
+                $ref: '#/components/schemas/JWT'
         401:
           $ref: '#/components/responses/Unauthorized'
         500:
@@ -481,10 +478,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  token:
-                    $ref: '#/components/schemas/JWT'
+                $ref: '#/components/schemas/JWT'
         401:
           $ref: '#/components/responses/Unauthorized'
         500:
