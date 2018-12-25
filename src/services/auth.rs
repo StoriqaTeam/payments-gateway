@@ -101,7 +101,7 @@ impl<E: DbExecutor> AuthService for AuthServiceImpl<E> {
                     .map_err(ectx!(try convert => user_id))?;
                 if user.is_none() {
                     let mut errors = ValidationErrors::new();
-                    let mut error = ValidationError::new("exists");
+                    let mut error = ValidationError::new("not_exists");
                     error.add_param("message".into(), &"email not found".to_string());
                     error.add_param("details".into(), &"no details".to_string());
                     error.add_param("user_id".into(), &user_id.to_string());
@@ -109,7 +109,7 @@ impl<E: DbExecutor> AuthService for AuthServiceImpl<E> {
                     return Err(ectx!(err ErrorContext::NoUser, ErrorKind::InvalidInput(serde_json::to_string(&errors).unwrap_or_default()) => user_id));
                 } else {
                     let mut errors = ValidationErrors::new();
-                    let mut error = ValidationError::new("exists");
+                    let mut error = ValidationError::new("not_exists");
                     error.add_param("message".into(), &"device not exists".to_string());
                     error.add_param("details".into(), &"no details".to_string());
                     error.add_param("user_id".into(), &user_id.to_string());
