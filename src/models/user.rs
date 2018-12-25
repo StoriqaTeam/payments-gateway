@@ -21,7 +21,7 @@ pub struct User {
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct NewUser {
-    #[validate(email(message = "Invalid email format"))]
+    #[validate(email(code = "not_valid", message = "Invalid email format"))]
     pub email: String,
     #[validate(length(min = "1", message = "First name must not be empty"))]
     pub first_name: String,
