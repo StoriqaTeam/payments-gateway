@@ -269,6 +269,18 @@ impl From<PostRateRequest> for GetRate {
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct PostRateRefreshRequest {
+    pub rate_id: ExchangeId,
+}
+
+impl From<PostRateRefreshRequest> for RefreshRate {
+    fn from(req: PostRateRefreshRequest) -> Self {
+        Self { exchange_id: req.rate_id }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct PostFeesRequest {
     pub currency: Currency,
     pub account_address: AccountAddress,

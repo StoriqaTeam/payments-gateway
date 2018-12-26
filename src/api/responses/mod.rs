@@ -111,6 +111,24 @@ impl From<Rate> for RateResponse {
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct RateRefreshResponse {
+    pub rate: RateResponse,
+    pub is_new_rate: bool,
+}
+
+impl From<RateRefresh> for RateRefreshResponse {
+    fn from(rate_refresh: RateRefresh) -> Self {
+        let RateRefresh { exchange, is_new_rate } = rate_refresh;
+
+        Self {
+            rate: RateResponse::from(exchange),
+            is_new_rate,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct FeesResponse {
     pub currency: Currency,
     pub fees: Vec<FeeResponse>,

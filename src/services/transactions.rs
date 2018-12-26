@@ -53,6 +53,7 @@ pub trait TransactionsService: Send + Sync + 'static {
     ) -> Box<Future<Item = Vec<Transaction>, Error = Error> + Send>;
     fn add_user_to_transaction(&self, transaction: Transaction) -> Box<Future<Item = Transaction, Error = Error> + Send>;
     fn get_rate(&self, rate: GetRate) -> Box<Future<Item = Rate, Error = Error> + Send>;
+    fn refresh_rate(&self, rate: RefreshRate) -> Box<Future<Item = RateRefresh, Error = Error> + Send>;
     fn get_fees(&self, rate: GetFees) -> Box<Future<Item = Fees, Error = Error> + Send>;
 }
 
@@ -222,6 +223,11 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
     fn get_rate(&self, rate: GetRate) -> Box<Future<Item = Rate, Error = Error> + Send> {
         let transactions_client = self.transactions_client.clone();
         Box::new(transactions_client.get_rate(rate.clone()).map_err(ectx!(convert => rate)))
+    }
+
+    fn refresh_rate(&self, rate: RefreshRate) -> Box<Future<Item = RateRefresh, Error = Error> + Send> {
+        let transactions_client = self.transactions_client.clone();
+        Box::new(transactions_client.refresh_rate(rate.clone()).map_err(ectx!(convert => rate)))
     }
 
     fn get_fees(&self, get_fees: GetFees) -> Box<Future<Item = Fees, Error = Error> + Send> {
