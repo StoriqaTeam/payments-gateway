@@ -62,6 +62,7 @@ pub struct UserDB {
     pub updated_at: NaiveDateTime,
     pub device_id: Option<DeviceId>,
     pub device_os: Option<String>,
+    pub revoke_before: NaiveDateTime,
 }
 
 impl Default for UserDB {
@@ -76,6 +77,7 @@ impl Default for UserDB {
             updated_at: ::chrono::Utc::now().naive_utc(),
             device_id: None,
             device_os: None,
+            revoke_before: ::chrono::Utc::now().naive_utc(),
         }
     }
 }
