@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use chrono::NaiveDateTime;
 use failure::Fail;
 use futures::future::{self, Either};
@@ -10,6 +12,7 @@ use super::Context;
 use super::ControllerFuture;
 use api::error::*;
 use models::*;
+use services::{AuthService, UsersService};
 
 pub fn merge_user(ctx: Context, jwt: StoriqaJWT) -> Box<Future<Item = (), Error = Error> + Send> {
     let users_service = ctx.users_service.clone();
@@ -281,27 +284,7 @@ pub fn post_users_change_password(ctx: &Context) -> ControllerFuture {
                             .change_password(input.into(), token)
                             .map_err(ectx!(convert => input_clone))
                     })
-                    .and_then(move |token| {
-                        let token_clone = token.clone();
-                        let token_clone2 = token.clone();
-                        let auth_service_clone = auth_service.clone();
-                        auth_service
-                            .get_exp(token_clone.clone())
-                            .map_err(ectx!(convert => token_clone))
-                            .into_future()
-                            .and_then(move |exp| {
-                                auth_service_clone
-                                    .get_jwt_auth(token_clone2.clone())
-                                    .map_err(ectx!(convert => token_clone2))
-                                    .into_future()
-                                    .and_then(move |auth| {
-                                        users_service_clone
-                                            .revoke_tokens_db(auth.user_id, NaiveDateTime::from_timestamp(exp as i64, 0))
-                                            .map_err(ectx!(convert => auth.user_id))
-                                    })
-                            })
-                            .map(|_| token)
-                    })
+                    .and_then(move |token| revoke_token_db(users_service_clone, auth_service, token.clone()).map(|_| token))
                     .and_then(|token| response_with_model(&token))
             })
     }))
@@ -319,27 +302,7 @@ pub fn post_users_confirm_reset_password(ctx: &Context) -> ControllerFuture {
                     .confirm_reset_password(input.into())
                     .map_err(ectx!(convert => input_clone))
             })
-            .and_then(move |token| {
-                let token_clone = token.clone();
-                let token_clone2 = token.clone();
-                let auth_service_clone = auth_service.clone();
-                auth_service
-                    .get_exp(token_clone.clone())
-                    .map_err(ectx!(convert => token_clone))
-                    .into_future()
-                    .and_then(move |exp| {
-                        auth_service_clone
-                            .get_jwt_auth(token_clone2.clone())
-                            .map_err(ectx!(convert => token_clone2))
-                            .into_future()
-                            .and_then(move |auth| {
-                                users_service_clone
-                                    .revoke_tokens_db(auth.user_id, NaiveDateTime::from_timestamp(exp as i64, 0))
-                                    .map_err(ectx!(convert => auth.user_id))
-                            })
-                    })
-                    .map(|_| token)
-            })
+            .and_then(move |token| revoke_token_db(users_service_clone, auth_service, token.clone()).map(|_| token))
             .and_then(|token| response_with_model(&token)),
     )
 }
@@ -397,28 +360,36 @@ pub fn post_sessions_revoke(ctx: &Context) -> ControllerFuture {
                 users_service
                     .revoke_jwt(token)
                     .map_err(ectx!(convert))
-                    .and_then(move |token| {
-                        let token_clone = token.clone();
-                        let token_clone2 = token.clone();
-                        let auth_service_clone = auth_service.clone();
-                        auth_service
-                            .get_exp(token_clone.clone())
-                            .map_err(ectx!(convert => token_clone))
-                            .into_future()
-                            .and_then(move |exp| {
-                                auth_service_clone
-                                    .get_jwt_auth(token_clone2.clone())
-                                    .map_err(ectx!(convert => token_clone2))
-                                    .into_future()
-                                    .and_then(move |auth| {
-                                        users_service_clone
-                                            .revoke_tokens_db(auth.user_id, NaiveDateTime::from_timestamp(exp as i64, 0))
-                                            .map_err(ectx!(convert => auth.user_id))
-                                    })
-                            })
-                            .map(|_| token)
-                    })
+                    .and_then(move |token| revoke_token_db(users_service_clone, auth_service, token.clone()).map(|_| token))
                     .and_then(|token| response_with_model(&token))
             })
     }))
+}
+
+pub fn revoke_token_db(
+    users_service: Arc<dyn UsersService>,
+    auth_service: Arc<dyn AuthService>,
+    token: StoriqaJWT,
+) -> Box<Future<Item = (), Error = Error> + Send> {
+    let users_service_clone = users_service.clone();
+    let token_clone = token.clone();
+    let token_clone2 = token.clone();
+    let auth_service_clone = auth_service.clone();
+    Box::new(
+        auth_service
+            .get_exp(token_clone.clone())
+            .map_err(ectx!(convert => token_clone))
+            .into_future()
+            .and_then(move |exp| {
+                auth_service_clone
+                    .get_jwt_auth(token_clone2.clone())
+                    .map_err(ectx!(convert => token_clone2))
+                    .map(|auth| (auth, exp))
+            })
+            .and_then(move |(auth, exp)| {
+                users_service_clone
+                    .revoke_tokens_db(auth.user_id, NaiveDateTime::from_timestamp(exp as i64, 0))
+                    .map_err(ectx!(convert => auth.user_id))
+            }),
+    )
 }
