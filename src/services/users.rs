@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use chrono::NaiveDateTime;
 use serde_json;
 use validator::{Validate, ValidationError, ValidationErrors};
 
@@ -32,6 +33,7 @@ pub trait UsersService: Send + Sync + 'static {
     fn me(&self, token: StoriqaJWT) -> Box<Future<Item = User, Error = Error> + Send>;
     fn refresh_jwt(&self, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
     fn revoke_jwt(&self, token: StoriqaJWT) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send>;
+    fn revoke_tokens_db(&self, user_id: UserId, revoke_before: NaiveDateTime) -> Box<Future<Item = (), Error = Error> + Send>;
 }
 
 pub struct UsersServiceImpl<E: DbExecutor> {
@@ -328,5 +330,10 @@ impl<E: DbExecutor> UsersService for UsersServiceImpl<E> {
                 .into_future()
                 .and_then(move |_| cli.confirm_reset_password(confirm.clone()).map_err(ectx!(convert => confirm))),
         )
+    }
+    fn revoke_tokens_db(&self, user_id: UserId, revoke_before: NaiveDateTime) -> Box<Future<Item = (), Error = Error> + Send> {
+        let users_repo = self.users_repo.clone();
+        let db_executor = self.db_executor.clone();
+        Box::new(db_executor.execute(move || users_repo.revoke_tokens(user_id, revoke_before).map_err(ectx!(convert => user_id))))
     }
 }

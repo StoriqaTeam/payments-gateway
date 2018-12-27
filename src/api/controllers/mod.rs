@@ -80,23 +80,29 @@ impl Context {
         Ok(AuthInfo::new(timestamp, device_id, sign_str.to_string()))
     }
 
-    pub fn get_auth(&self) -> Result<(AuthInfo, UserId), Error> {
+    pub fn get_auth(&self) -> Result<(AuthInfo, UserId, u64), Error> {
         let token = self
             .get_auth_token()
             .ok_or_else(|| ectx!(try err ErrorContext::Token, ErrorKind::Unauthorized))?;
+        let token_clone = token.clone();
         let user_id = self
             .auth_service
             .get_jwt_auth(token.clone())
             .map_err(ectx!(try convert => token))
             .map(|auth| auth.user_id)?;
-        self.get_auth_info().map(|auth_info| (auth_info, user_id))
+        let exp = self
+            .auth_service
+            .get_exp(token_clone.clone())
+            .map_err(ectx!(try convert => token_clone))?;
+
+        self.get_auth_info().map(|auth_info| (auth_info, user_id, exp))
     }
 
     pub fn authenticate(&self) -> impl Future<Item = UserId, Error = Error> + Send {
         let auth_service = self.auth_service.clone();
-        self.get_auth().into_future().and_then(move |(auth_info, user_id)| {
+        self.get_auth().into_future().and_then(move |(auth_info, user_id, exp)| {
             auth_service
-                .authenticate(auth_info.clone(), user_id)
+                .authenticate(auth_info.clone(), user_id, exp)
                 .map_err(ectx!(convert => auth_info, user_id))
                 .map(move |_| user_id)
         })
