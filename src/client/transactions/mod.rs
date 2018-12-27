@@ -33,6 +33,7 @@ pub trait TransactionsClient: Send + Sync + 'static {
         limit: i64,
     ) -> Box<Future<Item = Vec<TransactionResponse>, Error = Error> + Send>;
     fn get_rate(&self, input: GetRate) -> Box<Future<Item = Rate, Error = Error> + Send>;
+    fn refresh_rate(&self, input: RefreshRate) -> Box<Future<Item = RateRefresh, Error = Error> + Send>;
     fn get_fees(&self, input: GetFees) -> Box<Future<Item = Fees, Error = Error> + Send>;
 }
 
@@ -149,6 +150,16 @@ impl TransactionsClient for TransactionsClientImpl {
                 .and_then(move |body| client.exec_query::<Rate>(&url, Some(body), Method::POST)),
         )
     }
+    fn refresh_rate(&self, input: RefreshRate) -> Box<Future<Item = RateRefresh, Error = Error> + Send> {
+        let client = self.clone();
+        let url = format!("/rate/refresh");
+        Box::new(
+            serde_json::to_string(&input)
+                .map_err(ectx!(ErrorSource::Json, ErrorKind::Internal => input))
+                .into_future()
+                .and_then(move |body| client.exec_query::<RateRefresh>(&url, Some(body), Method::POST)),
+        )
+    }
     fn get_fees(&self, input: GetFees) -> Box<Future<Item = Fees, Error = Error> + Send> {
         let client = self.clone();
         let url = format!("/fees");
@@ -190,6 +201,9 @@ impl TransactionsClient for TransactionsClientMock {
     }
     fn get_rate(&self, _input: GetRate) -> Box<Future<Item = Rate, Error = Error> + Send> {
         Box::new(Ok(Rate::default()).into_future())
+    }
+    fn refresh_rate(&self, _input: RefreshRate) -> Box<Future<Item = RateRefresh, Error = Error> + Send> {
+        Box::new(Ok(RateRefresh::default()).into_future())
     }
     fn get_fees(&self, _input: GetFees) -> Box<Future<Item = Fees, Error = Error> + Send> {
         Box::new(Ok(Fees::default()).into_future())

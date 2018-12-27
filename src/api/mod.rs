@@ -132,6 +132,7 @@ impl Service for ApiService {
                         GET /v1/users/{user_id: UserId}/transactions => get_users_transactions,
                         POST /v1/transactions => post_transactions,
                         POST /v1/rate => post_rate,
+                        POST /v1/rate/refresh => post_rate_refresh,
                         POST /v1/fees => post_fees,
                         GET /wallet/register_device/{token: DeviceConfirmToken} => get_register_device,
                         GET /wallet/verify_email/{token: EmailConfirmToken} => get_users_confirm_email,

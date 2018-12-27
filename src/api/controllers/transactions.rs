@@ -41,6 +41,20 @@ pub fn post_rate(ctx: &Context) -> ControllerFuture {
     }))
 }
 
+pub fn post_rate_refresh(ctx: &Context) -> ControllerFuture {
+    let transactions_service = ctx.transactions_service.clone();
+    let body = ctx.body.clone();
+    Box::new(ctx.authenticate().and_then(move |_user_id_auth| {
+        parse_body::<PostRateRefreshRequest>(body).and_then(move |rate| {
+            let rate_clone = rate.clone();
+            transactions_service
+                .refresh_rate(rate.into())
+                .map_err(ectx!(convert => rate_clone))
+                .and_then(|rate| response_with_model(&RateRefreshResponse::from(rate)))
+        })
+    }))
+}
+
 pub fn post_fees(ctx: &Context) -> ControllerFuture {
     let transactions_service = ctx.transactions_service.clone();
     let body = ctx.body.clone();
