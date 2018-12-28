@@ -51,6 +51,7 @@ impl<E: DbExecutor> Notificator<E> {
                 if let Some((callback_url, account_id)) = callback {
                     let callback = Callback::new(
                         callback_url,
+                        transaction.id,
                         transaction.to_value.to_string(),
                         transaction.to_currency,
                         transaction.to.blockchain_address,

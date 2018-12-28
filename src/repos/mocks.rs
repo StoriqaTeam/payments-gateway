@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use std::sync::{Arc, Mutex};
 
 use super::accounts::*;
@@ -77,6 +78,9 @@ impl UsersRepo for UsersRepoMock {
     fn get_by_email(&self, email_: String) -> RepoResult<Option<UserDB>> {
         let data = self.data.lock().unwrap();
         Ok(data.iter().filter(|x| x.email == email_).nth(0).cloned())
+    }
+    fn revoke_tokens(&self, _user_id: UserId, _revoke_before: NaiveDateTime) -> RepoResult<()> {
+        Ok(())
     }
 }
 
