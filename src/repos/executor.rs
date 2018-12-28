@@ -14,7 +14,7 @@ thread_local! {
 /// One of these methods should be used anytime you use Repo methods.
 /// It effectively put a db connection to thread local storage, so that repo can use it.
 /// This trait is also responsible for removing unhealthy connections from tls.
-/// I.e. it provides guarantees that repo inside DbExecor's method closure will get healthy connection
+/// I.e. it provides guarantees that repo inside DbExecutor's method closure will get healthy connection
 /// or of not, DbExecutor will heal it next time.
 pub trait DbExecutor: Clone + Send + Sync + 'static {
     /// Execute some statements, basically queries
