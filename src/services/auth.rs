@@ -17,7 +17,7 @@ use utils::parse_hex;
 pub trait AuthService: Send + Sync + 'static {
     fn get_jwt_auth(&self, token: StoriqaJWT) -> Result<Auth, Error>;
     fn get_exp(&self, token: StoriqaJWT) -> Result<u64, Error>;
-    fn authenticate(&self, info: AuthInfo, user_id: UserId) -> ServiceFuture<()>;
+    fn authenticate(&self, info: AuthInfo, user_id: UserId, exp: u64) -> ServiceFuture<()>;
 }
 
 pub struct AuthServiceImpl<E: DbExecutor> {
@@ -70,11 +70,24 @@ impl<E: DbExecutor> AuthService for AuthServiceImpl<E> {
             .map_err(ectx!(ErrorContext::JsonWebToken, ErrorKind::Unauthorized => token_clone.inner()))
             .map(move |t| t.claims.exp)
     }
-    fn authenticate(&self, info: AuthInfo, user_id: UserId) -> ServiceFuture<()> {
+    fn authenticate(&self, info: AuthInfo, user_id: UserId, exp: u64) -> ServiceFuture<()> {
         let devices_repo = self.devices_repo.clone();
         let users_repo = self.users_repo.clone();
         let db_executor = self.db_executor.clone();
         Box::new(db_executor.execute(move || {
+
+            let user = users_repo.get(user_id)
+                .map_err(ectx!(try convert => user_id))?;
+            if let Some(ref user) = user {
+                if exp < user.revoke_before.timestamp() as u64 {
+                    let mut errors = ValidationErrors::new();
+                    let mut error = ValidationError::new("revoked");
+                    error.message = Some("JWT has been revoked.".into());
+                    errors.add("token", error);
+                    return Err(ectx!(err ErrorContext::NoUser, ErrorKind::InvalidInput(serde_json::to_string(&errors).unwrap_or_default()) => user));
+                }
+            }
+
             let device_id = info.device_id.clone();
             let device_id_clone = info.device_id.clone();
             let device = devices_repo
@@ -97,11 +110,9 @@ impl<E: DbExecutor> AuthService for AuthServiceImpl<E> {
                 devices_repo.update_timestamp(device_id_clone.clone(), user_id, info_timestamp)
                     .map_err(ectx!(try convert => user_id, device_id_clone, info_timestamp))?;
             } else {
-                let user = users_repo.get(user_id)
-                    .map_err(ectx!(try convert => user_id))?;
                 if user.is_none() {
                     let mut errors = ValidationErrors::new();
-                    let mut error = ValidationError::new("exists");
+                    let mut error = ValidationError::new("not_exists");
                     error.add_param("message".into(), &"email not found".to_string());
                     error.add_param("details".into(), &"no details".to_string());
                     error.add_param("user_id".into(), &user_id.to_string());
@@ -109,7 +120,7 @@ impl<E: DbExecutor> AuthService for AuthServiceImpl<E> {
                     return Err(ectx!(err ErrorContext::NoUser, ErrorKind::InvalidInput(serde_json::to_string(&errors).unwrap_or_default()) => user_id));
                 } else {
                     let mut errors = ValidationErrors::new();
-                    let mut error = ValidationError::new("exists");
+                    let mut error = ValidationError::new("not_exists");
                     error.add_param("message".into(), &"device not exists".to_string());
                     error.add_param("details".into(), &"no details".to_string());
                     error.add_param("user_id".into(), &user_id.to_string());

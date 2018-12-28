@@ -95,7 +95,7 @@ impl From<StoriqaClientErrorKind> for ErrorKind {
         match err {
             StoriqaClientErrorKind::Internal => ErrorKind::Internal,
             StoriqaClientErrorKind::Unauthorized => ErrorKind::Unauthorized,
-            StoriqaClientErrorKind::MalformedInput => ErrorKind::MalformedInput,
+            StoriqaClientErrorKind::MalformedInput => ErrorKind::Internal,
             StoriqaClientErrorKind::Validation(s) => ErrorKind::InvalidInput(s.to_string()),
         }
     }
@@ -105,8 +105,8 @@ impl From<TransactionsClientErrorKind> for ErrorKind {
     fn from(err: TransactionsClientErrorKind) -> Self {
         match err {
             TransactionsClientErrorKind::Internal => ErrorKind::Internal,
-            TransactionsClientErrorKind::Unauthorized => ErrorKind::Unauthorized,
-            TransactionsClientErrorKind::MalformedInput => ErrorKind::MalformedInput,
+            TransactionsClientErrorKind::Unauthorized => ErrorKind::Internal,
+            TransactionsClientErrorKind::MalformedInput => ErrorKind::Internal,
             TransactionsClientErrorKind::Validation(s) => ErrorKind::InvalidInput(s),
         }
     }

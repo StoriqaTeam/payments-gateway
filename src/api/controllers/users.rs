@@ -1,3 +1,6 @@
+use std::sync::Arc;
+
+use chrono::NaiveDateTime;
 use failure::Fail;
 use futures::future::{self, Either};
 use futures::prelude::*;
@@ -9,6 +12,7 @@ use super::Context;
 use super::ControllerFuture;
 use api::error::*;
 use models::*;
+use services::{AuthService, UsersService};
 
 pub fn merge_user(ctx: Context, jwt: StoriqaJWT) -> Box<Future<Item = (), Error = Error> + Send> {
     let users_service = ctx.users_service.clone();
@@ -54,15 +58,23 @@ pub fn post_sessions(ctx: &Context) -> ControllerFuture {
                     })
                     .and_then(move |jwt| {
                         let token = jwt.clone();
+                        let token_clone = jwt.clone();
                         let auth_service_clone = auth_service.clone();
+                        let auth_service_clone2 = auth_service.clone();
                         auth_service
                             .get_jwt_auth(jwt.clone())
                             .map_err(ectx!(convert => token))
                             .into_future()
                             .and_then(move |auth| {
                                 auth_service_clone
-                                    .authenticate(auth_info.clone(), auth.user_id)
-                                    .map_err(ectx!(convert => auth_info, auth.user_id))
+                                    .get_exp(token_clone.clone())
+                                    .map_err(ectx!(convert => token_clone))
+                                    .map(|exp| (auth, exp))
+                            })
+                            .and_then(move |(auth, exp)| {
+                                auth_service_clone2
+                                    .authenticate(auth_info.clone(), auth.user_id, exp)
+                                    .map_err(ectx!(convert => auth_info, auth.user_id, exp))
                             })
                             .map(|_| jwt)
                     })
@@ -94,15 +106,23 @@ pub fn post_sessions_oauth(ctx: &Context) -> ControllerFuture {
                     })
                     .and_then(move |jwt| {
                         let token = jwt.clone();
+                        let token_clone = jwt.clone();
                         let auth_service_clone = auth_service.clone();
+                        let auth_service_clone2 = auth_service.clone();
                         auth_service
                             .get_jwt_auth(jwt.clone())
                             .map_err(ectx!(convert => token))
                             .into_future()
                             .and_then(move |auth| {
                                 auth_service_clone
-                                    .authenticate(auth_info.clone(), auth.user_id)
-                                    .map_err(ectx!(convert => auth_info, auth.user_id))
+                                    .get_exp(token_clone.clone())
+                                    .map_err(ectx!(convert => token_clone))
+                                    .map(|exp| (auth, exp))
+                            })
+                            .and_then(move |(auth, exp)| {
+                                auth_service_clone2
+                                    .authenticate(auth_info.clone(), auth.user_id, exp)
+                                    .map_err(ectx!(convert => auth_info, auth.user_id, exp))
                             })
                             .map(|_| jwt)
                     })
@@ -247,6 +267,8 @@ pub fn post_users_resend_confirm_email(ctx: &Context) -> ControllerFuture {
 
 pub fn post_users_change_password(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
+    let users_service_clone = users_service.clone();
+    let auth_service = ctx.auth_service.clone();
     let maybe_token = ctx.get_auth_token();
     let body = ctx.body.clone();
 
@@ -262,6 +284,7 @@ pub fn post_users_change_password(ctx: &Context) -> ControllerFuture {
                             .change_password(input.into(), token)
                             .map_err(ectx!(convert => input_clone))
                     })
+                    .and_then(move |token| revoke_token_db(users_service_clone, auth_service, token.clone()).map(|_| token))
                     .and_then(|token| response_with_model(&token))
             })
     }))
@@ -269,6 +292,8 @@ pub fn post_users_change_password(ctx: &Context) -> ControllerFuture {
 
 pub fn post_users_confirm_reset_password(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
+    let users_service_clone = users_service.clone();
+    let auth_service = ctx.auth_service.clone();
     Box::new(
         parse_body::<PostUsersConfirmResetPasswordRequest>(ctx.body.clone())
             .and_then(move |input| {
@@ -277,6 +302,7 @@ pub fn post_users_confirm_reset_password(ctx: &Context) -> ControllerFuture {
                     .confirm_reset_password(input.into())
                     .map_err(ectx!(convert => input_clone))
             })
+            .and_then(move |token| revoke_token_db(users_service_clone, auth_service, token.clone()).map(|_| token))
             .and_then(|token| response_with_model(&token)),
     )
 }
@@ -322,6 +348,8 @@ pub fn post_sessions_refresh(ctx: &Context) -> ControllerFuture {
 
 pub fn post_sessions_revoke(ctx: &Context) -> ControllerFuture {
     let users_service = ctx.users_service.clone();
+    let users_service_clone = users_service.clone();
+    let auth_service = ctx.auth_service.clone();
     let maybe_token = ctx.get_auth_token();
 
     Box::new(ctx.authenticate().and_then(move |_user_id_auth| {
@@ -332,7 +360,36 @@ pub fn post_sessions_revoke(ctx: &Context) -> ControllerFuture {
                 users_service
                     .revoke_jwt(token)
                     .map_err(ectx!(convert))
-                    .and_then(|user| response_with_model(&user))
+                    .and_then(move |token| revoke_token_db(users_service_clone, auth_service, token.clone()).map(|_| token))
+                    .and_then(|token| response_with_model(&token))
             })
     }))
+}
+
+pub fn revoke_token_db(
+    users_service: Arc<dyn UsersService>,
+    auth_service: Arc<dyn AuthService>,
+    token: StoriqaJWT,
+) -> Box<Future<Item = (), Error = Error> + Send> {
+    let users_service_clone = users_service.clone();
+    let token_clone = token.clone();
+    let token_clone2 = token.clone();
+    let auth_service_clone = auth_service.clone();
+    Box::new(
+        auth_service
+            .get_exp(token_clone.clone())
+            .map_err(ectx!(convert => token_clone))
+            .into_future()
+            .and_then(move |exp| {
+                auth_service_clone
+                    .get_jwt_auth(token_clone2.clone())
+                    .map_err(ectx!(convert => token_clone2))
+                    .map(|auth| (auth, exp))
+            })
+            .and_then(move |(auth, exp)| {
+                users_service_clone
+                    .revoke_tokens_db(auth.user_id, NaiveDateTime::from_timestamp(exp as i64, 0))
+                    .map_err(ectx!(convert => auth.user_id))
+            }),
+    )
 }

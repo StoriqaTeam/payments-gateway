@@ -57,6 +57,7 @@ table! {
         updated_at -> Timestamp,
         device_id -> Nullable<Varchar>,
         device_os -> Nullable<Varchar>,
+        revoke_before -> Timestamp,
     }
 }
 

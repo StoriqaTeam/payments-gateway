@@ -53,3 +53,24 @@ impl Default for GetRate {
         }
     }
 }
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RefreshRate {
+    pub exchange_id: ExchangeId,
+}
+
+impl Default for RefreshRate {
+    fn default() -> Self {
+        Self {
+            exchange_id: ExchangeId::generate(),
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RateRefresh {
+    pub exchange: Rate,
+    pub is_new_rate: bool,
+}

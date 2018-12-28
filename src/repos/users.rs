@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use diesel;
 
 use super::error::*;
@@ -12,6 +13,7 @@ pub trait UsersRepo: Send + Sync + 'static {
     fn update(&self, user_id: UserId, payload: UpdateUser) -> RepoResult<UserDB>;
     fn get(&self, user_id: UserId) -> RepoResult<Option<UserDB>>;
     fn get_by_email(&self, email: String) -> RepoResult<Option<UserDB>>;
+    fn revoke_tokens(&self, user_id: UserId, revoke_before: NaiveDateTime) -> RepoResult<()>;
 }
 
 #[derive(Clone, Default)]
@@ -63,6 +65,19 @@ impl<'a> UsersRepo for UsersRepoImpl {
                     let error_kind = ErrorKind::from(&e);
                     ectx!(err e, error_kind => email_)
                 })
+        })
+    }
+    fn revoke_tokens(&self, user_id: UserId, revoke_before_: NaiveDateTime) -> RepoResult<()> {
+        with_tls_connection(|conn| {
+            let filter = users.filter(id.eq(user_id));
+            let query = diesel::update(filter).set(revoke_before.eq(revoke_before_));
+            query
+                .get_result(conn)
+                .map_err(move |e| {
+                    let error_kind = ErrorKind::from(&e);
+                    ectx!(err e, error_kind => user_id)
+                })
+                .map(|_: UserDB| ())
         })
     }
 }
