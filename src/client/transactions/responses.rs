@@ -97,6 +97,8 @@ impl From<TransactionResponse> for Transaction {
             blockchain_tx_ids: transaction.blockchain_tx_ids,
             created_at: transaction.created_at,
             updated_at: transaction.updated_at,
+            fiat_value: None,
+            fiat_currency: None,
         }
     }
 }

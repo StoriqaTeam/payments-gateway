@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use super::accounts::*;
 use super::error::*;
 use super::executor::DbExecutor;
+use super::transactions_fiat::*;
 use super::types::RepoResult;
 use super::users::*;
 use models::*;
@@ -52,6 +53,24 @@ impl AccountsRepo for AccountsRepoMock {
     fn get_by_user(&self, user_id_arg: UserId) -> RepoResult<Vec<Account>> {
         let data = self.data.lock().unwrap();
         Ok(data.clone().into_iter().filter(|x| x.user_id == user_id_arg).collect())
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct TransactionFiatRepoMock {
+    data: Arc<Mutex<Vec<TransactionFiat>>>,
+}
+
+impl TransactionFiatRepo for TransactionFiatRepoMock {
+    fn create(&self, payload: NewTransactionFiat) -> RepoResult<TransactionFiat> {
+        let mut data = self.data.lock().unwrap();
+        let res: TransactionFiat = payload.into();
+        data.push(res.clone());
+        Ok(res)
+    }
+    fn get(&self, transaction_id: TransactionId) -> RepoResult<Option<TransactionFiat>> {
+        let data = self.data.lock().unwrap();
+        Ok(data.iter().filter(|x| x.id == transaction_id).nth(0).cloned())
     }
 }
 

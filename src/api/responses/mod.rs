@@ -53,6 +53,8 @@ pub struct TransactionsResponse {
     pub blockchain_tx_ids: Vec<BlockchainTransactionId>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+    pub fiat_value: Option<String>,
+    pub fiat_currency: Option<String>,
 }
 
 impl From<Transaction> for TransactionsResponse {
@@ -77,6 +79,8 @@ impl From<Transaction> for TransactionsResponse {
             blockchain_tx_ids: transaction.blockchain_tx_ids,
             created_at: transaction.created_at,
             updated_at: transaction.updated_at,
+            fiat_value: transaction.fiat_value,
+            fiat_currency: transaction.fiat_currency,
         }
     }
 }

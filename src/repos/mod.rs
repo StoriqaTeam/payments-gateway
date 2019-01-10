@@ -8,6 +8,7 @@ pub mod executor;
 #[cfg(test)]
 mod mocks;
 pub mod templates;
+pub mod transactions_fiat;
 pub mod types;
 pub mod users;
 
@@ -19,5 +20,6 @@ pub use self::executor::*;
 #[cfg(test)]
 pub use self::mocks::*;
 pub use self::templates::*;
+pub use self::transactions_fiat::*;
 pub use self::types::*;
 pub use self::users::*;

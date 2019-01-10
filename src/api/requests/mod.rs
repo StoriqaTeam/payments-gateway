@@ -213,6 +213,8 @@ pub struct PostTransactionsRequest {
     pub hold_until: Option<NaiveDateTime>,
     pub exchange_id: Option<ExchangeId>,
     pub exchange_rate: Option<f64>,
+    pub fiat_value: Option<String>,
+    pub fiat_currency: Option<String>,
 }
 
 impl PostTransactionsRequest {
@@ -234,6 +236,8 @@ impl PostTransactionsRequest {
             fee,
             exchange_id: self.exchange_id,
             exchange_rate: self.exchange_rate,
+            fiat_value: self.fiat_value,
+            fiat_currency: self.fiat_currency,
         })
     }
 }
