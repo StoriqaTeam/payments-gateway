@@ -72,7 +72,7 @@ pub mod tests {
         let mut core = Core::new().unwrap();
         let db_executor = create_executor();
         let _ = core.run(db_executor.execute_test_transaction(move || {
-            let res = create_device();
+            let res = create_transactions_fiat();
             assert!(res.is_ok());
             res
         }));
@@ -84,8 +84,8 @@ pub mod tests {
         let db_executor = create_executor();
         let transactions_fiat_repo = TransactionFiatRepoImpl::default();
         let _ = core.run(db_executor.execute_test_transaction(move || {
-            let transactions_fiat = create_device().unwrap();
-            let res = transactions_fiat_repo.get(transactions_fiat.id);
+            let transactions_fiat_ = create_transactions_fiat().unwrap();
+            let res = transactions_fiat_repo.get(transactions_fiat_.id);
             assert!(res.is_ok());
             res
         }));

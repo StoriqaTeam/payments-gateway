@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use super::accounts::*;
 use super::error::*;
 use super::executor::DbExecutor;
+use super::transactions_fiat::*;
 use super::types::RepoResult;
 use super::users::*;
 use models::*;

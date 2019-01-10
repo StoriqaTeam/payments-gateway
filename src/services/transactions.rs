@@ -276,12 +276,14 @@ mod tests {
     fn create_services() -> (AccountsServiceImpl<DbExecutorMock>, TransactionsServiceImpl<DbExecutorMock>) {
         let accounts_repo = Arc::new(AccountsRepoMock::default());
         let users_repo = Arc::new(UsersRepoMock::default());
+        let transactions_fiat_repo = Arc::new(TransactionFiatRepoMock::default());
         let transactions_client = Arc::new(TransactionsClientMock::default());
         let db_executor = DbExecutorMock::default();
         let acc_service = AccountsServiceImpl::new(accounts_repo.clone(), db_executor.clone(), transactions_client.clone());
         let trans_service = TransactionsServiceImpl::new(
             accounts_repo.clone(),
             users_repo.clone(),
+            transactions_fiat_repo.clone(),
             db_executor.clone(),
             transactions_client.clone(),
         );
