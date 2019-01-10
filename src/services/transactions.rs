@@ -10,12 +10,13 @@ use super::error::*;
 use client::TransactionsClient;
 use models::*;
 use prelude::*;
-use repos::{AccountsRepo, DbExecutor, UsersRepo};
+use repos::{AccountsRepo, DbExecutor, TransactionFiatRepo, UsersRepo};
 
 #[derive(Clone)]
 pub struct TransactionsServiceImpl<E: DbExecutor> {
     accounts_repo: Arc<dyn AccountsRepo>,
     users_repo: Arc<dyn UsersRepo>,
+    transactions_fiat_repo: Arc<dyn TransactionFiatRepo>,
     db_executor: E,
     transactions_client: Arc<dyn TransactionsClient>,
 }
@@ -24,12 +25,14 @@ impl<E: DbExecutor> TransactionsServiceImpl<E> {
     pub fn new(
         accounts_repo: Arc<dyn AccountsRepo>,
         users_repo: Arc<dyn UsersRepo>,
+        transactions_fiat_repo: Arc<dyn TransactionFiatRepo>,
         db_executor: E,
         transactions_client: Arc<dyn TransactionsClient>,
     ) -> Self {
         Self {
             accounts_repo,
             users_repo,
+            transactions_fiat_repo,
             db_executor,
             transactions_client,
         }
@@ -51,7 +54,7 @@ pub trait TransactionsService: Send + Sync + 'static {
         offset: i64,
         limit: i64,
     ) -> Box<Future<Item = Vec<Transaction>, Error = Error> + Send>;
-    fn add_user_to_transaction(&self, transaction: Transaction) -> Box<Future<Item = Transaction, Error = Error> + Send>;
+    fn add_additional_info_to_transaction(&self, transaction: Transaction) -> Box<Future<Item = Transaction, Error = Error> + Send>;
     fn get_rate(&self, rate: GetRate) -> Box<Future<Item = Rate, Error = Error> + Send>;
     fn refresh_rate(&self, rate: RefreshRate) -> Box<Future<Item = RateRefresh, Error = Error> + Send>;
     fn get_fees(&self, rate: GetFees) -> Box<Future<Item = Fees, Error = Error> + Send>;
@@ -61,6 +64,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
     fn create_transaction(&self, user_id: UserId, input: CreateTransaction) -> Box<Future<Item = Transaction, Error = Error> + Send> {
         let db_executor = self.db_executor.clone();
         let accounts_repo = self.accounts_repo.clone();
+        let transactions_fiat_repo = self.transactions_fiat_repo.clone();
         let transactions_client = self.transactions_client.clone();
         let service = self.clone();
         Box::new(
@@ -68,7 +72,11 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                 .execute({
                     let input = input.clone();
                     let input_from = input.from.clone();
+                    let input_fiat: NewTransactionFiat = input.clone().into();
                     move || {
+                        transactions_fiat_repo
+                            .create(input_fiat.clone())
+                            .map_err(ectx!(try ErrorKind::Internal => input_fiat))?;
                         let accounts = accounts_repo
                             .get_by_user(user_id)
                             .map_err(ectx!(try ErrorKind::Internal => user_id))?;
@@ -91,7 +99,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                                 .map(From::from)
                         })
                 })
-                .and_then(move |transaction: Transaction| service.add_user_to_transaction(transaction)),
+                .and_then(move |transaction: Transaction| service.add_additional_info_to_transaction(transaction)),
         )
     }
 
@@ -122,7 +130,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                 })
                 .and_then(move |transactions: Vec<Transaction>| {
                     iter_ok::<_, Error>(transactions).fold(vec![], move |mut transactions, transaction| {
-                        service.add_user_to_transaction(transaction).and_then(|res| {
+                        service.add_additional_info_to_transaction(transaction).and_then(|res| {
                             transactions.push(res);
                             Ok(transactions) as Result<Vec<Transaction>, Error>
                         })
@@ -167,7 +175,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                 })
                 .and_then(move |transactions: Vec<Transaction>| {
                     iter_ok::<_, Error>(transactions).fold(vec![], move |mut transactions, transaction| {
-                        service.add_user_to_transaction(transaction).and_then(|res| {
+                        service.add_additional_info_to_transaction(transaction).and_then(|res| {
                             transactions.push(res);
                             Ok(transactions) as Result<Vec<Transaction>, Error>
                         })
@@ -175,9 +183,10 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                 }),
         )
     }
-    fn add_user_to_transaction(&self, mut transaction: Transaction) -> Box<Future<Item = Transaction, Error = Error> + Send> {
+    fn add_additional_info_to_transaction(&self, mut transaction: Transaction) -> Box<Future<Item = Transaction, Error = Error> + Send> {
         let accounts_repo = self.accounts_repo.clone();
         let users_repo = self.users_repo.clone();
+        let transactions_fiat_repo = self.transactions_fiat_repo.clone();
         let db_executor = self.db_executor.clone();
         Box::new(db_executor.execute({
             move || {
@@ -215,6 +224,18 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                         transaction.to.account_id = None;
                     }
                 }
+                let transaction_id = transaction.id;
+                let fiat = transactions_fiat_repo
+                    .get(transaction_id)
+                    .map_err(ectx!(try ErrorKind::Internal => transaction_id))?;
+                if let Some(TransactionFiat {
+                    fiat_value, fiat_currency, ..
+                }) = fiat
+                {
+                    transaction.fiat_value = fiat_value;
+                    transaction.fiat_currency = fiat_currency;
+                };
+
                 Ok(transaction)
             }
         }))

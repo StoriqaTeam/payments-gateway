@@ -16,6 +16,8 @@ pub struct CreateTransaction {
     pub value_currency: Currency,
     pub exchange_id: Option<ExchangeId>,
     pub exchange_rate: Option<f64>,
+    pub fiat_value: Option<String>,
+    pub fiat_currency: Option<String>,
 }
 
 impl Default for CreateTransaction {
@@ -31,6 +33,8 @@ impl Default for CreateTransaction {
             fee: Amount::default(),
             exchange_id: None,
             exchange_rate: None,
+            fiat_value: None,
+            fiat_currency: None,
         }
     }
 }
@@ -49,6 +53,8 @@ pub struct Transaction {
     pub blockchain_tx_ids: Vec<BlockchainTransactionId>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+    pub fiat_value: Option<String>,
+    pub fiat_currency: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

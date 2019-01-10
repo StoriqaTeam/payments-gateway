@@ -27,7 +27,9 @@ use client::{HttpClientImpl, StoriqaClient, StoriqaClientImpl, TransactionsClien
 use models::*;
 use r2d2;
 use rabbit::TransactionPublisher;
-use repos::{AccountsRepoImpl, DbExecutorImpl, DeviceTokensRepoImpl, DevicesRepoImpl, TemplatesRepoImpl, UsersRepoImpl};
+use repos::{
+    AccountsRepoImpl, DbExecutorImpl, DeviceTokensRepoImpl, DevicesRepoImpl, TemplatesRepoImpl, TransactionFiatRepoImpl, UsersRepoImpl,
+};
 use services::{AccountsServiceImpl, AuthServiceImpl, EmailSenderServiceImpl, TransactionsServiceImpl, UsersServiceImpl};
 use utils::read_body;
 
@@ -171,6 +173,7 @@ impl Service for ApiService {
                     let transactions_service = Arc::new(TransactionsServiceImpl::new(
                         Arc::new(AccountsRepoImpl),
                         Arc::new(UsersRepoImpl),
+                        Arc::new(TransactionFiatRepoImpl),
                         db_executor.clone(),
                         transactions_client,
                     ));

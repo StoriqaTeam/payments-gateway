@@ -1325,6 +1325,10 @@ components:
           $ref: '#/components/schemas/Uuid'
         exchangeRate:
           $ref: '#/components/schemas/Rate'
+        fiatValue:
+          type: string
+        fiateCurrency:
+          type: string
     TransactionAddress:
       type: object
       required:
@@ -1398,6 +1402,10 @@ components:
           $ref: '#/components/schemas/TimeStamp'
         updated_at:
           $ref: '#/components/schemas/TimeStamp'
+        fiatValue:
+          type: string
+        fiateCurrency:
+          type: string
     AccountAddress:
       type: string
       description: Either blockchain address or fiat account number (depending on currency)
