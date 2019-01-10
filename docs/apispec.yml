@@ -1327,7 +1327,7 @@ components:
           $ref: '#/components/schemas/Rate'
         fiatValue:
           type: string
-        fiateCurrency:
+        fiatCurrency:
           type: string
     TransactionAddress:
       type: object
@@ -1404,7 +1404,7 @@ components:
           $ref: '#/components/schemas/TimeStamp'
         fiatValue:
           type: string
-        fiateCurrency:
+        fiatCurrency:
           type: string
     AccountAddress:
       type: string

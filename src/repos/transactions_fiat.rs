@@ -31,7 +31,6 @@ impl<'a> TransactionFiatRepo for TransactionFiatRepoImpl {
         with_tls_connection(|conn| {
             transactions_fiat
                 .filter(id.eq(transaction_id.clone()))
-                .limit(1)
                 .get_result(conn)
                 .optional()
                 .map_err(move |e| {

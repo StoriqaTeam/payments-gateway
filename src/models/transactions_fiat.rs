@@ -8,8 +8,8 @@ use schema::transactions_fiat;
 #[derive(Debug, Queryable, Clone)]
 pub struct TransactionFiat {
     pub id: TransactionId,
-    pub fiat_value: Option<String>,
-    pub fiat_currency: Option<String>,
+    pub fiat_value: String,
+    pub fiat_currency: String,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -18,8 +18,8 @@ impl Default for TransactionFiat {
     fn default() -> Self {
         Self {
             id: TransactionId::generate(),
-            fiat_value: None,
-            fiat_currency: None,
+            fiat_value: "123".to_string(),
+            fiat_currency: "USD".to_string(),
             created_at: ::chrono::Utc::now().naive_utc(),
             updated_at: ::chrono::Utc::now().naive_utc(),
         }
@@ -37,12 +37,12 @@ impl From<NewTransactionFiat> for TransactionFiat {
     }
 }
 
-impl From<CreateTransaction> for NewTransactionFiat {
-    fn from(transaction: CreateTransaction) -> Self {
+impl NewTransactionFiat {
+    pub fn new(id: TransactionId, fiat_value: String, fiat_currency: String) -> Self {
         Self {
-            id: transaction.id,
-            fiat_value: transaction.fiat_value,
-            fiat_currency: transaction.fiat_currency,
+            id,
+            fiat_value,
+            fiat_currency,
         }
     }
 }
@@ -51,16 +51,16 @@ impl From<CreateTransaction> for NewTransactionFiat {
 #[table_name = "transactions_fiat"]
 pub struct NewTransactionFiat {
     pub id: TransactionId,
-    pub fiat_value: Option<String>,
-    pub fiat_currency: Option<String>,
+    pub fiat_value: String,
+    pub fiat_currency: String,
 }
 
 impl Default for NewTransactionFiat {
     fn default() -> Self {
         Self {
             id: TransactionId::generate(),
-            fiat_value: None,
-            fiat_currency: None,
+            fiat_value: "123".to_string(),
+            fiat_currency: "USD".to_string(),
         }
     }
 }

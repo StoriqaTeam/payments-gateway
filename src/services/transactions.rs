@@ -72,11 +72,19 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                 .execute({
                     let input = input.clone();
                     let input_from = input.from.clone();
-                    let input_fiat: NewTransactionFiat = input.clone().into();
                     move || {
-                        transactions_fiat_repo
-                            .create(input_fiat.clone())
-                            .map_err(ectx!(try ErrorKind::Internal => input_fiat))?;
+                        if let CreateTransaction {
+                            id,
+                            fiat_currency: Some(currency),
+                            fiat_value: Some(value),
+                            ..
+                        } = input.clone()
+                        {
+                            let input_fiat = NewTransactionFiat::new(id, currency, value);
+                            transactions_fiat_repo
+                                .create(input_fiat.clone())
+                                .map_err(ectx!(try ErrorKind::Internal => input_fiat))?;
+                        }
                         let accounts = accounts_repo
                             .get_by_user(user_id)
                             .map_err(ectx!(try ErrorKind::Internal => user_id))?;
@@ -232,8 +240,8 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                     fiat_value, fiat_currency, ..
                 }) = fiat
                 {
-                    transaction.fiat_value = fiat_value;
-                    transaction.fiat_currency = fiat_currency;
+                    transaction.fiat_value = Some(fiat_value);
+                    transaction.fiat_currency = Some(fiat_currency);
                 };
 
                 Ok(transaction)

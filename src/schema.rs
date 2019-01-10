@@ -49,8 +49,8 @@ table! {
 table! {
     transactions_fiat (id) {
         id -> Uuid,
-        fiat_value -> Nullable<Varchar>,
-        fiat_currency -> Nullable<Varchar>,
+        fiat_value -> Varchar,
+        fiat_currency -> Varchar,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
