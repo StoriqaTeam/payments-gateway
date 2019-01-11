@@ -75,8 +75,8 @@ use tokio::timer::{Delay, Timeout};
 
 use self::models::*;
 use config::Config;
-use rabbit::{ConnectionHooks, R2D2ErrorHandler, RabbitConnectionManager, TransactionConsumerImpl, TransactionPublisherImpl};
 use rabbit::{ErrorKind, ErrorSource};
+use rabbit::{R2D2ErrorHandler, RabbitConnectionManager, TransactionConsumerImpl, TransactionPublisherImpl};
 use repos::{AccountsRepoImpl, DbExecutorImpl, DevicesRepoImpl, UsersRepoImpl};
 use services::Notificator;
 use utils::log_error;
@@ -118,7 +118,6 @@ pub fn start_server() {
         .unwrap();
     let rabbit_connection_pool = r2d2::Pool::builder()
         .max_size(config_clone.rabbit.connection_pool_size as u32)
-        .connection_customizer(Box::new(ConnectionHooks))
         .error_handler(Box::new(R2D2ErrorHandler))
         .build(rabbit_connection_manager)
         .expect("Cannot build rabbit connection pool");
