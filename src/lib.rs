@@ -58,7 +58,6 @@ mod sentry_integration;
 mod services;
 mod utils;
 
-use std::io;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -71,6 +70,7 @@ use failure::Fail;
 use futures::future::{self, Either};
 use futures_cpupool::CpuPool;
 use lapin_futures::channel::Channel;
+use lapin_futures::error::Error as LapinError;
 use tokio::net::tcp::TcpStream;
 use tokio::prelude::*;
 use tokio::timer::{Delay, Timeout};
@@ -228,7 +228,7 @@ pub fn start_server() {
                         future::join_all(fs)
                     })
                     .map(|_| ())
-                    .map_err(|e: io::Error| {
+                    .map_err(|e: LapinError| {
                         error!("Error closing consumer {}", e);
                     })
                     .then(move |_| {
