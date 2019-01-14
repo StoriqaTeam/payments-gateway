@@ -80,7 +80,7 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                             ..
                         } = input.clone()
                         {
-                            let input_fiat = NewTransactionFiat::new(id, currency, value);
+                            let input_fiat = NewTransactionFiat::new(id, value, currency);
                             transactions_fiat_repo
                                 .create(input_fiat.clone())
                                 .map_err(ectx!(try ErrorKind::Internal => input_fiat))?;
