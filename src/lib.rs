@@ -219,9 +219,7 @@ pub fn start_server() {
                                 let mut channel = channel.clone();
                                 let consumer_tag = consumer_tag.clone();
                                 trace!("Canceling {} with channel `{}`", consumer_tag, channel.id);
-                                channel
-                                    .cancel_consumer(consumer_tag.to_string())
-                                    .and_then(move |_| channel.close(0, "Cancelled on consumer resubscribe"))
+                                channel.cancel_consumer(consumer_tag.to_string())
                             })
                             .collect();
 
