@@ -1,16 +1,16 @@
-use std::io::Error as StdIoError;
+use futures::future;
+use futures_cpupool::CpuPool;
+use lapin_futures::channel::{Channel, ExchangeDeclareOptions, QueueDeclareOptions};
+use lapin_futures::error::Error as LapinError;
+use r2d2::PooledConnection;
+use serde_json;
+use tokio::net::tcp::TcpStream;
 
 use super::error::*;
 use super::r2d2::RabbitConnectionManager;
 use super::r2d2::RabbitPool;
-use futures::future;
-use futures_cpupool::CpuPool;
-use lapin_futures::channel::{Channel, ExchangeDeclareOptions, QueueDeclareOptions};
 use models::*;
 use prelude::*;
-use r2d2::PooledConnection;
-use serde_json;
-use tokio::net::tcp::TcpStream;
 
 pub trait TransactionPublisher: Send + Sync + 'static {
     fn push(&self, push: PushNotifications) -> Box<Future<Item = (), Error = Error> + Send>;
@@ -48,7 +48,7 @@ impl TransactionPublisherImpl {
     }
 
     fn declare(&self, channel: &Channel<TcpStream>) -> impl Future<Item = (), Error = Error> {
-        let f1: Box<Future<Item = (), Error = StdIoError>> = Box::new(channel.exchange_declare(
+        let f1: Box<Future<Item = (), Error = LapinError>> = Box::new(channel.exchange_declare(
             "notifications",
             "direct",
             ExchangeDeclareOptions {
@@ -57,7 +57,7 @@ impl TransactionPublisherImpl {
             },
             Default::default(),
         ));
-        let f2: Box<Future<Item = (), Error = StdIoError>> = Box::new(
+        let f2: Box<Future<Item = (), Error = LapinError>> = Box::new(
             channel
                 .queue_declare(
                     "pushes",
@@ -69,7 +69,7 @@ impl TransactionPublisherImpl {
                 )
                 .map(|_| ()),
         );
-        let f3: Box<Future<Item = (), Error = StdIoError>> = Box::new(
+        let f3: Box<Future<Item = (), Error = LapinError>> = Box::new(
             channel
                 .queue_declare(
                     "callbacks",
@@ -81,7 +81,7 @@ impl TransactionPublisherImpl {
                 )
                 .map(|_| ()),
         );
-        let f4: Box<Future<Item = (), Error = StdIoError>> = Box::new(
+        let f4: Box<Future<Item = (), Error = LapinError>> = Box::new(
             channel
                 .queue_declare(
                     "emails",
@@ -93,11 +93,11 @@ impl TransactionPublisherImpl {
                 )
                 .map(|_| ()),
         );
-        let f5: Box<Future<Item = (), Error = StdIoError>> =
+        let f5: Box<Future<Item = (), Error = LapinError>> =
             Box::new(channel.queue_bind("pushes", "notifications", "pushes", Default::default(), Default::default()));
-        let f6: Box<Future<Item = (), Error = StdIoError>> =
+        let f6: Box<Future<Item = (), Error = LapinError>> =
             Box::new(channel.queue_bind("callbacks", "notifications", "callbacks", Default::default(), Default::default()));
-        let f7: Box<Future<Item = (), Error = StdIoError>> =
+        let f7: Box<Future<Item = (), Error = LapinError>> =
             Box::new(channel.queue_bind("emails", "notifications", "emails", Default::default(), Default::default()));
         future::join_all(vec![f1, f2, f3, f4, f5, f6, f7])
             .map(|_| ())
