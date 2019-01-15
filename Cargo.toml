@@ -23,8 +23,8 @@ http_router = "0.1"
 hyper = "0.12"
 hyper-tls = "0.3"
 jsonwebtoken = "5"
-lapin-async = {version = "0.15", git = "https://github.com/StoriqaTeam/lapin", branch = "0.15.1" }
-lapin-futures = {version = "0.15", git = "https://github.com/StoriqaTeam/lapin", branch = "0.15.1" }
+lapin-async = {version = "0.15", git = "https://github.com/StoriqaTeam/lapin", branch = "0.15.2" }
+lapin-futures = {version = "0.15", git = "https://github.com/StoriqaTeam/lapin", branch = "0.15.2" }
 lazy_static = "1.1.0"
 log = { version = "0.4", features = ["std", "serde"] }
 num = { version = "0.2", features = ["i128"] }
