@@ -2,7 +2,9 @@ use std::fmt;
 use std::fmt::Display;
 
 use failure::{Backtrace, Context, Fail};
+use jsonwebtoken::errors::ErrorKind as JwtErrorKind;
 use serde_json;
+use validator::{ValidationError, ValidationErrors};
 
 use client::storiqa::ErrorKind as StoriqaClientErrorKind;
 use client::transactions::ErrorKind as TransactionsClientErrorKind;
@@ -108,6 +110,21 @@ impl From<TransactionsClientErrorKind> for ErrorKind {
             TransactionsClientErrorKind::Unauthorized => ErrorKind::Internal,
             TransactionsClientErrorKind::MalformedInput => ErrorKind::Internal,
             TransactionsClientErrorKind::Validation(s) => ErrorKind::InvalidInput(s),
+        }
+    }
+}
+
+impl<'a> From<&'a JwtErrorKind> for ErrorKind {
+    fn from(err: &JwtErrorKind) -> Self {
+        match err {
+            JwtErrorKind::ExpiredSignature => {
+                let mut errors = ValidationErrors::new();
+                let mut error = ValidationError::new("expired");
+                error.message = Some("JWT has expired.".into());
+                errors.add("token", error);
+                ErrorKind::InvalidInput(serde_json::to_string(&errors).unwrap_or_default())
+            }
+            _ => ErrorKind::Unauthorized,
         }
     }
 }
