@@ -54,7 +54,7 @@ impl<E: DbExecutor> AuthService for AuthServiceImpl<E> {
         };
         let token_clone = token.clone();
         decode::<JWTClaims>(token_clone.inner(), &self.jwt_public_key, &validation)
-            .map_err(ectx!(ErrorContext::JsonWebToken, ErrorKind::Unauthorized => token_clone.inner()))
+            .map_err(ectx!(convert ErrorContext::JsonWebToken => token_clone.inner()))
             .map(move |t| Auth {
                 user_id: t.claims.user_id,
                 token: StoriqaJWT::new(token.inner().to_string()),
@@ -67,7 +67,7 @@ impl<E: DbExecutor> AuthService for AuthServiceImpl<E> {
             ..Validation::new(Algorithm::RS256)
         };
         decode::<JWTClaims>(token_clone.inner(), &self.jwt_public_key, &validation)
-            .map_err(ectx!(ErrorContext::JsonWebToken, ErrorKind::Unauthorized => token_clone.inner()))
+            .map_err(ectx!(convert ErrorContext::JsonWebToken => token_clone.inner()))
             .map(move |t| t.claims.exp)
     }
     fn authenticate(&self, info: AuthInfo, user_id: UserId, exp: u64) -> ServiceFuture<()> {
