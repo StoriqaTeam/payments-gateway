@@ -43,6 +43,7 @@ impl<E: DbExecutor> Notificator<E> {
             .into_future()
             .and_then(move |transaction| service.get_transaction_info(transaction))
             .and_then(move |(transaction, devices, callback)| {
+                info!("Sending callback: {:?}, transaction: {:?}", callback, transaction);
                 let mut futs = vec![];
                 for device in devices {
                     let push = PushNotifications::new(device.device_id, device.device_os, transaction.clone().into());
