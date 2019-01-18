@@ -129,12 +129,13 @@ pub fn start_server() {
         rabbit_thread_pool.clone(),
         config_clone.auth.storiqa_transactions_user_id,
     );
-    let publisher = Arc::new(TransactionPublisherImpl::new(rabbit_connection_pool, rabbit_thread_pool));
+    let mut publisher = TransactionPublisherImpl::new(rabbit_connection_pool, rabbit_thread_pool);
     core.run(publisher.init())
         .map_err(|e| {
             log_error(&e);
         })
-        .unwrap();
+        .expect("Can not create publisher for transactions in rabbit");
+    let publisher = Arc::new(publisher);
     let publisher_clone = publisher.clone();
     let fetcher = Notificator::new(
         Arc::new(AccountsRepoImpl),
