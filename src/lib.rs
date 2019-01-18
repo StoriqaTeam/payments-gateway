@@ -59,7 +59,6 @@ mod services;
 mod utils;
 
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::thread;
@@ -153,8 +152,6 @@ pub fn start_server() {
             let counters_clone = counters.clone();
             let consumers_to_close: Rc<RefCell<Vec<(Channel<TcpStream>, String)>>> = Rc::new(RefCell::new(Vec::new()));
             let consumers_to_close_clone = consumers_to_close.clone();
-            let last_delivery_tag: Rc<RefCell<HashMap<String, u64>>> = Rc::new(RefCell::new(HashMap::new()));
-            let last_delivery_tag_clone = last_delivery_tag.clone();
             let resubscribe_duration = Duration::from_secs(config_clone.rabbit.restart_subscription_secs as u64);
             let fetcher_clone = fetcher.clone();
             let subscription = consumer
@@ -163,9 +160,7 @@ pub fn start_server() {
                     let counters_clone = counters.clone();
                     let fetcher_clone = fetcher_clone.clone();
                     let consumers_to_close = consumers_to_close.clone();
-                    let last_delivery_tag_clone = last_delivery_tag.clone();
                     let mut consumers_to_close_lock = consumers_to_close.borrow_mut();
-                    let counsumer_tag = stream.consumer_tag.clone();
                     consumers_to_close_lock.push((channel.clone(), stream.consumer_tag.clone()));
                     stream
                         .for_each(move |message| {
@@ -175,40 +170,32 @@ pub fn start_server() {
                             counters.0 += 1;
                             let counters_clone2 = counters_clone.clone();
                             let channel = channel.clone();
-                            let last_delivery_tag_clone2 = last_delivery_tag_clone.clone();
-                            let mut last_delivery_tag_clone = last_delivery_tag_clone.borrow_mut();
-                            last_delivery_tag_clone.insert(counsumer_tag.clone(), delivery_tag);
-                            let counsumer_tag = counsumer_tag.clone();
-                            fetcher_clone.handle_message(message.data).then(move |res| {
-                                let mut last_delivery_tag_clone = last_delivery_tag_clone2.borrow_mut();
-                                last_delivery_tag_clone.remove(&counsumer_tag);
-                                match res {
-                                    Ok(_) => {
-                                        let mut counters_clone = counters_clone2.clone();
+                            fetcher_clone.handle_message(message.data).then(move |res| match res {
+                                Ok(_) => {
+                                    let mut counters_clone = counters_clone2.clone();
+                                    let mut counters = counters_clone.borrow_mut();
+                                    counters.1 += 1;
+                                    Either::A(channel.basic_ack(delivery_tag, false).inspect(move |_| {
+                                        let counters_clone = counters_clone2.clone();
                                         let mut counters = counters_clone.borrow_mut();
-                                        counters.1 += 1;
-                                        Either::A(channel.basic_ack(delivery_tag, false).inspect(move |_| {
-                                            let counters_clone = counters_clone2.clone();
-                                            let mut counters = counters_clone.borrow_mut();
-                                            counters.2 += 1;
-                                        }))
-                                    }
-                                    Err(e) => {
-                                        let mut counters_clone = counters_clone2.clone();
-                                        let mut counters = *counters_clone.borrow_mut();
-                                        counters.3 += 1;
-                                        log_error(&e);
-                                        let when = Instant::now() + Duration::from_millis(DELAY_BEFORE_NACK);
-                                        let f = Delay::new(when).then(move |_| {
-                                            channel.basic_nack(delivery_tag, false, true).inspect(move |_| {
-                                                counters.4 += 1;
-                                            })
-                                        });
-                                        tokio::spawn(f.map_err(|e| {
-                                            error!("Error sending nack: {}", e);
-                                        }));
-                                        Either::B(future::ok(()))
-                                    }
+                                        counters.2 += 1;
+                                    }))
+                                }
+                                Err(e) => {
+                                    let mut counters_clone = counters_clone2.clone();
+                                    let mut counters = *counters_clone.borrow_mut();
+                                    counters.3 += 1;
+                                    log_error(&e);
+                                    let when = Instant::now() + Duration::from_millis(DELAY_BEFORE_NACK);
+                                    let f = Delay::new(when).then(move |_| {
+                                        channel.basic_nack(delivery_tag, false, true).inspect(move |_| {
+                                            counters.4 += 1;
+                                        })
+                                    });
+                                    tokio::spawn(f.map_err(|e| {
+                                        error!("Error sending nack: {}", e);
+                                    }));
+                                    Either::B(future::ok(()))
                                 }
                             })
                         })
@@ -226,27 +213,20 @@ pub fn start_server() {
                             counters.0, counters.1, counters.2, counters.3, counters.4
                         );
                         let mut consumers_to_close_lock = consumers_to_close_clone.borrow_mut();
-                        let last_delivery_tag_clone2 = last_delivery_tag_clone.clone();
-                        let last_delivery_tag_lock = last_delivery_tag_clone2.borrow_mut();
                         let fs: Vec<_> = consumers_to_close_lock
                             .iter_mut()
                             .map(move |(channel, consumer_tag)| {
                                 let mut channel = channel.clone();
                                 let channel_clone = channel.clone();
                                 let consumer_tag = consumer_tag.clone();
-                                let last_delivery_tag = last_delivery_tag_lock.get(&consumer_tag.to_string()).cloned();
                                 trace!("Canceling {} with channel `{}`", consumer_tag, channel.id);
-                                if let Some(last_delivery_tag) = last_delivery_tag {
-                                    Either::A(channel.basic_nack(last_delivery_tag, true, true))
-                                } else {
-                                    Either::B(future::ok(()))
-                                }
-                                .map_err(From::from)
-                                .and_then(move |_| channel.cancel_consumer(consumer_tag.to_string()).map_err(From::from))
-                                .and_then(move |_| {
-                                    let mut transport = channel_clone.transport.lock().unwrap();
-                                    transport.conn.basic_recover(channel_clone.id, true).map_err(From::from)
-                                })
+                                channel
+                                    .cancel_consumer(consumer_tag.to_string())
+                                    .map_err(From::from)
+                                    .and_then(move |_| {
+                                        let mut transport = channel_clone.transport.lock().unwrap();
+                                        transport.conn.basic_recover(channel_clone.id, true).map_err(From::from)
+                                    })
                             })
                             .collect();
 
