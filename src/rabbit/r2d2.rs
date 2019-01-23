@@ -1,23 +1,20 @@
-use std::error::Error as StdError;
 use std::fmt::{self, Debug};
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::{Arc, Mutex};
-use std::thread;
 use std::time::Duration;
 
 use failure;
 use failure::Compat;
-use futures::future::Either;
 use lapin_async::connection::{ConnectingState, ConnectionState};
-use lapin_futures::channel::{BasicQosOptions, Channel};
+use lapin_futures::channel::{BasicQosOptions, Channel, ConfirmSelectOptions};
 use lapin_futures::client::{Client, ConnectionOptions, HeartbeatHandle};
+
 use prelude::*;
-use r2d2::HandleError;
-use r2d2::{CustomizeConnection, ManageConnection, Pool};
+use r2d2::{ManageConnection, Pool};
 use regex::Regex;
 use tokio::net::tcp::TcpStream;
+use tokio::runtime::Runtime;
 use tokio::timer::timeout::Timeout;
-use tokio_core::reactor::Core;
 
 use super::error::*;
 use config::Config;
@@ -58,43 +55,6 @@ impl Drop for RabbitHeartbeatHandle {
         if let Some(h) = handle {
             h.stop();
         }
-    }
-}
-
-#[derive(Debug)]
-pub struct R2D2ErrorHandler;
-
-impl<E> HandleError<E> for R2D2ErrorHandler
-where
-    E: StdError,
-{
-    fn handle_error(&self, error: E) {
-        // We skip this error as it constantly appears probably on resubscription and pollutes log
-        // Todo - figure out why channels are closing
-        if format!("{}", error) != CHANNEL_IS_NOT_CONNECTED_MESSAGE {
-            error!("r2d2 error: {}", error);
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct ConnectionHooks;
-
-impl CustomizeConnection<Channel<TcpStream>, Compat<failure::Error>> for ConnectionHooks {
-    #[allow(unused_variables)]
-    fn on_acquire(&self, conn: &mut Channel<TcpStream>) -> Result<(), Compat<failure::Error>> {
-        trace!("Acquired rabbitmq channel");
-        Ok(())
-    }
-
-    #[allow(unused_variables)]
-    fn on_release(&self, conn: Channel<TcpStream>) {
-        trace!("Released rabbitmq channel");
-        thread::spawn(move || {
-            // We ignore the error here, because the channel might be evicted from the pool
-            // because it was already closed
-            let _ = conn.close(0, "Released from pool").wait();
-        });
     }
 }
 
@@ -151,23 +111,12 @@ impl RabbitConnectionManager {
         Ok((options, address))
     }
 
-    fn repair_if_tcp_is_broken(&self) {
-        if self.is_broken_conn() {
-            let self_clone = self.clone();
-            thread::spawn(move || {
-                let _ = self_clone.repair_tcp().wait();
-            });
-        }
-    }
-
-    fn repair_tcp(&self) -> impl Future<Item = (), Error = Error> {
+    fn repair_tcp(&self) -> Result<(), Error> {
         {
             let cli = self.client.lock().unwrap();
             let mut transport = cli.transport.lock().unwrap();
             match transport.conn.state {
-                ConnectionState::Connecting(_) => {
-                    return Either::A(Err(ectx!(err ErrorContext::AlreadyConnecting, ErrorKind::Internal)).into_future())
-                }
+                ConnectionState::Connecting(_) => return Err(ectx!(err ErrorContext::AlreadyConnecting, ErrorKind::Internal)),
                 _ => (),
             };
             info!("Resetting tcp connection to rabbit...");
@@ -178,7 +127,8 @@ impl RabbitConnectionManager {
         let self_client = self.client.clone();
         let self_client2 = self.client.clone();
         let self_hearbeat_handle = self.heartbeat_handle.clone();
-        Either::B(
+        let mut runtime = Runtime::new().expect("Can not create runtime core");
+        runtime.block_on(
             RabbitConnectionManager::establish_client(self.address, self.connection_options.clone())
                 .map(move |(client, hearbeat_handle)| {
                     {
@@ -219,21 +169,12 @@ impl RabbitConnectionManager {
                 info!("Connected to rabbit");
                 let handle = heartbeat.handle();
                 let client_clone = client.clone();
-                thread::spawn(move || {
-                    // Just using wait here doesn't work - says timer is stopped.
-                    // On the other hand we need to isolate this to a new thread,
-                    // i.e. need to use thread::spawn instead of tokio::spawn,
-                    // because r2d2 uses it's own thread pool witout tokio =>
-                    // good chance tokio::spawn won't work.
-                    let mut core = Core::new().unwrap();
-                    let f = heartbeat.map_err(move |e| {
-                        let e: Error = ectx!(err e, ErrorContext::Heartbeat, ErrorKind::Internal);
-                        log_error(&e);
-                        let mut transport = client_clone.transport.lock().unwrap();
-                        transport.conn.state = ConnectionState::Error;
-                    });
-                    let _ = core.run(f);
-                });
+                tokio::spawn(heartbeat.map_err(move |e| {
+                    let e: Error = ectx!(err e, ErrorContext::Heartbeat, ErrorKind::Internal);
+                    log_error(&e);
+                    let mut transport = client_clone.transport.lock().unwrap();
+                    transport.conn.state = ConnectionState::Error;
+                }));
                 handle
                     .ok_or(ectx!(err ErrorContext::HeartbeatHandle, ErrorKind::Internal))
                     .map(move |handle| (client, RabbitHeartbeatHandle::new(handle)))
@@ -264,10 +205,19 @@ impl ManageConnection for RabbitConnectionManager {
     type Error = Compat<failure::Error>;
     fn connect(&self) -> Result<Self::Connection, Self::Error> {
         trace!("Creating rabbit channel...");
-        self.repair_if_tcp_is_broken();
         let cli = self.client.lock().unwrap();
         let ch = cli
-            .create_channel()
+            .create_confirm_channel(ConfirmSelectOptions::default())
+            .then(|res| {
+                match res {
+                    Ok(channel) => Ok(channel),
+                    Err(e) => {
+                        // if any error occured - we do reconnect to rabbit
+                        let _ = self.repair_tcp();
+                        Err(e)
+                    }
+                }
+            })
             .wait()
             .map_err(ectx!(ErrorSource::Io, ErrorContext::RabbitChannel, ErrorKind::Internal))
             .map_err(|e: failure::Error| e.compat())?;
@@ -283,7 +233,6 @@ impl ManageConnection for RabbitConnectionManager {
         Ok(ch)
     }
     fn is_valid(&self, conn: &mut Self::Connection) -> Result<(), Self::Error> {
-        self.repair_if_tcp_is_broken();
         if self.is_broken_conn() {
             let e: Error = ectx!(err format_err!("Connection is broken"), ErrorKind::Internal);
             let e: failure::Error = format_err!("{}", format_error(&e));
