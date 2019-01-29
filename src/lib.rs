@@ -107,27 +107,15 @@ pub fn start_server() {
     let mut core = tokio_core::reactor::Core::new().unwrap();
     debug!("Started creating rabbit connection pool");
 
-    let rabbit_thread_pool = futures_cpupool::CpuPool::new(config_clone.rabbit.thread_pool_size);
     let rabbit_connection_manager = core
         .run(RabbitConnectionManager::create(&config_clone))
         .map_err(|e| {
             log_error(&e);
         })
         .unwrap();
-    let rabbit_connection_pool = r2d2::Pool::builder()
-        .max_size(config_clone.rabbit.connection_pool_size as u32)
-        .test_on_check_out(false)
-        .max_lifetime(None)
-        .idle_timeout(None)
-        .build(rabbit_connection_manager)
-        .expect("Cannot build rabbit connection pool");
     debug!("Finished creating rabbit connection pool");
-    let consumer = TransactionConsumerImpl::new(
-        rabbit_connection_pool.clone(),
-        rabbit_thread_pool.clone(),
-        config_clone.auth.storiqa_transactions_user_id,
-    );
-    let mut publisher = TransactionPublisherImpl::new(rabbit_connection_pool, rabbit_thread_pool);
+    let consumer = TransactionConsumerImpl::new(rabbit_connection_manager.clone(), config_clone.auth.storiqa_transactions_user_id);
+    let mut publisher = TransactionPublisherImpl::new(rabbit_connection_manager);
     core.run(publisher.init())
         .map_err(|e| {
             log_error(&e);
