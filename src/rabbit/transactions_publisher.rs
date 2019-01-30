@@ -7,7 +7,6 @@ use serde_json;
 use tokio::net::tcp::TcpStream;
 
 use super::error::*;
-use super::r2d2::RabbitConnectionManager;
 use models::*;
 use prelude::*;
 
@@ -22,15 +21,8 @@ pub struct TransactionPublisherImpl {
 }
 
 impl TransactionPublisherImpl {
-    pub fn new(rabbit_pool: RabbitConnectionManager) -> Self {
-        let channel = Arc::new(rabbit_pool.get_channel().expect("Can not get channel from pool"));
-        Self { channel }
-    }
-
-    pub fn init(&mut self) -> impl Future<Item = (), Error = Error> {
-        let channel = self.channel.clone();
-
-        let f1: Box<Future<Item = (), Error = LapinError>> = Box::new(channel.exchange_declare(
+    pub fn init(channel: Arc<Channel<TcpStream>>) -> impl Future<Item = Self, Error = Error> + Send {
+        let f1: Box<Future<Item = (), Error = LapinError> + Send> = Box::new(channel.exchange_declare(
             "notifications",
             "direct",
             ExchangeDeclareOptions {
@@ -39,7 +31,7 @@ impl TransactionPublisherImpl {
             },
             Default::default(),
         ));
-        let f2: Box<Future<Item = (), Error = LapinError>> = Box::new(
+        let f2: Box<Future<Item = (), Error = LapinError> + Send> = Box::new(
             channel
                 .queue_declare(
                     "pushes",
@@ -51,7 +43,7 @@ impl TransactionPublisherImpl {
                 )
                 .map(|_| ()),
         );
-        let f3: Box<Future<Item = (), Error = LapinError>> = Box::new(
+        let f3: Box<Future<Item = (), Error = LapinError> + Send> = Box::new(
             channel
                 .queue_declare(
                     "callbacks",
@@ -63,7 +55,7 @@ impl TransactionPublisherImpl {
                 )
                 .map(|_| ()),
         );
-        let f4: Box<Future<Item = (), Error = LapinError>> = Box::new(
+        let f4: Box<Future<Item = (), Error = LapinError> + Send> = Box::new(
             channel
                 .queue_declare(
                     "emails",
@@ -75,14 +67,14 @@ impl TransactionPublisherImpl {
                 )
                 .map(|_| ()),
         );
-        let f5: Box<Future<Item = (), Error = LapinError>> =
+        let f5: Box<Future<Item = (), Error = LapinError> + Send> =
             Box::new(channel.queue_bind("pushes", "notifications", "pushes", Default::default(), Default::default()));
-        let f6: Box<Future<Item = (), Error = LapinError>> =
+        let f6: Box<Future<Item = (), Error = LapinError> + Send> =
             Box::new(channel.queue_bind("callbacks", "notifications", "callbacks", Default::default(), Default::default()));
-        let f7: Box<Future<Item = (), Error = LapinError>> =
+        let f7: Box<Future<Item = (), Error = LapinError> + Send> =
             Box::new(channel.queue_bind("emails", "notifications", "emails", Default::default(), Default::default()));
         future::join_all(vec![f1, f2, f3, f4, f5, f6, f7])
-            .map(|_| ())
+            .map(|_| Self { channel })
             .map_err(ectx!(ErrorSource::Lapin, ErrorKind::Internal))
     }
 }
