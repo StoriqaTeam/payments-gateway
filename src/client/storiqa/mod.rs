@@ -251,19 +251,23 @@ impl StoriqaClient for StoriqaClientImpl {
                     }
                 }
             "#;
-        Box::new(
-            self.exec_query::<Me>(&query, Some(token))
-                .and_then(|resp| {
-                    resp.data.clone().ok_or_else(|| {
-                        if let Some(payload) = get_error_payload(resp.clone().errors) {
-                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Validation(payload) => resp.clone())
-                        } else {
-                            ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp.clone())
-                        }
-                    })
-                })
-                .map(|resp_data| resp_data.me),
-        )
+        Box::new(self.exec_query::<Me>(&query, Some(token)).and_then(|resp| {
+            let data = resp.data.clone().ok_or_else(|| {
+                if let Some(payload) = get_error_payload(resp.clone().errors) {
+                    ectx!(try err ErrorContext::NoGraphQLData, ErrorKind::Validation(payload) => resp.clone())
+                } else {
+                    ectx!(try err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => resp.clone())
+                }
+            })?;
+
+            data.me.clone().ok_or_else(|| {
+                if let Some(payload) = get_error_payload(resp.clone().errors) {
+                    ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Validation(payload) => data.clone())
+                } else {
+                    ectx!(err ErrorContext::NoGraphQLData, ErrorKind::Unauthorized => data.clone())
+                }
+            })
+        }))
     }
 
     fn confirm_email(&self, token: EmailConfirmToken) -> Box<Future<Item = StoriqaJWT, Error = Error> + Send> {

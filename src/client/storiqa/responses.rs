@@ -83,7 +83,7 @@ pub struct CreateUser {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Me {
-    pub me: User,
+    pub me: Option<User>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
