@@ -60,7 +60,7 @@ paths:
   /rate/refresh:
     post:
       summary: Refreshes the expiration date of the exchange rate if it didn't change much. Otherwise creates a new exchange rate
-      security: 
+      security:
         - Bearer: []
       tags:
         - exchange
@@ -180,7 +180,7 @@ paths:
         name: Sign
         schema:
           type: string
-        required: true  
+        required: true
     post:
       summary: Login by oauth provider
       tags:
@@ -816,14 +816,12 @@ paths:
           type: string
         required: true
     post:
-      summary: Create a transactions for a user
+      summary: Create a transaction for a user
       description: Only users with `userId` are allowed to create a transaction
       security:
         - Bearer: []
       tags:
         - transactions
-      parameters:
-        - $ref: '#/components/parameters/userIdParam'
       responses:
         200:
           description: Ok
@@ -844,6 +842,46 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TransactionCreateInput'
+
+  '/transactions/{transactionId}':
+    parameters:
+      - in: header
+        name: Timestamp
+        schema:
+          type: string
+          format: integer
+        required: true
+      - in: header
+        name: Device-id
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: Sign
+        schema:
+          type: string
+        required: true
+    get:
+      summary: Get a transaction
+      description: The transaction will be returned only if it's linked to any account of the user
+      security:
+        - Bearer: []
+      tags:
+        - transactions
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/Internal'
+
   '/users/{userId}/accounts/{accountId}/transactions':
     parameters:
       - in: header
@@ -1354,7 +1392,7 @@ components:
         estimatedTime:
           type: number
           description: seconds
-          
+
     Transaction:
       type: object
       required:
@@ -1468,7 +1506,7 @@ components:
           example: My main account
         erc20Approved:
           type: boolean
-          description: Can withdraw from erc20 account status 
+          description: Can withdraw from erc20 account status
     Currency:
       type: string
       description: >-

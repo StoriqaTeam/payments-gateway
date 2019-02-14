@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use futures::future;
 use futures::prelude::*;
 use futures::stream::iter_ok;
 use futures::IntoFuture;
@@ -41,6 +42,7 @@ impl<E: DbExecutor> TransactionsServiceImpl<E> {
 
 pub trait TransactionsService: Send + Sync + 'static {
     fn create_transaction(&self, user_id: UserId, input: CreateTransaction) -> Box<Future<Item = Transaction, Error = Error> + Send>;
+    fn get_transaction(&self, user_id: UserId, tx_id: TransactionId) -> Box<Future<Item = Option<Transaction>, Error = Error> + Send>;
     fn get_transactions_for_user(
         &self,
         user_id: UserId,
@@ -109,6 +111,57 @@ impl<E: DbExecutor> TransactionsService for TransactionsServiceImpl<E> {
                 })
                 .and_then(move |transaction: Transaction| service.add_additional_info_to_transaction(transaction)),
         )
+    }
+
+    fn get_transaction(&self, user_id: UserId, tx_id: TransactionId) -> Box<Future<Item = Option<Transaction>, Error = Error> + Send> {
+        let db_executor = self.db_executor.clone();
+        let accounts_repo = self.accounts_repo.clone();
+        let transactions_client = self.transactions_client.clone();
+        let service = self.clone();
+
+        let fut = db_executor
+            .execute(move || {
+                let accounts = accounts_repo
+                    .get_by_user(user_id)
+                    .map_err(ectx!(try ErrorKind::Internal => user_id))?;
+
+                if accounts.is_empty() {
+                    Err(ectx!(err ErrorContext::NoAccount, ErrorKind::Unauthorized => user_id, tx_id))
+                } else {
+                    Ok(accounts)
+                }
+            })
+            .and_then(move |accounts| {
+                transactions_client
+                    .get_transaction(tx_id.clone())
+                    .map_err(ectx!(convert => tx_id))
+                    .map(|tx_resp| (accounts, tx_resp.map(Transaction::from)))
+            })
+            .and_then(move |(accounts, tx)| {
+                let tx = match tx {
+                    None => return future::Either::A(future::ok(None)),
+                    Some(tx) => tx,
+                };
+
+                let is_involved_into_tx = accounts.into_iter().any(|account| {
+                    let is_in_to = Some(account.id) == tx.to.account_id || account.account_address == tx.to.blockchain_address;
+                    let is_in_from = tx
+                        .from
+                        .iter()
+                        .any(|from| Some(account.id) == from.account_id || account.account_address == from.blockchain_address);
+                    is_in_to || is_in_from
+                });
+
+                let tx = if !is_involved_into_tx {
+                    return future::Either::A(future::ok(None));
+                } else {
+                    tx
+                };
+
+                future::Either::B(service.add_additional_info_to_transaction(tx).map(Some))
+            });
+
+        Box::new(fut)
     }
 
     fn get_transactions_for_user(

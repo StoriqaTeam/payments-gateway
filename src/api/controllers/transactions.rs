@@ -11,6 +11,16 @@ use api::responses::*;
 use models::*;
 use serde_qs;
 
+pub fn get_transaction(ctx: &Context, tx_id: TransactionId) -> ControllerFuture {
+    let transactions_service = ctx.transactions_service.clone();
+    Box::new(ctx.authenticate().and_then(move |user_id_auth| {
+        transactions_service
+            .get_transaction(user_id_auth, tx_id)
+            .map_err(ectx!(convert => user_id_auth, tx_id))
+            .and_then(|tx| response_with_model(&tx.map(TransactionsResponse::from)))
+    }))
+}
+
 pub fn post_transactions(ctx: &Context) -> ControllerFuture {
     let transactions_service = ctx.transactions_service.clone();
     let body = ctx.body.clone();
