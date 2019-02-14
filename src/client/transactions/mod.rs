@@ -26,6 +26,7 @@ pub trait TransactionsClient: Send + Sync + 'static {
     fn delete_account(&self, account_id: AccountId) -> Box<Future<Item = AccountResponse, Error = Error> + Send>;
     fn get_account_balance(&self, account_id: AccountId) -> Box<Future<Item = BalanceResponse, Error = Error> + Send>;
     fn create_transaction(&self, input: CreateTransaction) -> Box<Future<Item = TransactionResponse, Error = Error> + Send>;
+    fn get_transaction(&self, tx_id: TransactionId) -> Box<Future<Item = Option<TransactionResponse>, Error = Error> + Send>;
     fn get_account_transactions(
         &self,
         account_id: AccountId,
@@ -130,6 +131,11 @@ impl TransactionsClient for TransactionsClientImpl {
                 .and_then(move |body| client.exec_query::<TransactionResponse>(&url, Some(body), Method::POST)),
         )
     }
+    fn get_transaction(&self, tx_id: TransactionId) -> Box<Future<Item = Option<TransactionResponse>, Error = Error> + Send> {
+        let client = self.clone();
+        let url = format!("/transactions/{}", tx_id);
+        Box::new(client.exec_query::<Option<TransactionResponse>>(&url, None, Method::GET))
+    }
     fn get_account_transactions(
         &self,
         account_id: AccountId,
@@ -190,6 +196,9 @@ impl TransactionsClient for TransactionsClientMock {
     }
     fn create_transaction(&self, _input: CreateTransaction) -> Box<Future<Item = TransactionResponse, Error = Error> + Send> {
         Box::new(Ok(TransactionResponse::default()).into_future())
+    }
+    fn get_transaction(&self, _tx_id: TransactionId) -> Box<Future<Item = Option<TransactionResponse>, Error = Error> + Send> {
+        Box::new(Ok(None).into_future())
     }
     fn get_account_transactions(
         &self,
