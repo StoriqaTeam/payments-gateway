@@ -165,6 +165,7 @@ pub struct PostAccountsRequest {
     pub currency: Currency,
     pub name: String,
     pub callback_url: Option<String>,
+    pub daily_limit_type: Option<DailyLimitType>,
 }
 
 impl From<(PostAccountsRequest, UserId)> for CreateAccount {
@@ -175,6 +176,7 @@ impl From<(PostAccountsRequest, UserId)> for CreateAccount {
             currency: req.0.currency,
             callback_url: req.0.callback_url,
             user_id: req.1,
+            daily_limit_type: req.0.daily_limit_type,
         }
     }
 }
