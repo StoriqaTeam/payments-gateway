@@ -88,6 +88,7 @@ pub struct CreateAccount {
     #[validate(length(min = "1", max = "40", message = "Name must not be empty "))]
     pub name: String,
     pub callback_url: Option<String>,
+    pub daily_limit_type: Option<DailyLimitType>,
 }
 
 impl Default for CreateAccount {
@@ -98,6 +99,7 @@ impl Default for CreateAccount {
             currency: Currency::Eth,
             name: String::default(),
             callback_url: None,
+            daily_limit_type: None,
         }
     }
 }

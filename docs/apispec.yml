@@ -1467,6 +1467,10 @@ components:
           type: string
           description: Callback url is called when transaction to this account occured
           example: http://billing.com/callback
+        dailyLimitType:
+          type: string
+          enum: [defaultlimit|unlimited]
+          example: defaultlimit
     AccountUpdateInput:
       type: object
       required:
