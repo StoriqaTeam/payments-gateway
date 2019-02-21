@@ -861,6 +861,7 @@ paths:
         schema:
           type: string
         required: true
+      - $ref: '#/components/parameters/transactionIdParam'
     get:
       summary: Get a transaction
       description: The transaction will be returned only if it's linked to any account of the user
@@ -1625,6 +1626,13 @@ components:
       name: accountId
       in: path
       description: ID of account
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    transactionIdParam:
+      name: transactionId
+      in: path
+      description: ID of transaction
       required: true
       schema:
         $ref: '#/components/schemas/Id'
