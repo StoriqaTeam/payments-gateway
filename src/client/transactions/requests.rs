@@ -7,6 +7,7 @@ pub struct CreateAccountRequest {
     pub user_id: WorkspaceId,
     pub currency: Currency,
     pub name: String,
+    pub daily_limit_type: Option<DailyLimitType>,
 }
 
 impl From<(CreateAccount, WorkspaceId)> for CreateAccountRequest {
@@ -16,6 +17,7 @@ impl From<(CreateAccount, WorkspaceId)> for CreateAccountRequest {
             name: req.0.name,
             currency: req.0.currency,
             user_id: req.1,
+            daily_limit_type: req.0.daily_limit_type,
         }
     }
 }
