@@ -66,7 +66,6 @@ use diesel::r2d2::ConnectionManager;
 use futures::future::Either;
 use futures_cpupool::CpuPool;
 use tokio::prelude::*;
-use tokio::runtime::Runtime;
 use tokio::timer::{Delay, Timeout};
 
 use self::models::*;
@@ -101,20 +100,20 @@ pub fn start_server() {
     let db_executor = DbExecutorImpl::new(db_pool.clone(), cpu_pool.clone());
     let config_clone = config.clone();
 
-    let mut rt = Runtime::new().expect("Failed to create a Tokio runtime");
+    let mut core = tokio_core::reactor::Core::new().unwrap();
     debug!("Started creating rabbit connection pool");
 
-    let rabbit_connection_manager = rt
-        .block_on(RabbitConnectionManager::create(&config_clone))
+    let rabbit_connection_manager = core
+        .run(RabbitConnectionManager::create(&config_clone))
         .map_err(|e| {
             log_error(&e);
         })
-        .expect("Failed to create the rabbit connection manager");
+        .unwrap();
     debug!("Finished creating rabbit connection pool");
     let consumer = TransactionConsumerImpl::new(rabbit_connection_manager.clone(), config_clone.auth.storiqa_transactions_user_id);
     let channel = Arc::new(rabbit_connection_manager.get_channel().expect("Can not get channel from pool"));
-    let publisher = rt
-        .block_on(TransactionPublisherImpl::init(channel))
+    let publisher = core
+        .run(TransactionPublisherImpl::init(channel))
         .map_err(|e| {
             log_error(&e);
         })
@@ -128,8 +127,8 @@ pub fn start_server() {
         db_executor.clone(),
         publisher_clone,
     );
-    let (stream, channel) = rt
-        .block_on(consumer.subscribe())
+    let (stream, channel) = core
+        .run(consumer.subscribe())
         .expect("Can not create subscribers for transactions in rabbit");
     debug!("Subscribing to rabbit");
     let fetcher_clone = fetcher.clone();
@@ -161,10 +160,8 @@ pub fn start_server() {
         })
         .map_err(|_| ());
 
-    rt.spawn(subscription);
-    rt.spawn(api::server(config, publisher.clone()));
-
-    rt.shutdown_on_idle().wait().expect("Tokio runtime shutdown failed")
+    core.handle().spawn(subscription);
+    api::start_server(core, config, publisher.clone());
 }
 
 fn get_config() -> Config {
