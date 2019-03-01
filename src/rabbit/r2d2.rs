@@ -1,11 +1,9 @@
 use std::fmt::{self, Debug};
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::{Arc, Mutex};
-use std::thread;
 use std::time::Duration;
 
 use failure;
-use lapin_async::connection::ConnectionState;
 use lapin_futures::channel::{BasicQosOptions, Channel, ConfirmSelectOptions};
 use lapin_futures::client::{Client, ConnectionOptions, HeartbeatHandle};
 
@@ -13,7 +11,6 @@ use prelude::*;
 use regex::Regex;
 use tokio::net::tcp::TcpStream;
 use tokio::timer::timeout::Timeout;
-use tokio_core::reactor::Core;
 
 use super::error::*;
 use config::Config;
@@ -125,17 +122,10 @@ impl RabbitConnectionManager {
             .and_then(move |(client, mut heartbeat)| {
                 info!("Connected to rabbit");
                 let handle = heartbeat.handle();
-                let client_clone = client.clone();
-                // due to lapin docs heartbeat must be run on another thread
-                thread::spawn(move || {
-                    let mut core = Core::new().unwrap();
-                    let _ = core.run(heartbeat.map_err(move |e| {
-                        let e: Error = ectx!(err e, ErrorContext::Heartbeat, ErrorKind::Internal);
-                        log_error(&e);
-                        let mut transport = client_clone.transport.lock().unwrap();
-                        transport.conn.state = ConnectionState::Error;
-                    }));
-                });
+                tokio::spawn(heartbeat.map_err(move |e| {
+                    let e: Error = ectx!(err e, ErrorContext::Heartbeat, ErrorKind::Internal);
+                    log_error(&e);
+                }));
                 handle
                     .ok_or(ectx!(err ErrorContext::HeartbeatHandle, ErrorKind::Internal))
                     .map(move |handle| (client, RabbitHeartbeatHandle::new(handle)))
